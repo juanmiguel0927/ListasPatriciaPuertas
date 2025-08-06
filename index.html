@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Calificaciones - Grupos</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos generales del cuerpo y contenedor principal */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        .container {
+            max-width: 95%;
+            margin: auto;
+        }
+        /* Contenedor principal de la tabla con scroll horizontal y vertical */
+        .table-container {
+            max-height: 80vh; /* Permite desplazamiento vertical si la tabla es muy larga */
+            overflow: auto;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        /* Estilos de la tabla, celdas y encabezados */
+        table {
+            width: 100%;
+            min-width: 1160px; /* Ancho mínimo ajustado para la nueva columna "Nivel" */
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        th, td {
+            padding: 0.75rem;
+            text-align: center;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            background-color: #ffffff; /* Fondo para evitar que el contenido se muestre al hacer scroll */
+        }
+        th {
+            background-color: #4b5563;
+            color: #ffffff;
+            font-weight: 600;
+            vertical-align: top;
+        }
+        /* La fila de encabezados se mantiene fija en la parte superior */
+        thead tr th {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background-color: #4b5563; /* Fondo para que no sea transparente */
+        }
+        /* Columnas fijas: No, Nombre de Estudiante, y las secciones de evaluación */
+        thead th.sticky-col-no {
+            left: 0;
+            z-index: 23; /* Más alto para "No" */
+            box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
+        }
+        thead th.sticky-col-name {
+            left: 40px; /* Ancho de la columna "No" */
+            z-index: 22;
+            box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
+        }
+        thead th.sticky-col-cognitivo {
+            left: calc(40px + 150px); /* Ancho de No + Nombre */
+            z-index: 21;
+            box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
+        }
+        thead th.sticky-col-procedimental {
+            left: calc(40px + 150px + 180px); /* Ancho de No + Nombre + Cognitivo */
+            z-index: 21;
+            box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
+        }
+        thead th.sticky-col-actitudinal {
+            left: calc(40px + 150px + 180px + 180px); /* Ancho de No + Nombre + Cognitivo + Procedimental */
+            z-index: 21;
+            box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
+        }
+        thead th.sticky-col-def {
+            left: calc(40px + 150px + 180px + 180px + 180px); /* Ancho de No + Nombre + Cognitivo + Procedimental + Actitudinal */
+            z-index: 21;
+            box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
+            width: 70px; /* Fixed width for DEF column */
+        }
+        thead th.sticky-col-nivel {
+            left: calc(40px + 150px + 180px + 180px + 180px + 70px); /* Ancho de No + Nombre + Cognitivo + Procedimental + Actitudinal + DEF */
+            z-index: 21;
+            box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
+            width: 70px; /* Fixed width for Nivel column */
+        }
+
+        tbody tr td.sticky-col-no {
+            position: sticky;
+            left: 0;
+            z-index: 12;
+            background-color: #f9fafb;
+            box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
+        }
+        tbody tr td.sticky-col-name {
+            position: sticky;
+            left: 40px; /* Ancho de la columna "No" */
+            z-index: 11;
+            text-align: left;
+            font-weight: bold;
+            background-color: #f9fafb;
+            box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
+        }
+        /* Estilos para las celdas de calificación que contienen el texto o el input */
+        td.grade-cell {
+            cursor: pointer; /* Indicar que son clickeables */
+            position: sticky; /* Mantener la posición sticky para las columnas */
+            background-color: #ffffff;
+            box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
+            border: 1px solid #ccc; /* Borde añadido para enmarcar la celda */
+        }
+        /* Ajuste de posición para las celdas de calificación fijas */
+        td.grade-cell[data-field^="cognitivo"] { left: calc(40px + 150px); z-index: 10; }
+        td.grade-cell[data-field="cognitivoC2"] { left: calc(40px + 150px + 60px); z-index: 10; }
+        td.grade-cell[data-field="cognitivoC3"] { left: calc(40px + 150px + 120px); z-index: 10; }
+        td.grade-cell[data-field^="procedimental"] { left: calc(40px + 150px + 180px); z-index: 10; }
+        td.grade-cell[data-field="procedimentalP2"] { left: calc(40px + 150px + 180px + 60px); z-index: 10; }
+        td.grade-cell[data-field="procedimentalP3"] { left: calc(40px + 150px + 180px + 120px); z-index: 10; }
+        td.grade-cell[data-field^="actitudinal"] { left: calc(40px + 150px + 180px + 180px); z-index: 10; }
+        td.grade-cell[data-field="actitudinalA2"] { left: calc(40px + 150px + 180px + 180px + 60px); z-index: 10; }
+        td.grade-cell[data-field="actitudinalA3"] { left: calc(40px + 150px + 180px + 180px + 120px); z-index: 10; }
+
+
+        tbody tr td.sticky-col-def {
+            position: sticky;
+            left: calc(40px + 150px + 180px + 180px + 180px);
+            z-index: 10;
+            background-color: #ffffff;
+            box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
+            width: 70px; /* Fixed width for DEF column */
+        }
+        tbody tr td.sticky-col-nivel {
+            position: sticky;
+            left: calc(40px + 150px + 180px + 180px + 180px + 70px); /* Ancho de No + Nombre + Cognitivo + Procedimental + Actitudinal + DEF */
+            z-index: 10;
+            background-color: #ffffff;
+            box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
+            width: 70px; /* Fixed width for Nivel column */
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+        /* Estilo para filas de alerta (calificación baja) */
+        .alert-row {
+            background-color: #fee2e2; /* Fondo rojo claro para alerta */
+        }
+        /* Estilos de los inputs de calificaciones */
+        .grade-input {
+            width: 60px; /* Ancho fijo para los campos de calificación */
+            padding: 0.25rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.25rem;
+            text-align: center;
+        }
+        /* Estilos para el cuadro de mensajes (guardado, error) */
+        .message-box {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            background-color: #4CAF50;
+            color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: opacity 0.3s ease;
+            z-index: 100; /* Asegurar que esté por encima de otros elementos */
+        }
+        /* Estilos para las casillas de asistencia */
+        .attendance-checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr); /* 5 columnas */
+            gap: 0.25rem; /* Espacio entre casillas */
+            justify-items: center;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .attendance-checkbox-grid input[type="checkbox"] {
+            width: 1rem;
+            height: 1rem;
+            cursor: pointer;
+        }
+        .attendance-summary {
+            font-size: 0.75rem;
+            text-align: left;
+            margin-top: 0.5rem;
+        }
+        /* Contenedor principal para los días (horizontal) */
+        .daily-schedule-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap; /* Permite que los días se envuelvan en pantallas pequeñas */
+            gap: 1.5rem; /* Espacio entre los bloques de días */
+            margin-bottom: 1.5rem;
+        }
+        /* Contenedor individual para cada día */
+        .daily-group-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            background-color: #e0e7eb; /* Fondo ligeramente diferente para cada día */
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            min-width: 150px; /* Ancho mínimo para cada bloque de día */
+        }
+        .daily-group-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #374151;
+            margin-bottom: 0.75rem;
+            text-align: center;
+            width: 100%; /* Asegura que el título ocupe todo el ancho del bloque */
+        }
+        .group-buttons-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.5rem; /* Espacio entre los botones de grupo */
+        }
+        /* Estilos de los botones de pestaña */
+        .tab-button {
+            padding: 0.75rem 1rem; /* Ajustado para que quepan más */
+            border-radius: 0.5rem; /* Bordes redondeados para todos los lados */
+            font-weight: 600;
+            transition: all 0.2s ease;
+            cursor: pointer; /* Indicar que es clickeable */
+            white-space: nowrap; /* Evita que el texto del botón se rompa */
+        }
+        .tab-button.active {
+            background-color: #3b82f6; /* Azul vibrante */
+            color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5), 0 2px 4px -1px rgba(59, 130, 246, 0.25); /* Sombra azul */
+        }
+        .tab-button:not(.active) {
+            background-color: #d1d5db;
+            color: #4b5563;
+        }
+        .footer-text {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 sm:p-8">
+    <div class="container max-w-screen-2xl bg-white shadow-xl rounded-xl p-4 sm:p-8 mt-4">
+        <h1 class="text-3xl sm:text-4xl font-bold text-center mb-6 text-gray-800">Control de Calificaciones y Asistencia</h1>
+
+        <!-- Tab Navigation (se generará dinámicamente) -->
+        <div id="tabNavigation" class="daily-schedule-container">
+            <!-- Los botones de las pestañas se insertarán aquí mediante JavaScript -->
+        </div>
+        
+        <h2 id="courseTitle" class="text-2xl font-bold text-center mb-2 text-gray-700"></h2>
+        <div id="courseInfo" class="text-center text-gray-600 mb-4"></div>
+
+        <!-- Attendance Table -->
+        <div id="attendanceTableContainer" class="table-container">
+            <!-- La tabla se renderizará aquí mediante JavaScript -->
+        </div>
+        
+        <!-- Message box for user notifications -->
+        <div id="message-box" class="hidden message-box"></div>
+
+        <!-- Footer with attribution -->
+        <div class="footer-text">
+            Diseñado por Juan Miguel Ríos Redondo
+        </div>
+    </div>
+
+    <script>
+        // UI Elements
+        const tableContainer = document.getElementById('attendanceTableContainer');
+        const messageBox = document.getElementById('message-box');
+        const courseTitle = document.getElementById('courseTitle');
+        const courseInfo = document.getElementById('courseInfo');
+        const tabNavigation = document.getElementById('tabNavigation');
+
+        // Shows a message to the user (saved, error, etc.)
+        const showMessage = (text, type = 'success') => {
+            messageBox.textContent = text;
+            messageBox.style.backgroundColor = type === 'success' ? '#4CAF50' : '#f44336';
+            messageBox.classList.remove('hidden');
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 3000);
+        };
+        
+        // Function to capitalize words in a string (e.g., "juan perez" -> "Juan Perez")
+        const capitalizeWords = (str) => {
+            if (!str) return '';
+            return str.toLowerCase().split(' ').map(word => {
+                return word.charAt(0).toUpperCase() + word.slice(1);
+            }).join(' ');
+        };
+
+        // Student data extracted from the PDF, organized by group
+        const allStudentsData = {
+            '7D': [
+                "AHUMADA SIERRA THAEL SOFIA", "AMARIS SIERRA JULEISY PAOLA", "BENITEZ BOSSIO MARIA JOSE",
+                "BOLIVAR GOMEZ MARIA JOSE", "CABALLERO SILVERA JOHELIS ANA", "CARMONA SILVERA LEYNER LEONARDO",
+                "CARPINTERO SILVERA THALIA", "CONSUEGRA ALVAREZ JHOINER DAVID", "ESCORCIA RIVALDO CAMILO ANDRES",
+                "GERONIMO BARRAZA HELLEN SOFIA", "GOEZ OTERO DANIEL JOSE", "GONZALEZ BARRAZA DANNA SOFIA",
+                "GUANIPA GUTIERREZ ARANZA", "GUTIERREZ OJEDA EMMANUEL", "HERNANDEZ DIAZ JESUS DAVID",
+                "LLANOS SEGURA YAILETH PATRICIA", "MARIN PALMA SANTIAGO", "MARMOL HERNANDEZ SEBASTIAN ANDRES",
+                "NAVAS CEDEÑO ANGEL ALBERTO", "NIETO ROLONG MARY ISABEL", "ORTEGA BENITEZ IVIAN ALEJANDRA",
+                "ORTEGA MANGA ANGELLYS ISABEL", "PATIÑO BORRERO HARRISON DANIEL", "PEREZ ALVAREZ MARIA JOSE",
+                "PEREZ NATERA VALENTINA SOFIA", "PIMIENTA OTERO LAURENS JULIANA", "POLO REDONDO MARIA GUADALUPE",
+                "PRADA SARMIENTO BRAYAN JOSE", "RADA RADA VALLERYE DE JESUS", "SANTIAGO DACONTE ANDRES FELIPE",
+                "SIERRA CASTILLO MAURICIO JOSE", "SIERRA GOMEZ LIZETH PAOLA", "SMITH SANTIAGO VALERIA",
+                "SUAREZ GALLARDO MATEO JUSETH", "TORRES FERNANDEZ SANTIAGO ENRIQUE", "UZCATEGUI MONTILLA SANTIAGO ALEJANDRO",
+                "VEGA PLAZA NEIMAR", "ZARATE REDONDO YAJAIRA NICOLL"
+            ],
+            '8A': [
+                "ARIZA CONSUEGRA STEISY SOFÍA", "BARRAZA HERNANDEZ RONALD ALFREDO", "BARRIOS MOLINA LITZY MARIELL",
+                "BECERRA CRESPO MANOLO", "BELLIDO CASIANO LEIDER JOSE", "BERRUEZO ORTEGA SAMANTHA ISABEL",
+                "BLANCO REYES ANGEL RAFAEL", "BOLIVAR ESCOBAR VALENTINA SARETH", "CIRO ROMERO ANGELA SOFIA",
+                "DE LA CRUZ SIERRA ALAN DAVID", "DITA ESCALANTE GILMAR JOSE", "ESCALANTE OSPINO ANDERSON CAMILO",
+                "ESCOBAR ALGARIN LILIANA", "GOMEZ VILLA ANA VALERIA", "GUTIERREZ PAEZ ANA MILENA",
+                "JIMÉNEZ QUINTANA FREDDY DAVID", "JIMENEZ RUA NASLI DANIELA", "LLANOS REDONDO ADRIANA MICHELL",
+                "LLANOS REYES ANDRES FELIPE", "MARQUEZ MARIN VALERIN VALENTINA", "MARQUEZ VILORIA EMILY SOFÍA",
+                "MARTINEZ ORTEGA JESUS MANUEL", "MOLINA GUTIERREZ JULIE PAOLA", "NIETO ORTEGA MAILETH SMITH",
+                "ORDOÑEZ GARCIA LEONARDO ENRIQUE", "PACHECO AVILA MARIA ANGEL", "PEÑATE VEGA MARIA ALEJANDRA",
+                "PEREZ ARAUJO ANDRÉS CAMILO", "REDONDO PATIÑO DELEVIS ENRIQUE", "RODRIGUEZ SANJUAN SALOME",
+                "SANTIAGO JULIO ASLY PAOLA", "SIERRA GOMEZ LUISA FERNANDA", "SILVERA GOMEZ GABRIEL",
+                "SILVERA ORTEGA MAYLER JESHUA", "TEJERA ORTEGA LUIS MARIO", "TORRES CERA HEIDER JESUS",
+                "VANEGAS DE LA CRUZ DANIELA ANDREA", "VEGA ORTIZ EYEELIN LORENA", "VELASQUEZ GARCIA MANUEL ALEJANDRO"
+            ],
+            '8B': [
+                "ACOSTA NATERA JAVITH DE JESUS", "AREVALO ARCON JOSE DAVID", "BARRETO ROLONG MARIANA SOFIA",
+                "BARRIOS PUENTES BLAYNER ESTEBAN", "BULA PEREZ MARIA LUISA", "BUSTOS BARRIOS HONEY SOPHIA",
+                "CASTRO CASTRO DASHARY MICHELL", "CASTRO HARO JEAN LUCAS", "CONTRERAS SANJUAN IVANNA MICHELL",
+                "CORREDOR BARBOSA SAMUEL ARTURO", "COTES ESCALANTE YESID ANDRES", "GARCIA VARELA SHADAY VALENTINA",
+                "GONZALEZ SILVERA LILIBETH ISABEL", "HEREDIA LOPEZ EYLIN PAOLA", "HERNANDEZ DE LA CRUZ MIGUEL ANGEL",
+                "HERNANDEZ LLANOS GUADALUPE MARIA", "HERNANDEZ LLANOS JESE DAVID", "HERRERA POLO LINA MILAGROS",
+                "JAIME ROA ANYELO JAVIER", "LINARES ESTEVEZ MAYTE ALEJANDRA", "LUQUE GONZALEZ YANKELIS ESTEFANIA",
+                "MONCADA NAVARRO YOHANI ZAFIRO", "MONSALVO QUINTERO ADRIAN ANDRES", "MONTERROSA CABALLERO LAURA VANESA",
+                "NORIEGA REDONDO WENDY PAOLA", "POLO JIMENEZ NORELLA MARÍA", "RADA GUTIERREZ AISHA MARIETT",
+                "REDONDO FRANCO LUIS ANGEL", "RINCON PEREZ ANGIELIN ORIANA", "SALAZAR ZAMBRANO RICHARD JOSE",
+                "SIERRA OROZCO ANGGY PAOLA", "SILVERA ESCOBAR DAYAR AMETH", "SILVERA JIMENEZ NICOLL DAYANA",
+                "SILVERA SANJUAN ADALYANA ISABEL", "SOSA BERRIO DEICY JULIETH", "SUAREZ DURAN JOSTIN DE JESUS",
+                "TOMASES RADA THIAGO ANDRES", "URANGO PACHECO DEILER JOSEPH", "VILLAMIL HERNANDEZ XIMENA ESTER"
+            ],
+            '8C': [
+                "ACOSTA CAICEDO DAIMAR DE JESUS", "ACUÑA VALENCIA LUIS ALEJANDRO", "ARAUJO MENDOZA SIRIANA VALENTINA",
+                "BANDERA LLANOS SHAILETH VALENTINA", "BURGUILLOS CARBONELL JHOSNIEL SAID", "CARDENAS CHIQUILLO MICHAELL MANUEL",
+                "CASTRO GOMEZ SHERIL NICOLLE", "CERVANTES LARA MAURO DE JESUS", "DE LA CRUZ PIÑERES SERGIO ANDRES",
+                "DE LA CRUZ REDONDO ANTONY RICARDO", "DE LA HOZ CABAS YEFFER DE JESUS", "ESCORCIA MIRANDA GUADALUPE",
+                "FERRER SANTANDER DAMIAN CAMILO", "GARCIA PEÑATE MARIA DEL CARMEN", "GARCIA ROJAS TIFFANY DAYANA",
+                "GOMEZ OTERO JANNIER FARID", "GONZALEZ SALCEDO MARIA DE LOS ANGELES", "HURTADO ORTIZ ALAN DAVIDSON",
+                "LLANOS TAGUER BRANDON DE JESUS", "MADERA ORTEGA ANA PAULA", "MEZA SIERRA JAMES DE JESUS",
+                "MORALES PERCY KEREN SOFIA", "OLANO PAZ YARIANGEL CHICHINQUIRA", "ORTEGA SIERRA VALENTINA MISHEL",
+                "PEREZ GONZALEZ SHAIRA LUCIA", "PEREZ NAVAS VALENTINA NICOLLE", "POLO GUERRA XAVIER JOSUE",
+                "POSADA FRANCO MARIA CAMILA", "RADA CORRO STEPHANIE SOFIA", "RANGEL SIERRA LAUREN SOFIA",
+                "RICO ZAPATA DANNA SOFIA", "RIVALDO PALMA MILAGRO DE JESUS", "RIVALDO PALMA TANIA ISABEL",
+                "ROSANIA MINDIOLA DIEGO DAVID", "SARMIENTO MARTINEZ MARI ANGEL", "SILVA SILVERA SOFIA ISABEL",
+                "SILVERA CERVANTES MILTON DE JESUS", "TRIGOS OROZCO SHELSY SOFIA", "URRUCHURTO PEREZ ISABELLA"
+            ],
+            '8D': [
+                "ACOSTA HERNANDEZ EMILY GISELL", "ACUÑA MARTINEZ JOB DAVID", "ANGULO DE LA CRUZ NAHIARA MICHEL",
+                "BALVIN ROMERO NORMA GABRIELA", "CABALLERO ACEVEDO MARIA ALEJANDRA", "CABELLO NATERA STEVE EMANUEL",
+                "CONTRERAS SARMIENTO ANGELLYS NICOLLE", "COSSIO NARVAEZ ANGELA VICTORIA", "ESTRADA LLANOS MOISES ALEXANDER",
+                "FRANCO RODRIGUEZ JUAN DAVID", "GUZMAN PENATE LUIS ALBERTO", "HERNANDEZ PALLARES FERNANDO JUNIOR",
+                "HERNANDEZ REDONDO SHAYRA NICOLL", "JIMENEZ ACUÑA MARIANA ISABEL", "JIMENEZ SIERRA KAROL SOFIA",
+                "LLERENA IMITOLA JADER JOSE", "MADARIAGA LOPEZ LUISA FERNANDA", "MAESTRE DE LA HOZ MARIELYS MILETH",
+                "MENDOZA GOEZ DANIELA ROSA", "MOLINA PALLARES MATIAS", "MONCADA SIERRA MARIA CAROLINA",
+                "MORALES ORTEGA JOSSUET", "OROZCO GONZALEZ DULCE MARIA", "ORTEGA HERNANDEZ SARAY DE JESUS",
+                "PACHECO SILVERA ANGILIS MILETH", "PINO MARIANO MARIANA PATRICIA", "POLO ORELLANO JUAN SEBASTIAN",
+                "POLO VERGARA SHARY SOFÍA", "RANGEL MARTINEZ MELANI PAOLA", "RINCON GOMEZ ALEJANDRO DAVID",
+                "ROA RADA DANIEL DE JESUS", "ROA RADA EDGAR ANDRES", "RODRIGUEZ BUSTILLO GABRIELA LUCIA",
+                "ROLONG GOEZ JUAN ANDRES", "ROMERO PEÑA NEYMAR", "RUDAS VARGAS YAIRIS MARIA",
+                "SANTIAGO REYES OMER DE JESUS", "SIERRA CASTILLO LUIS JOSE", "SIERRA VARELA ANDREA CAMILA"
+            ],
+            '9A': [
+                "ACOSTA PADILLA OVER ENRIQUE", "ACOSTA PALMA CRISTHIAN JASSER", "AMADOR PALMA ALVARO JUNIOR",
+                "ARCON ALVAREZ SEBASTIAN", "ARTETA CONSUEGRA JANNY LIZ", "AVILA MEZA MAUREN JULIETH",
+                "BARRAZA SIERRA LUIS FERNANDO", "BARRIOS LLANOS GERALDINE ISABEL", "BARRIOS SIERRA BRIANA SOFIA",
+                "CAMARGO DE LA CRUZ LEINYS MAURETH", "CAMARGO MARTINEZ MARIA ALEJANDRA", "CANOSA CERVANTES VIVIANA CAROLINA",
+                "CORTES PIÑA JHOVANNY ESTEBAN", "COSSIO NARVAEZ HEIDY ISABEL", "DE LA HOZ VIZCAINO BUENDI BANESA",
+                "ESCORCIA BLANCO MELANY SOFIA", "ESCORCIA MIRANDA JESUS DAVID", "FERNANDEZ ANGULO SHARICK",
+                "GALINDO ESCALANTE SHARON MICHAELL", "GALLARDO BRADFORD JHOYMAR DE JESUS", "LOPEZ MITROBICH MARIMAR",
+                "MARRIAGA SANJUAN SOCHY", "MURILLO SILVERA YEYCI MISHELL", "ORELLANO MOLINA CICLALIS VALENTINA",
+                "ORTIZ PEREZ CRISTIAN DAVID", "OTERO CARDENAS ADAN ELIAS", "OTERO NIETO JAIR DE JESUS",
+                "PEÑA MEZA VICTOR ANDRES", "POLO CONTRERAS ANDERSON", "POLO PALMA SAILLY TATIANA",
+                "RADA JIMÉNEZ JESUS ALBERTO", "RADA NIEVES DAMARIS SOFIA", "REDONDO SALGADO ALEJANDRA SOFIA",
+                "RODRIGUEZ ANGULO DANNA NICOLLE", "SALAZAR IGLESIAS TALIANA LISETH", "SANTIAGO LOPEZ MARIA CAMILA",
+                "SARMIENTO CERVANTES VALEREE LUCIA", "SARMIENTO DE LA RANS ALAN DAVID", "TURBAY GOMEZ LAIONEL DAVID",
+                "ZARATA ROA LUIS ALEJANDRO"
+            ],
+            '9B': [
+                "ANGULO BARRAGAN CARLOS DAVID", "ARAUJO ESCALANTE YELIANYS", "ARTETA ZARATE JHAN CARLOS",
+                "BARRAZA CAFIEL VALENTINA ESTHER", "BLANCO ESTRADA JENIFER", "BLANCO SILVERA YAIKOVIC ALEXANDER",
+                "BOLIVAR MARRIAGA YANDERSON DAVID", "ESCOBAR ALGARIN JOSE MIGUEL", "FERRER SANTANDER LOGAN SMITH",
+                "FONTALVO PUELLO CRISTIAN DAVID", "GARCIA CAMARGO ANGELY PAOLA", "GERONIMO ROJAS EMMANUEL DE JESUS",
+                "GIL GUTIERREZ ANA REYSHELL", "GOENAGA LEJARDE JULIANNY KAROLAY", "GUTIERREZ SIERRA SANTIAGO DAVID",
+                "HERNANDEZ LOPEZ MARIA CAMILA", "HERNANDEZ MONTAÑO MARIA ALEXANDRA", "JIMENEZ CONSUEGRA TANIA CAROLINA",
+                "MARIN MORALES GENESIS PAOLA", "MARTINEZ DAZA EILYN DAYANA", "MEDINA RIQUETT KELLY ROXANA",
+                "MOLINA VELASQUEZ LERVYS JAVIER", "MORALES OTERO JESUS MANUEL", "MOVILLA BOLIVAR EYMIS YOLANIS",
+                "NAVARRO GUTIERREZ ALEJANDRO DE JESUS", "ORTEGA CUERVO KRISTEL ARIANNE", "ORTIZ JIMENEZ ELIATH DAVID",
+                "PALMA SILVERA MARISOL", "PATINO CONSUEGRA ANDRYS PAOLA", "PEREZ ALGARIN LUCIANA",
+                "PEREZ BOLIVAR JHONEFFER", "REDONDO RODRIGUEZ KARLA CRISTINA", "RODRIGUEZ VEGA YESID JAVIER",
+                "RUIZ MARENCO JUAN CAMILO", "SILVERA JIMENO THALIANA VANESA", "TEJERA ORTEGA VALENTINA",
+                "TESILLO PEREZ CARLOS DANIEL", "TORRADO NORENA CRISTIAN", "ZAPATA SIERRA LUCYANA MARIA"
+            ],
+            '9C': [
+                "BALLESTAS DE LA CRUZ OWEL ALBERTO", "BARANDICA GUTIERREZ IKER DAVID", "CAMARGO CABALLERO JHONNY ENRIQUE",
+                "CONSUEGRA HERNANDEZ ANGIE PAOLA", "DIAZ DEL TORO SHARILYN PAOLA", "ESCORCIA BORNACELLY NATHALIA ISABEL",
+                "ESCORCIA DE LA CRUZ LUISA FERNANDA", "ESTRADA RUA JHON FREDY", "GOENAGA DE AVILA CARLOS MAURICIO",
+                "GONZALEZ CONTRERAS YURLANYS MICHELL", "GONZALEZ FERRER MAIRELYS DAYANA", "GONZALEZ LLANOS ANA MILAGRO",
+                "GONZALEZ RICO JAVIER EDUARDO", "HURTADO ORTIZ AMY", "JIMENEZ BADILLO JUAN MIGUEL",
+                "JIMENEZ DE LA CRUZ JUSETH DAVID", "LINARES TEJEDA MARCELA", "LUBO JIMENEZ ALEJANDRO JOSE",
+                "MARTINEZ CASTILLO DANNA CAROLINA", "MEDINA SILVERA DILAN DE JESUS", "MIRANDA FERNANDEZ ANTONNY DAVID",
+                "MOLINA ARRIETA KAIRETH ALEJANDRA", "OCHOA ORTEGA JOSE ANDRES", "ORTEGA LUNAR DIEGO JESUS",
+                "PEREZ GERONIMO EYMER DE JESUS", "PRADA SARMIENTO SHARICK ANDREA", "QUIROZ POLO YINIVETH PAOLA",
+                "REDONDO BERDUGO MARIANA PAOLA", "RICAURTE SANTANA MARIA PAULA", "RIOS ARCON ARANZA LUCIA",
+                "RIOS NAVAS VICTOR MANUEL", "ROA DE LA CRUZ PEDRO PABLO", "RODRIGUEZ VASQUEZ LUIS MANUEL",
+                "ROMERO JIMENEZ STEVAN FELIPE", "SILVERA LINARES ANDRES FELIPE", "SILVERA VILORIA SNEYDER DE JESUS",
+                "VARGAS CASTRO SAMIR JOSE", "VILORIA CABARCAS ESTEFANY PAOLA", "ZARATE PALMA LINA MARCELA"
+            ],
+            '9D': [
+                "AMAYA PAZ JEIVER DAVID", "ARDILA ORDUZ ALISSON", "BLANCO SIERRA ANDY CAMILO",
+                "BUSTOS BARRIOS ANGEL DAVID", "CABRERA ORTEGA DAVID JESUS", "CARBONELL BOSSA MAURICIO ANDRES",
+                "CELIN VELASQUEZ MARLIN LORAINE", "ESCALANTE ACENDRA ANA VALENTINA", "GAMARRA GONZALEZ GABRIEL ALEJANDRO",
+                "HERNANDEZ ARJONA JOSUE ALEJANDRO", "JIMENEZ DE MOYA SARAY MILENA", "LEJARDE PERTUZ ASLHEY DAVIELA",
+                "LOPEZ GARCIA ANGEL JESUS", "LOPEZ RAMOS OSIEL DAVID", "MARTINEZ GARCIA MELANIE CAROLINA",
+                "MENDOZA DE LA CRUZ LAURY DANIELA", "MERIDIANO CARDENAS DIEGO ANDRES", "MONCADA NAVARRO ELIANYS SOFIA",
+                "MUÑOZ RAMIREZ JEISIRE YURUBI", "NITROBICH RIAÑO YEISON YESITH", "ORELLANO PALMA ELIANA MARCELA",
+                "OROZCO GOMEZ JEISYS PAOLA", "ORTEGA GIL ALLISON MITCHEL", "OTERO JIMENO SHADYA VANESSA",
+                "OTERO MORALES DILAN MATIAS", "PADILLA BORRERO AYLIM JOHANA", "PALMA BARRAZA XAVI ALONSO",
+                "PALMA SILVERA MARILUNA", "PEREZ MACIAS GISELL ANDREA", "PINERES TRUYOL VALERY TATIANA",
+                "RANGEL MARTINEZ GENESIS PAOLA", "REAL BARRIOS JUNIÑO MANUEL", "ROBLES MARIN JASSER JESUS",
+                "RODRIGUEZ DEL VILLAR JOAN SEBASTIAN", "SALAS MALDONADO ALIANYS PATRICIA", "SANJUAN PERTUZ JOSSED DAVID",
+                "SANTIAGO SOLANO AXEL LEONY", "VARGAS ALBIS YERSON DAVID", "VARGAS MUÑOZ SHERIT DADIVA",
+                "VELILLA ACOSTA CAMILO ANDRES"
+            ],
+            '10C': [
+                "ACOSTA DE LA CRUZ ISACC DAVID", "ACUÑA RADA SARESTH CAROLINA", "BENEDETTI GARCIA GLEINER DAVID",
+                "BORGE FLOREZ MARIA ALEJANDRA", "CANTILLO NORIEGA KEIVEN STEVEN", "CONSUEGRA GOYENECHE HANYDANIELS ISABELL",
+                "CONSUEGRA POLO EDU FERNANDO", "CORRO IBAÑEZ DAVID ALEJANDRO", "DE LA HOZ ARTETA ANGELINE LUCIA",
+                "GOMEZ MARTINEZ NADIA JALILA", "GOMEZ OROZCO ANGIE SOFIA", "GUTIERREZ OJEDA ANTONE ALEXANDER",
+                "LAFAURIE SILVERA JUAN DAVID", "LEAL QUINTANILLA JESUS DAVID", "MARIANO OROZCO NICOLL ANDREA",
+                "MELENDEZ CAMBERO WILIANNIS KARI", "MENDOZA ESCALANTE DILAN SACHEL", "NAVAS BOLIVAR JAMER DE JESUS",
+                "OROZCO ARAUJO MARIA DE LOS ANGELES", "ORTEGA GARCIA JULIANA ANDREA", "OSPINO DE LA CRUZ JOSE ENRIQUE",
+                "OVIEDO MOLINA THAILY SOFIA", "PADILLA CONRADO JAIRO ANDRES", "PALLARES DE LA RANS JUAN DANIEL",
+                "PALMA PEREZ DANNA MEIBELYN", "PEREZ DE LA CRUZ LIS DAYANA", "RADA TAMAYO JASIR ALFONSO",
+                "RANGEL MARTINEZ LIS ALEXANDRA", "RODRIGUEZ BLANCO ZAMIRA SOFIA", "SALGADO VERDEZA MARIA VALENTINA",
+                "SARMIENTO ACUÑA DULCE MARIA", "SARMIENTO PALMA MANUEL ALFONSO", "SIERRA DE LA CRUZ LAUREEN JAEL",
+                "SILVERA SANTIAGO JUAN SEBASTIAN", "SUAREZ SIERRA MARIA ANGEL"
+            ],
+            '11A': [
+                "ALBA BOLIVAR GABRIELA ISABEL", "ARDILA ORDUZ KAREN DAYANNA", "BLANCO SILVERA YUGEIDIS DEL CARMEN",
+                "BOLIVAR SANTIAGO EDWIN JESUS", "CERA SILVERA BRIANDA SOFIA", "CUETO REDONDO YULIFER PAOLA",
+                "DE LA HOZ LOPEZ ROSA ISABEL", "DE MOYA PALLAREZ ADRIAN JOSUE", "FLOREZ SOLANO JUAN ANGEL",
+                "FRANCO FRANCO VALERY ELENA", "GONZALEZ DE LA CRUZ YICEL ANDREA", "HERNANDEZ JULIO ISABELA",
+                "HERNANDEZ MARRIAGA KARLA SOFIA", "HIGUITA ZAPATA VALENTINA MARIA", "HOUSSET VALENCIA CRISTOBAL ALBERTO",
+                "HOUSSET VALENCIA TALIANA CAROLINA", "IBAÑEZ NIETO MAYLAN CRISTINA", "JIMENEZ ROA STALYN DE JESÚS",
+                "LOPEZ MERCADO YULIMAR", "MORALES OTERO ANA MARIA", "ORTEGA BOLIVAR MARIETH",
+                "OSPINO NIETO WANDA KATERIN", "PALMA PACHECO JONATHAN DAVID", "RADA POLO STIVE JOHAN",
+                "REYES VILLALOBOS SHEILYN", "ROLONG SIERRA ANA SARAY", "ROMERO RODRIGUEZ LUISA ESTHER",
+                "SANTIAGO CUETO KERLYN ANDREA", "SANTIAGO DE LA ROSA RITA MERCEDES", "SERJE GARCIA MISSELL ISABEL",
+                "VASQUEZ CHARRIS YELIS MARGARITA", "VELASQUEZ ZAMBRANO DANIEL ALEJANDRO"
+            ],
+            '11B': [
+                "ALBOR SILVERA ALEJANDRA", "AMAYA QUINTERO DUVAN JHOSET", "BAZA ESCOBAR YORELIS",
+                "CERVANTES LARA DEREEK FELIPE", "CONSUEGRA DE LA CRUZ SERGIO LUIS", "CORRO GONZALEZ ANDRES SEBASTIAN",
+                "CORRO HERRERA JULIAN RAFAEL", "CUENTAS SIERRA LAUREN MELISA", "ESCOBAR ALGARIN FELICIDAD MARIA",
+                "GONZALEZ GIL NATALIA MARIA", "GONZALEZ HURTADO LAURA MICHEL", "GUZMAN NUÑEZ LAUREN CAROLINA",
+                "MARQUEZ MIRANDA JOHAN", "MAURY SALGADO ALISSON MICHELLE", "MEJIA GONZALEZ ISABELLA",
+                "MIRANDA DE MOYA EVANGELLY SARIETH", "MONTERROSA RODRIGUEZ ANDRES FELIPE", "OROZCO VASQUEZ ROSAURA",
+                "ORTEGA SIERRA YULIANA PAOLA", "PADILLA REDONDO YESSICA MARIA", "PEREZ DE LA CRUZ JESUS ALFREDO",
+                "PEREZ FRANCO YORIANA LUCIA", "QUINTERO COBA EDIER ALEJANDRO", "REDONDO TORRES YESICA CAMILA",
+                "RODRIGUEZ CARPINTERO CAMILA YSLEN", "ROJO CARDONA MISHELL", "SANTIAGO NATERA JOHN DAVID",
+                "SIERRA FIGUEROA LUCILA ISABEL", "UCROS HERNANDEZ SHEILA NICOLL", "VALLEJO CASTILLO ISABELLA SOFIA",
+                "VARGAS MOLINA SEBASTIAN ANDRES"
+            ],
+            '11C': [
+                "ALTAMAR CABALLERO PAOLA ANDREA", "ARIZA PEREZ DILAN", "ARROYO CORREDOR ANDRES FELIPE",
+                "BARRETO GUTIERREZ SLAYNETH SOFIA", "BONILLA GUTIERREZ SHARON YULIANA", "CASTIBLANCO IBAÑEZ IAN SANTIAGO",
+                "DE LA CRUZ ARRIETA ANGEL DANIEL", "DE LA CRUZ CAMARGO SERGIO ANDRES", "DE LA CRUZ SARMIENTO MARIA JOSE",
+                "DE LA HOZ MUÑOZ LUISA FERNANDA", "DE LA HOZ SIERRA JOHAN JESUS", "DE LOS REYES TAMAYO YOSETH DAVID",
+                "DELGADO HERNANDEZ SOFIA ELENA", "ESCALANTE QUIROZ JESUS DAVID", "ESCOBAR SALCEDO JUSEPH ENRIQUE",
+                "ESCORCIA JIMENEZ ANDRES CAMILO", "GALLARDO PANCHA GABRIELA MARIA", "GOEZ SERRANO EMMANUEL JOSE",
+                "HERNANDEZ CERVANTES PABLO ANDRES", "HERNANDEZ MUÑOZ DANA GABRIELA", "HERRERA MENDOZA ESTEBAN ENRIQUE",
+                "MARQUEZ MIRANDA JAZIR", "ORELLANO BOLIVAR KEYDDER DAYAN", "PACHECO SIERRA ADRIANA LUCIA",
+                "PARRA REDONDO JUAN CAMILO", "REDONDO MENDOZA MARIANGEL", "RIVERO COBA GLEIDYS PAOLA",
+                "SALAZAR LLANOS YAMITH ANDRES", "SANCHEZ CELIS DIEGO ISAC", "SANTAMARIA BORJA ANDREA DANITZA",
+                "SIERRA GARCIA OSCAR ANDRES", "VASQUEZ ARZUZA ALAM MATIU", "VERGARA BARRIOS KLEIVER MANUEL"
+            ],
+            '11D': [
+                "ARIZA DE LA CRUZ SEBASTIAN DE JESUS", "ARIZA SILVERA JORGE MARIO DE JESÚS", "BLANCO ESCALANTE SAIDER ISABEL",
+                "BOLIVAR VIVANCO NICOL DANIELA", "BORGE GOENAGA SHADIA MICHELLE", "CABALLERO BARRIOS BREIDER JOSE",
+                "CHICO MARTINEZ DAIRON ANDRES", "CONSUEGRA SILVERA SARAY MICHELL", "ESCALANTE GONZALEZ DANIELA PAOLA",
+                "GALLARDO BRADFORD NAYALITH ANDREA", "GARZON GALINDO LENIN", "GONZALEZ DE LA RANS SHARLET MARIA",
+                "GUTIERREZ MENDOZA JOSE LUIS", "GUTIERREZ VASQUEZ PAULA PATRICIA", "MELENDRES VILLALBA KEIMER ANDRES",
+                "MEZA GARCIA CARLOS ANDRES", "MORA SILVERA DEYNER ALEXANDER", "ORTEGA GONZALEZ LEWIN STICK",
+                "PADILLA PARRA MARY ANGEL", "PALMA DE LA HOZ LUIS ANGEL", "PEDRAZA OLIVEROS MATHIAS KEITEL",
+                "PEDROZA GALLARDO SCARLETT SOFIA", "PEREZ VEGA NICOL SHARITH", "RODRIGUEZ SALAS YORYANIZ ANETH",
+                "SANTIAGO SOLANO AXEL LEONY", "VARGAS ALBIS YERSON DAVID", "VARGAS MUÑOZ SHERIT DADIVA",
+                "VELILLA ACOSTA CAMILO ANDRES"
+            ]
+        };
+
+        // Define the daily schedule for groups
+        const dailySchedule = {
+            'Lunes': ['8C', '9B'],
+            'Martes': ['8A', '9C'],
+            'Miércoles': ['8B', '9A'],
+            'Jueves': ['10C', '11A', '11B', '11C', '11D'],
+            'Viernes': ['8D', '9D', '7D']
+        };
+
+        // Global variables for the app state
+        // Set the active course to the first group of the first day in the schedule
+        let activeCourse = dailySchedule[Object.keys(dailySchedule)[0]][0]; 
+        let gradesData = {}; // Object to store grading data
+
+        // Comparison function to sort groups alphanumerically (e.g., 7D, 8A, ..., 11D)
+        function sortGroups(a, b) {
+            const getNumericPart = (str) => parseInt(str.match(/\d+/)[0]);
+            const getAlphaPart = (str) => str.match(/[A-Z]+/)[0];
+
+            const numA = getNumericPart(a);
+            const numB = getNumericPart(b);
+
+            if (numA !== numB) {
+                return numA - numB;
+            } else {
+                return getAlphaPart(a).localeCompare(getAlphaPart(b));
+            }
+        }
+
+        // Course configuration
+        const courseConfig = {};
+        // Populates courseConfig dynamically with student data
+        for (const group in allStudentsData) {
+            courseConfig[group] = {
+                students: allStudentsData[group].map(capitalizeWords), // Capitalizes names upon loading
+                title: `Grupo: ${group}`, // Course/group title
+                professor: "Puertas Lopez Patricia Isabel", // Corrected professor's last name
+                subject: "Artística Plástica y Visual" // Subject extracted from PDF
+            };
+        }
+
+        // Helper function to get a grade value, treating non-numeric/empty as 0
+        // This function now returns the value on a 1-5 scale directly.
+        const getGradeValue = (grades, field) => {
+            const value = parseFloat(grades[field]);
+            // If value is NaN (empty or non-numeric), treat as 0.
+            return isNaN(value) ? 0 : value;
+        };
+
+        // Helper function to calculate the average of an array of grades, ignoring non-valid numbers
+        const calculateAverage = (gradesArray) => {
+            // Filter out grades that are NaN (from empty inputs) or undefined
+            const validGrades = gradesArray.filter(g => typeof g === 'number' && !isNaN(g));
+            if (validGrades.length === 0) return 0;
+            return validGrades.reduce((a, b) => a + b, 0) / validGrades.length;
+        };
+
+        // Function to calculate the final grade (DEF) on a 1-5 scale
+        const calculateDef = (grades) => {
+            // Get grades directly on 1-5 scale
+            const cognitivoGrades = [
+                getGradeValue(grades, 'cognitivoC1'),
+                getGradeValue(grades, 'cognitivoC2'),
+                getGradeValue(grades, 'cognitivoC3')
+            ];
+            const cognitivoAvg = calculateAverage(cognitivoGrades);
+
+            const procedimentalGrades = [
+                getGradeValue(grades, 'procedimentalP1'),
+                getGradeValue(grades, 'procedimentalP2'),
+                getGradeValue(grades, 'procedimentalP3')
+            ];
+            const procedimentalAvg = calculateAverage(procedimentalGrades);
+
+            const actitudinalGrades = [
+                getGradeValue(grades, 'actitudinalA1'),
+                getGradeValue(grades, 'actitudinalA2'),
+                getGradeValue(grades, 'actitudinalA3')
+            ];
+            const actitudinalAvg = calculateAverage(actitudinalGrades);
+
+            // Calculate DEF with weights: Cognitivo (40%), Procedimental (30%), Actitudinal (30%)
+            // The average is already on the 1-5 scale, so apply weights directly.
+            const def = (cognitivoAvg * 0.40) + (procedimentalAvg * 0.30) + (actitudinalAvg * 0.30);
+            return def.toFixed(2); // Round to 2 decimal places
+        };
+
+        // Function to determine the qualitative level based on DEF score (1-5 scale)
+        const determineNivel = (defScore) => {
+            // defScore is already on the 1-5 scale
+            if (defScore >= 1 && defScore <= 2.99) {
+                return "Bajo";
+            } else if (defScore >= 3 && defScore <= 3.99) {
+                return "Básico";
+            } else if (defScore >= 4 && defScore <= 4.59) {
+                return "Alto";
+            } else if (defScore >= 4.6 && defScore <= 5) {
+                return "Superior";
+            }
+            return ""; // For empty or invalid scores
+        };
+
+        // Function to calculate attendance summary
+        const calculateAttendanceSummary = (attendanceSessions) => {
+            let attended = 0;
+            let absent = 0;
+            attendanceSessions.forEach(session => {
+                if (session) {
+                    attended++;
+                } else {
+                    absent++;
+                }
+            });
+            return { attended, absent };
+        };
+
+        // Function to render the grading table
+        const renderTable = () => {
+            const config = courseConfig[activeCourse];
+            const students = config.students;
+            const data = gradesData[activeCourse] || {};
+            
+            // Update course title and info
+            courseTitle.textContent = config.title;
+            courseInfo.innerHTML = `<p>Docente: ${config.professor}</p><p>Asignatura: ${config.subject}</p>`;
+
+            let tableHTML = `
+                <table class="bg-white">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" class="sticky-col-no">No</th>
+                            <th rowspan="2" class="sticky-col-name">NOMBRE DE ESTUDIANTE</th>
+                            <th colspan="3" class="sticky-col-cognitivo">COGNITIVO (40%)</th>
+                            <th colspan="3" class="sticky-col-procedimental">PROCEDIMENTAL (30%)</th>
+                            <th colspan="3" class="sticky-col-actitudinal">ACTITUDINAL (30%)</th>
+                            <th rowspan="2" class="sticky-col-def">DEF (1-5)</th>
+                            <th rowspan="2" class="sticky-col-nivel">NIVEL</th>
+                            <th rowspan="2">ASISTENCIA</th>
+                        </tr>
+                        <tr>
+                            <th class="sticky-col-cognitivo">C1</th>
+                            <th class="sticky-col-cognitivo">C2</th>
+                            <th class="sticky-col-cognitivo">C3</th>
+                            <th class="sticky-col-procedimental">P1</th>
+                            <th class="sticky-col-procedimental">P2</th>
+                            <th class="sticky-col-procedimental">P3</th>
+                            <th class="sticky-col-actitudinal">A1</th>
+                            <th class="sticky-col-actitudinal">A2</th>
+                            <th class="sticky-col-actitudinal">A3</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            // Add rows for each student
+            students.forEach((student, index) => {
+                const studentData = data[student] || {
+                    grades: {
+                        cognitivoC1: '',
+                        cognitivoC2: '',
+                        cognitivoC3: '',
+                        procedimentalP1: '',
+                        procedimentalP2: '',
+                        procedimentalP3: '',
+                        actitudinalA1: '',
+                        actitudinalA2: '',
+                        actitudinalA3: ''
+                    },
+                    def: '',
+                    attendanceSessions: Array(20).fill(false)
+                };
+
+                studentData.def = calculateDef(studentData.grades);
+                const attendanceSummary = calculateAttendanceSummary(studentData.attendanceSessions);
+                const nivel = determineNivel(parseFloat(studentData.def));
+
+                const formatGradeForDisplay = (gradeValue) => {
+                    const num = parseFloat(gradeValue);
+                    return !isNaN(num) ? num.toFixed(1) : '';
+                };
+
+                tableHTML += `
+                    <tr>
+                        <td class="sticky-col-no">${index + 1}</td>
+                        <td class="sticky-col-name">${student}</td>
+                        <td class="grade-cell" data-course="${activeCourse}" data-student="${student}" data-field="cognitivoC1">${formatGradeForDisplay(studentData.grades.cognitivoC1)}</td>
+                        <td class="grade-cell" data-course="${activeCourse}" data-student="${student}" data-field="cognitivoC2">${formatGradeForDisplay(studentData.grades.cognitivoC2)}</td>
+                        <td class="grade-cell" data-course="${activeCourse}" data-student="${student}" data-field="cognitivoC3">${formatGradeForDisplay(studentData.grades.cognitivoC3)}</td>
+                        <td class="grade-cell" data-course="${activeCourse}" data-student="${student}" data-field="procedimentalP1">${formatGradeForDisplay(studentData.grades.procedimentalP1)}</td>
+                        <td class="grade-cell" data-course="${activeCourse}" data-student="${student}" data-field="procedimentalP2">${formatGradeForDisplay(studentData.grades.procedimentalP2)}</td>
+                        <td class="grade-cell" data-course="${activeCourse}" data-student="${student}" data-field="procedimentalP3">${formatGradeForDisplay(studentData.grades.procedimentalP3)}</td>
+                        <td class="grade-cell" data-course="${activeCourse}" data-student="${student}" data-field="actitudinalA1">${formatGradeForDisplay(studentData.grades.actitudinalA1)}</td>
+                        <td class="grade-cell" data-course="${activeCourse}" data-student="${student}" data-field="actitudinalA2">${formatGradeForDisplay(studentData.grades.actitudinalA2)}</td>
+                        <td class="grade-cell" data-course="${activeCourse}" data-student="${student}" data-field="actitudinalA3">${formatGradeForDisplay(studentData.grades.actitudinalA3)}</td>
+                        <td class="sticky-col-def font-bold">${studentData.def}</td>
+                        <td class="sticky-col-nivel">${nivel}</td>
+                        <td>
+                            <div class="attendance-checkbox-grid">
+                                ${Array(20).fill().map((_, i) => `
+                                    <input type="checkbox" 
+                                           id="attendance-${student.replace(/\s/g, '')}-${i}" 
+                                           onchange="updateAttendanceSession('${activeCourse}', '${student}', ${i}, this.checked)"
+                                           ${studentData.attendanceSessions[i] ? 'checked' : ''}>
+                                `).join('')}
+                            </div>
+                            <div class="attendance-summary">
+                                <span>Asistencias: ${attendanceSummary.attended}</span><br>
+                                <span>Ausencias: ${attendanceSummary.absent}</span>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `
+                        </tbody>
+                    </table>
+            `;
+
+            tableContainer.innerHTML = tableHTML;
+            addGradeCellListeners(); // Add listeners after table is rendered
+        };
+
+        // Adds click listeners to all grade cells
+        const addGradeCellListeners = () => {
+            document.querySelectorAll('.grade-cell').forEach(cell => {
+                cell.addEventListener('click', enableEdit);
+            });
+        };
+
+        // Enables editing for a specific grade cell
+        const enableEdit = (event) => {
+            const cell = event.target.closest('.grade-cell');
+            if (!cell || cell.querySelector('input.grade-input')) { // If already editing or not a grade cell
+                return;
+            }
+
+            const course = cell.dataset.course;
+            const student = cell.dataset.student;
+            const field = cell.dataset.field;
+            const currentValue = gradesData[course]?.[student]?.grades?.[field] || '';
+
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.min = '1';
+            input.max = '5';
+            input.step = '0.1';
+            input.classList.add('grade-input');
+            input.value = parseFloat(currentValue).toFixed(1) === 'NaN' ? '' : parseFloat(currentValue).toFixed(1); // Format for display
+
+            // Set data attributes on the input for easy retrieval
+            input.dataset.course = course;
+            input.dataset.student = student;
+            input.dataset.field = field;
+
+            // Replace cell content with input
+            cell.textContent = '';
+            cell.appendChild(input);
+            input.focus();
+
+            // Add event listeners for blur and keydown (Enter/Tab)
+            input.addEventListener('blur', updateGradeAndRevert);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === 'Tab') {
+                    e.preventDefault(); // Prevent default Tab behavior (moving focus)
+                    updateGradeAndRevert({ target: input }); // Manually trigger update
+                    
+                    // Logic to move focus to the next cell after Enter/Tab
+                    const allGradeCells = Array.from(document.querySelectorAll('.grade-cell'));
+                    const currentCellIndex = allGradeCells.indexOf(cell);
+                    let nextCell = null;
+
+                    if (e.key === 'Enter') {
+                        // Move to the next cell in the same row, or first cell of next row
+                        if (currentCellIndex < allGradeCells.length - 1) {
+                            nextCell = allGradeCells[currentCellIndex + 1];
+                        }
+                    } else if (e.key === 'Tab') {
+                        // Default Tab behavior moves to next focusable element.
+                        // We need to ensure it moves to the next *grade cell* and enables edit.
+                        // This part is tricky with native tab behavior.
+                        // For simplicity, let's just re-enable edit on the next cell if found.
+                        if (currentCellIndex < allGradeCells.length - 1) {
+                            nextCell = allGradeCells[currentCellIndex + 1];
+                        }
+                    }
+
+                    if (nextCell) {
+                        enableEdit({ target: nextCell }); // Enable edit on the next cell
+                    } else {
+                        // If no next cell, blur current input to finalize
+                        input.blur();
+                    }
+                }
+            });
+        };
+
+        // Updates grading data and reverts cell back to text
+        const updateGradeAndRevert = (event) => {
+            const inputElement = event.target;
+            const course = inputElement.dataset.course;
+            const student = inputElement.dataset.student;
+            const field = inputElement.dataset.field;
+            const value = inputElement.value;
+            const cell = inputElement.closest('.grade-cell');
+
+            // Ensure data structure exists
+            gradesData[course] = gradesData[course] || {};
+            gradesData[course][student] = gradesData[course][student] || {
+                grades: {
+                    cognitivoC1: '', cognitivoC2: '', cognitivoC3: '',
+                    procedimentalP1: '', procedimentalP2: '', procedimentalP3: '',
+                    actitudinalA1: '', actitudinalA2: '', actitudinalA3: ''
+                },
+                def: '',
+                attendanceSessions: Array(20).fill(false)
+            };
+
+            let numericValue = parseFloat(value);
+            let isValid = true;
+            let displayValue = '';
+
+            if (value === '') {
+                gradesData[course][student].grades[field] = '';
+                displayValue = '';
+            } else if (isNaN(numericValue)) {
+                showMessage('Por favor, introduce un número válido.', 'error');
+                isValid = false;
+                displayValue = gradesData[course][student].grades[field] || ''; // Revert to last valid value
+            } else if (numericValue < 1 || numericValue > 5) {
+                showMessage('La nota debe estar entre 1 y 5.', 'error');
+                isValid = false;
+                displayValue = gradesData[course][student].grades[field] || ''; // Revert to last valid value
+            } else {
+                gradesData[course][student].grades[field] = value;
+                displayValue = numericValue.toFixed(1);
+            }
+            
+            // Update the cell's displayed text
+            cell.textContent = displayValue;
+
+            // Recalculate DEF after each grade change
+            const newDef = calculateDef(gradesData[course][student].grades);
+            gradesData[course][student].def = newDef;
+
+            // Determine Nivel
+            const newNivel = determineNivel(parseFloat(newDef));
+
+            // Update the specific DEF and Nivel cells in the DOM for that student's row
+            const studentRow = cell.closest('tr');
+            if (studentRow) {
+                const defCell = studentRow.querySelector('.sticky-col-def');
+                const nivelCell = studentRow.querySelector('.sticky-col-nivel');
+
+                if (defCell) defCell.textContent = newDef;
+                if (nivelCell) nivelCell.textContent = newNivel;
+            }
+
+            // Save the updated data only if valid
+            if (isValid) {
+                saveData();
+            }
+        };
+
+        // Updates the state of an attendance session
+        const updateAttendanceSession = (course, student, sessionIndex, checked) => {
+            gradesData[course] = gradesData[course] || {};
+            gradesData[course][student] = gradesData[course][student] || {
+                grades: { /* ... */ },
+                def: '',
+                attendanceSessions: Array(20).fill(false)
+            };
+
+            gradesData[course][student].attendanceSessions[sessionIndex] = checked;
+
+            saveData();
+            // Re-render the table to update attendance summary
+            renderTable();
+        };
+
+        // Saves data to localStorage
+        const saveData = () => {
+            try {
+                localStorage.setItem('gradesDataGroups', JSON.stringify(gradesData));
+                showMessage('Calificaciones guardadas automáticamente en tu navegador.');
+            } catch (e) {
+                console.error("Error saving to local storage: ", e);
+                showMessage('Error al guardar las calificaciones.', 'error');
+            }
+        };
+
+        // Loads data from localStorage
+        const loadData = () => {
+            try {
+                const savedData = localStorage.getItem('gradesDataGroups');
+                if (savedData) {
+                    gradesData = JSON.parse(savedData);
+                } else {
+                    gradesData = {};
+                }
+            } catch (e) {
+                console.error("Error loading from local storage: ", e);
+                gradesData = {};
+            }
+            renderTable();
+        };
+
+        // Handles keyboard navigation for grade inputs
+        tableContainer.addEventListener('keydown', (event) => {
+            // Only act if an input is currently focused
+            if (!event.target.classList.contains('grade-input')) {
+                return;
+            }
+
+            const currentInput = event.target;
+            const currentCell = currentInput.closest('.grade-cell');
+            const allGradeCells = Array.from(document.querySelectorAll('.grade-cell'));
+            const currentIndex = allGradeCells.indexOf(currentCell);
+            const inputsPerRow = 9; // Number of grade input cells per student row
+
+            let nextCell = null;
+
+            if (event.key === 'ArrowRight') {
+                event.preventDefault(); // Prevent default browser scrolling
+                if (currentIndex < allGradeCells.length - 1) {
+                    nextCell = allGradeCells[currentIndex + 1];
+                }
+            } else if (event.key === 'ArrowLeft') {
+                event.preventDefault(); // Prevent default browser scrolling
+                if (currentIndex > 0) {
+                    nextCell = allGradeCells[currentIndex - 1];
+                }
+            } else if (event.key === 'ArrowDown') {
+                event.preventDefault(); // Prevent default browser scrolling
+                const currentColIndex = currentIndex % inputsPerRow;
+                const nextRowStartIndex = currentIndex + inputsPerRow;
+                if (nextRowStartIndex < allGradeCells.length) {
+                    nextCell = allGradeCells[nextRowStartIndex + currentColIndex];
+                }
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault(); // Prevent default browser scrolling
+                const currentColIndex = currentIndex % inputsPerRow;
+                const prevRowStartIndex = currentIndex - inputsPerRow;
+                if (prevRowStartIndex >= 0) {
+                    nextCell = allGradeCells[prevRowStartIndex + currentColIndex];
+                }
+            }
+
+            if (nextCell) {
+                // Manually trigger blur on current input to save its value and revert to span
+                currentInput.blur(); 
+                // Then, enable edit on the next cell
+                enableEdit({ target: nextCell });
+            }
+        });
+
+        // Dynamically generates tab buttons organized by day
+        const generateTabs = () => {
+            tabNavigation.innerHTML = ''; // Clears existing tabs
+
+            for (const day in dailySchedule) {
+                const dayBlock = document.createElement('div');
+                dayBlock.classList.add('daily-group-block');
+
+                const dayTitle = document.createElement('div');
+                dayTitle.classList.add('daily-group-title');
+                dayTitle.textContent = day;
+                dayBlock.appendChild(dayTitle);
+
+                const groupButtonsWrapper = document.createElement('div');
+                groupButtonsWrapper.classList.add('group-buttons-wrapper');
+
+                dailySchedule[day].forEach(group => {
+                    const button = document.createElement('button');
+                    button.id = `tab-${group}`;
+                    button.classList.add('tab-button');
+                    button.textContent = group;
+                    button.addEventListener('click', () => switchCourse(group));
+                    groupButtonsWrapper.appendChild(button);
+                });
+                dayBlock.appendChild(groupButtonsWrapper);
+                tabNavigation.appendChild(dayBlock);
+            }
+
+            // Sets the 'active' class for the initial tab
+            if (activeCourse) {
+                document.getElementById(`tab-${activeCourse}`).classList.add('active');
+            }
+        };
+
+        // Switches the active course/group and re-renders the table
+        const switchCourse = (course) => {
+            // Removes the 'active' class from all tabs
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            activeCourse = course;
+            
+            // Adds the 'active' class to the new tab
+            const newTab = document.getElementById(`tab-${activeCourse}`);
+            if (newTab) newTab.classList.add('active');
+            
+            renderTable();
+        };
+
+        // Initial data load and table rendering when the window is fully loaded
+        window.onload = () => {
+            generateTabs(); // Generates tabs first
+            loadData(); // Loads grading data
+            // Ensures the active tab has the 'active' class after initial load
+            if (activeCourse) {
+                const initialTab = document.getElementById(`tab-${activeCourse}`);
+                if (initialTab) initialTab.classList.add('active');
+            }
+        };
+    </script>
+</body>
+</html>
+
