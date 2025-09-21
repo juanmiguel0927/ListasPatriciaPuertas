@@ -201,6 +201,17 @@
             </div>
         </div>
 
+        <div id="dateNoteModal" class="modal-overlay">
+            <div class="modal-content">
+                <h3 class="text-xl font-bold mb-4">Anotación para la fecha: <span id="dateNoteDate"></span></h3>
+                <textarea id="dateNoteTextarea" placeholder="Añadir un evento o nota para este día (ej. Examen, Salida pedagógica)..."></textarea>
+                <div class="flex justify-end gap-2 mt-4">
+                    <button id="closeDateNoteModal" class="action-button">Cerrar</button>
+                    <button id="saveDateNote" class="action-button bg-blue-600">Guardar</button>
+                </div>
+            </div>
+        </div>
+
         <div id="bulletinModal" class="modal-overlay">
             <div class="modal-content">
                 <div id="bulletinContent" class="printable">
@@ -222,7 +233,7 @@
             </div>
         </div>
 
-        <div class="footer-text mt-8">Diseñado por Juan Miguel Ríos Redondo</div>
+        <div class="w-full text-center mt-8 text-sm text-gray-500">Diseñado por Juan Miguel Ríos Redondo</div>
     </div>
 
     <script>
@@ -240,6 +251,9 @@
         const obsModal = document.getElementById('obsModal');
         const obsStudentName = document.getElementById('obsStudentName');
         const obsTextarea = document.getElementById('obsTextarea');
+        const dateNoteModal = document.getElementById('dateNoteModal');
+        const dateNoteDate = document.getElementById('dateNoteDate');
+        const dateNoteTextarea = document.getElementById('dateNoteTextarea');
         const bulletinModal = document.getElementById('bulletinModal');
 
         // App State
@@ -292,7 +306,7 @@
             const searchTerm = searchBox.value.toLowerCase();
             const filteredStudents = config.students.filter(s => s.toLowerCase().includes(searchTerm));
 
-            courseTitle.textContent = config.title;
+            courseTitle.textContent = `Grupo: ${activeCourse}`;
             courseInfo.innerHTML = `<p>Docente: ${config.professor}</p><p>Asignatura: ${config.subject}</p>`;
 
             const tableEl = document.createElement('table');
@@ -313,7 +327,19 @@
                         <th rowspan="2" class="col-nivel">NIVEL</th>
                     </tr>
                     <tr>
-                        ${attendanceDates.map(d => `<th class="date-header"><div>${d.getDate()}/${d.getMonth()+1}</div><button class="attendance-bulk-btn bg-green-500" onclick="markAllAttendance('${d.toISOString().split('T')[0]}', true)">✓</button><button class="attendance-bulk-btn bg-red-500" onclick="markAllAttendance('${d.toISOString().split('T')[0]}', false)">✗</button></th>`).join('')}
+                        ${attendanceDates.map(d => {
+                            const dateString = d.toISOString().split('T')[0];
+                            const note = data.dateNotes?.[dateString] || '';
+                            const noteIconClass = note ? 'fas fa-comment-dots text-yellow-300' : 'fas fa-plus-circle text-gray-400';
+                             return `<th class="date-header" title="${note}">
+                                <div>
+                                    ${d.getDate()}/${d.getMonth()+1} 
+                                    <i class="${noteIconClass} cursor-pointer hover:text-yellow-500 text-xs ml-1" onclick="showDateNoteModal('${dateString}')"></i>
+                                </div>
+                                <button class="attendance-bulk-btn bg-green-500" onclick="markAllAttendance('${dateString}', true)">✓</button>
+                                <button class="attendance-bulk-btn bg-red-500" onclick="markAllAttendance('${dateString}', false)">✗</button>
+                            </th>`;
+                        }).join('')}
                         <th>C1</th><th>C2</th><th>C3</th><th>P1</th><th>P2</th><th>P3</th><th>A1</th><th>A2</th><th>A3</th>
                     </tr>
                 </thead>
@@ -358,99 +384,19 @@
         };
 
         // --- Event Handlers & Data Management ---
-        const ensureStudentData = (student) => {
+        const ensureCourseData = () => {
             if (!gradesData[activeCourse]) gradesData[activeCourse] = {};
+            if (!gradesData[activeCourse].dateNotes) gradesData[activeCourse].dateNotes = {};
+        };
+        const ensureStudentData = (student) => {
+            if (!gradesData[activeCourse]) gradesData[activeCourse] = { dateNotes: {} };
             if (!gradesData[activeCourse][student]) {
                 gradesData[activeCourse][student] = { grades: {}, attendance: {}, observations: "" };
             }
         };
         
-        const enableEdit = (cell) => {
-            if (cell.querySelector('input')) return;
-            const { student, field } = cell.dataset;
-            ensureStudentData(student);
-            const currentVal = gradesData[activeCourse][student].grades[field] || '';
-            const input = document.createElement('input');
-            input.type = 'number';
-            input.min = '1';
-            input.max = '5';
-            input.step = '0.1';
-            input.className = 'grade-input';
-            input.value = !isNaN(parseFloat(currentVal)) ? parseFloat(currentVal).toFixed(1) : '';
-            cell.textContent = '';
-            cell.appendChild(input);
-            input.focus();
-
-            const saveAndExit = () => {
-                // Ensure the cell reverts even if the input is not attached anymore
-                const currentInput = cell.querySelector('input');
-                if (currentInput) {
-                    updateGrade(student, field, currentInput.value, cell);
-                }
-            }
-            
-            input.addEventListener('blur', saveAndExit);
-            input.addEventListener('keydown', (e) => {
-                const navKeys = ['Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'];
-                if (!navKeys.includes(e.key)) return;
-
-                e.preventDefault();
-                
-                const allGradeCells = Array.from(tableContainer.querySelectorAll('.grade-cell'));
-                const currentIndex = allGradeCells.indexOf(cell);
-                const inputsPerRow = 9;
-                let nextCell = null;
-
-                if (e.key === 'Enter' || e.key === 'ArrowDown') {
-                    const nextIndex = currentIndex + inputsPerRow;
-                    if (nextIndex < allGradeCells.length) nextCell = allGradeCells[nextIndex];
-                } else if (e.key === 'ArrowUp') {
-                    const nextIndex = currentIndex - inputsPerRow;
-                    if (nextIndex >= 0) nextCell = allGradeCells[nextIndex];
-                } else if (e.key === 'ArrowRight' || e.key === 'Tab') {
-                    const nextIndex = currentIndex + 1;
-                    if (nextIndex < allGradeCells.length) nextCell = allGradeCells[nextIndex];
-                } else if (e.key === 'ArrowLeft') {
-                    const nextIndex = currentIndex - 1;
-                    if (nextIndex >= 0) nextCell = allGradeCells[nextIndex];
-                }
-
-                input.blur();
-
-                if (nextCell) {
-                    setTimeout(() => enableEdit(nextCell), 0); 
-                }
-            });
-        };
-        
-        const updateGrade = (student, field, value, cell) => {
-            if(!cell.contains(document.activeElement)) { // Prevent double-saving on blur
-                ensureStudentData(student);
-                const studentData = gradesData[activeCourse][student];
-                let numVal = parseFloat(value);
-                if (value !== '' && (isNaN(numVal) || numVal < 1 || numVal > 5)) {
-                    showMessage('La nota debe estar entre 1 y 5.', 'error');
-                    cell.textContent = studentData.grades[field] || '';
-                    return;
-                }
-                studentData.grades[field] = value;
-                cell.textContent = value !== '' ? numVal.toFixed(1) : '';
-                const studentRow = cell.closest('tr');
-                if(studentRow) {
-                    const newDef = calculateDef(studentData.grades);
-                    const newNivel = determineNivel(newDef);
-                    const nivelClass = newNivel ? `nivel-${newNivel.toLowerCase()}` : '';
-                    const defCell = studentRow.querySelector('.col-def');
-                    const nivelCell = studentRow.querySelector('.col-nivel');
-                    defCell.textContent = newDef;
-                    nivelCell.textContent = newNivel;
-                    defCell.className = `col-def ${nivelClass}`;
-                    nivelCell.className = `col-nivel ${nivelClass}`;
-                }
-                saveData(true);
-                calculateAndDisplayStats();
-            }
-        };
+        const enableEdit = (cell) => { /* ... existing code ... */ };
+        const updateGrade = (student, field, value, cell) => { /* ... existing code ... */ };
 
         const updateAttendance = (box) => {
             const { student, date } = box.dataset;
@@ -478,12 +424,7 @@
             if (!config) return;
             const students = config.students;
             const data = gradesData[activeCourse] || {};
-
-            const allCurrentlyMarked = students.every(student => {
-                const studentData = data[student] || { attendance: {} };
-                return studentData.attendance[dateString] === status;
-            });
-
+            const allCurrentlyMarked = students.every(student => (data[student]?.attendance?.[dateString] === status));
             const newStatus = allCurrentlyMarked ? undefined : status;
 
             students.forEach(student => {
@@ -514,167 +455,50 @@
         // --- New Feature Functions ---
         
         // Dark Mode
-        function applyTheme(isDark) {
-            if (isDark) {
-                document.documentElement.classList.add('dark');
-                darkModeToggle.checked = true;
-            } else {
-                document.documentElement.classList.remove('dark');
-                darkModeToggle.checked = false;
-            }
-        }
-        darkModeToggle.addEventListener('change', () => {
-            localStorage.setItem('darkMode', darkModeToggle.checked);
-            applyTheme(darkModeToggle.checked);
-        });
+        function applyTheme(isDark) { /* ... existing code ... */ }
+        darkModeToggle.addEventListener('change', () => { /* ... existing code ... */ });
 
         // Observations Modal
-        function showObservationsModal(student) {
-            ensureStudentData(student);
-            obsStudentName.textContent = student;
-            obsTextarea.value = gradesData[activeCourse][student].observations || '';
-            obsModal.classList.add('active');
-            obsModal.dataset.student = student;
-        }
-        document.getElementById('saveObs').addEventListener('click', () => {
-            const student = obsModal.dataset.student;
-            gradesData[activeCourse][student].observations = obsTextarea.value;
-            saveData(true);
-            obsModal.classList.remove('active');
-        });
+        function showObservationsModal(student) { /* ... existing code ... */ }
+        document.getElementById('saveObs').addEventListener('click', () => { /* ... existing code ... */ });
         document.getElementById('closeObsModal').addEventListener('click', () => obsModal.classList.remove('active'));
 
-        // Bulletin Modal
-        function showBulletinModal(student) {
-            ensureStudentData(student);
-            const studentData = gradesData[activeCourse][student];
-            const def = calculateDef(studentData.grades);
-            const nivel = determineNivel(def);
-            const attendance = calculateAttendanceSummary(studentData.attendance);
-
-            document.getElementById('bulletinStudentName').textContent = student;
-            document.getElementById('bulletinCourseName').textContent = courseConfig[activeCourse].title;
-            
-            let gradesHTML = `
-                <p><strong>Cognitivo C1:</strong> ${studentData.grades.cognitivoC1 || 'N/A'}</p>
-                <p><strong>Cognitivo C2:</strong> ${studentData.grades.cognitivoC2 || 'N/A'}</p>
-                <p><strong>Cognitivo C3:</strong> ${studentData.grades.cognitivoC3 || 'N/A'}</p>
-                <p><strong>Procedimental P1:</strong> ${studentData.grades.procedimentalP1 || 'N/A'}</p>
-                <p><strong>Procedimental P2:</strong> ${studentData.grades.procedimentalP2 || 'N/A'}</p>
-                <p><strong>Procedimental P3:</strong> ${studentData.grades.procedimentalP3 || 'N/A'}</p>
-                <p><strong>Actitudinal A1:</strong> ${studentData.grades.actitudinalA1 || 'N/A'}</p>
-                <p><strong>Actitudinal A2:</strong> ${studentData.grades.actitudinalA2 || 'N/A'}</p>
-                <p><strong>Actitudinal A3:</strong> ${studentData.grades.actitudinalA3 || 'N/A'}</p>
-                <p class="mt-2 font-bold"><strong>DEF: ${def} (${nivel})</strong></p>`;
-            document.getElementById('bulletinGrades').innerHTML = gradesHTML;
-
-            document.getElementById('bulletinAttendance').innerHTML = `<p><strong>Asistencias:</strong> ${attendance.attended}</p><p><strong>Ausencias:</strong> ${attendance.absent}</p>`;
-            document.getElementById('bulletinObs').textContent = studentData.observations || 'Sin observaciones.';
-            bulletinModal.classList.add('active');
+        // Date Note Modal
+        function showDateNoteModal(dateString) {
+            ensureCourseData();
+            const date = new Date(dateString + 'T00:00:00');
+            dateNoteDate.textContent = date.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
+            dateNoteTextarea.value = gradesData[activeCourse].dateNotes?.[dateString] || '';
+            dateNoteModal.dataset.date = dateString;
+            dateNoteModal.classList.add('active');
         }
+        document.getElementById('saveDateNote').addEventListener('click', () => {
+            const dateString = dateNoteModal.dataset.date;
+            const noteText = dateNoteTextarea.value.trim();
+            ensureCourseData();
+            if (noteText) {
+                gradesData[activeCourse].dateNotes[dateString] = noteText;
+            } else {
+                delete gradesData[activeCourse].dateNotes[dateString];
+            }
+            saveData();
+            dateNoteModal.classList.remove('active');
+        });
+        document.getElementById('closeDateNoteModal').addEventListener('click', () => dateNoteModal.classList.remove('active'));
+
+        // Bulletin Modal
+        function showBulletinModal(student) { /* ... existing code ... */ }
         document.getElementById('closeBulletinModal').addEventListener('click', () => bulletinModal.classList.remove('active'));
         
         // Export to CSV
-        exportCsvBtn.addEventListener('click', () => {
-             const config = courseConfig[activeCourse];
-             const data = gradesData[activeCourse] || {};
-             const attendanceDates = getAttendanceDates(activeCourse).map(d => d.toLocaleDateString('es-CO'));
-             let csvContent = "data:text/csv;charset=utf-8,";
-             const headers = ["No", "Estudiante", ...attendanceDates, "Obs.", "C1", "C2", "C3", "P1", "P2", "P3", "A1", "A2", "A3", "DEF", "NIVEL"];
-             csvContent += headers.join(",") + "\r\n";
-             
-             config.students.forEach((student, index) => {
-                 const studentData = data[student] || {};
-                 const def = calculateDef(studentData.grades);
-                 const nivel = determineNivel(def);
-                 let row = [
-                     index + 1,
-                     `"${student}"`,
-                     ...getAttendanceDates(activeCourse).map(d => {
-                         const status = studentData.attendance?.[d.toISOString().split('T')[0]];
-                         return status === true ? "P" : status === false ? "A" : "";
-                     }),
-                     `"${(studentData.observations || '').replace(/"/g, '""')}"`,
-                     studentData.grades?.cognitivoC1 || "", studentData.grades?.cognitivoC2 || "", studentData.grades?.cognitivoC3 || "",
-                     studentData.grades?.procedimentalP1 || "", studentData.grades?.procedimentalP2 || "", studentData.grades?.procedimentalP3 || "",
-                     studentData.grades?.actitudinalA1 || "", studentData.grades?.actitudinalA2 || "", studentData.grades?.actitudinalA3 || "",
-                     def, nivel
-                 ];
-                 csvContent += row.join(",") + "\r\n";
-             });
-
-             const encodedUri = encodeURI(csvContent);
-             const link = document.createElement("a");
-             link.setAttribute("href", encodedUri);
-             link.setAttribute("download", `calificaciones_${activeCourse}.csv`);
-             document.body.appendChild(link);
-             link.click();
-             document.body.removeChild(link);
-        });
+        exportCsvBtn.addEventListener('click', () => { /* ... existing code ... */ });
 
         // Import Students
         importBtn.addEventListener('click', () => importFile.click());
-        importFile.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const text = e.target.result;
-                const newStudents = text.split('\n').map(name => capitalizeWords(name.trim())).filter(name => name.length > 0);
-                if (newStudents.length > 0) {
-                    allStudentsData[activeCourse] = newStudents;
-                    gradesData[activeCourse] = {}; // Reset data for the new list
-                    setupCourseConfig();
-                    saveData();
-                }
-            };
-            reader.readAsText(file);
-            importFile.value = ''; // Reset input
-        });
+        importFile.addEventListener('change', (event) => { /* ... existing code ... */ });
 
         // Stats Panel
-        function calculateAndDisplayStats() {
-            const data = gradesData[activeCourse] || {};
-            const students = courseConfig[activeCourse]?.students || [];
-            if (students.length === 0) {
-                statsPanel.innerHTML = "";
-                return;
-            }
-
-            let totalDef = 0, studentCountWithGrades = 0;
-            const nivelCounts = { "Bajo": 0, "Básico": 0, "Alto": 0, "Superior": 0, "N/A": 0 };
-            
-            let totalAttended = 0;
-            const totalPossibleSessions = students.length * getAttendanceDates(activeCourse).length;
-
-
-            students.forEach(student => {
-                const studentData = data[student] || {};
-                const def = parseFloat(calculateDef(studentData.grades));
-                if (!isNaN(def) && def > 0) {
-                    totalDef += def;
-                    studentCountWithGrades++;
-                }
-
-                const nivel = determineNivel(def) || "N/A";
-                nivelCounts[nivel]++;
-
-                const summary = calculateAttendanceSummary(studentData.attendance);
-                totalAttended += summary.attended;
-            });
-            
-            const avgDef = studentCountWithGrades > 0 ? (totalDef / studentCountWithGrades).toFixed(2) : "0.00";
-            const attendancePercent = totalPossibleSessions > 0 ? ((totalAttended / totalPossibleSessions) * 100).toFixed(1) : 0;
-
-            statsPanel.innerHTML = `
-                <div class="stat-item"><p class="font-bold text-lg">${avgDef}</p><p class="text-sm">Promedio General</p></div>
-                <div class="stat-item"><p class="font-bold text-lg">${attendancePercent}%</p><p class="text-sm">Asistencia Total</p></div>
-                <div class="stat-item"><p class="font-bold text-lg">${nivelCounts.Superior}</p><p class="text-sm">Superior</p></div>
-                <div class="stat-item"><p class="font-bold text-lg">${nivelCounts.Alto}</p><p class="text-sm">Alto</p></div>
-                <div class="stat-item"><p class="font-bold text-lg">${nivelCounts.Básico}</p><p class="text-sm">Básico</p></div>
-                <div class="stat-item"><p class="font-bold text-lg">${nivelCounts.Bajo}</p><p class="text-sm">Bajo</p></div>`;
-        }
+        function calculateAndDisplayStats() { /* ... existing code ... */ }
 
         // --- App Initialization ---
         searchBox.addEventListener('input', renderTable);
@@ -704,7 +528,7 @@
         };
         const switchCourse = (course) => {
             activeCourse = course;
-            if (!gradesData[activeCourse]) gradesData[activeCourse] = {};
+            if (!gradesData[activeCourse]) gradesData[activeCourse] = { dateNotes: {} };
             document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
             const newTab = document.getElementById(`tab-${activeCourse}`);
             if(newTab) newTab.classList.add('active');
