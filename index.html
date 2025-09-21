@@ -4,25 +4,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lista de Calificaciones - Grupos</title>
-    <!-- Tailwind CSS for styling -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <style>
-        /* Estilos generales del cuerpo y contenedor principal */
+        /* CSS Variables for theming */
+        :root {
+            --bg-color: #f3f4f6;
+            --text-color: #1f2937;
+            --card-bg-color: #ffffff;
+            --header-bg-color: #4b5563;
+            --sticky-col-bg: #f9fafb;
+            --border-color: #e5e7eb;
+            --input-border-color: #d1d5db;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --tab-block-bg: #f1f5f9;
+            --tab-button-bg: #e2e8f0;
+            --tab-button-text: #475569;
+        }
+
+        html.dark {
+            --bg-color: #1f2937;
+            --text-color: #f3f4f6;
+            --card-bg-color: #374151;
+            --header-bg-color: #111827;
+            --sticky-col-bg: #4b5563;
+            --border-color: #4b5563;
+            --input-border-color: #6b7280;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --tab-block-bg: #4b5563;
+            --tab-button-bg: #64748b;
+            --tab-button-text: #e2e8f0;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-            color: #1f2937;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
         }
         .container {
             width: 100%;
             max-width: 95%;
             margin: auto;
+            background-color: var(--card-bg-color);
+            box-shadow: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -2px var(--shadow-color);
         }
         .table-container {
-            max-height: 80vh;
+            max-height: 75vh;
             overflow: auto;
             border-radius: 0.5rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
         table {
             width: 100%;
@@ -32,122 +64,197 @@
         th, td {
             padding: 0.75rem;
             text-align: center;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid var(--border-color);
             font-size: 0.875rem;
             white-space: nowrap;
+            background-color: var(--card-bg-color);
         }
-        tr:last-child td {
-            border-bottom: none;
-        }
+        tr:last-child td { border-bottom: none; }
 
         /* --- STICKY & COLUMN STYLES --- */
         thead th {
-            position: sticky;
-            top: 0;
-            background-color: #4b5563;
-            color: #ffffff;
-            z-index: 20;
-            vertical-align: middle;
-            height: 70px; /* Altura uniforme para todas las celdas del encabezado */
+            position: sticky; top: 0;
+            background-color: var(--header-bg-color);
+            color: #ffffff; z-index: 20;
+            vertical-align: middle; height: 70px;
         }
-        thead tr:nth-child(2) th {
-            top: 70px; /* Coincide con la altura de la primera fila */
-        }
-        .sticky-left {
-            position: sticky;
-            left: 0; /* Base position, will be overridden */
-            box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1);
-        }
-        th.sticky-left {
-            z-index: 22;
-            background-color: #4b5563;
-        }
-        td.sticky-left {
-            z-index: 21;
-            background-color: #f9fafb;
-        }
+        thead tr:nth-child(2) th { top: 70px; }
+        .sticky-left { position: sticky; left: 0; box-shadow: 2px 0 5px -2px var(--shadow-color); }
+        th.sticky-left { z-index: 22; background-color: var(--header-bg-color); }
+        td.sticky-left { z-index: 21; background-color: var(--sticky-col-bg); }
 
-        /* Column positioning and widths */
         .sticky-col-no { left: 0; width: 50px; min-width: 50px; }
-        .sticky-col-name { left: 50px; width: 200px; min-width: 200px; text-align: left; }
-        .sticky-col-summary { left: 250px; width: 120px; min-width: 120px; } /* 50 + 200 */
+        .sticky-col-name { left: 50px; width: 220px; min-width: 220px; text-align: left; }
+        .sticky-col-actions { left: 270px; width: 100px; min-width: 100px; }
+        .sticky-col-summary { left: 370px; width: 120px; min-width: 120px; }
         
-        .grade-cell { width: 60px; min-width: 60px; cursor: pointer; border: 1px solid #ccc; }
-        .grade-input { width: 100%; padding: 0.25rem; border: 1px solid #d1d5db; border-radius: 0.25rem; text-align: center; }
-        
-        .col-def { width: 80px; min-width: 80px; }
-        .col-nivel { width: 80px; min-width: 80px; }
+        /* --- Grade & Input Styles --- */
+        .grade-cell { width: 60px; min-width: 60px; cursor: pointer; }
+        .grade-input { width: 100%; padding: 0.25rem; border: 1px solid var(--input-border-color); border-radius: 0.25rem; text-align: center; background-color: var(--card-bg-color); color: var(--text-color); }
+        .col-def, .col-nivel { width: 80px; min-width: 80px; font-weight: bold; }
+
+        /* Performance Level Colors */
+        .nivel-bajo { background-color: #fee2e2; color: #991b1b; }
+        .nivel-basico { background-color: #fef9c3; color: #854d0e; }
+        .nivel-alto { background-color: #dcfce7; color: #166534; }
+        .nivel-superior { background-color: #dbeafe; color: #1e40af; }
+        html.dark .nivel-bajo { background-color: #7f1d1d; color: #fecaca; }
+        html.dark .nivel-basico { background-color: #713f12; color: #fef08a; }
+        html.dark .nivel-alto { background-color: #14532d; color: #bbf7d0; }
+        html.dark .nivel-superior { background-color: #1e3a8a; color: #bfdbfe; }
 
         /* --- Attendance Styles --- */
         .attendance-box {
-            cursor: pointer; width: 28px; height: 28px; border: 1px solid #d1d5db;
+            cursor: pointer; width: 28px; height: 28px; border: 1px solid var(--input-border-color);
             border-radius: 0.375rem; display: flex; align-items: center; justify-content: center;
-            margin: auto; font-size: 1.1rem; font-weight: bold; line-height: 1;
-            transition: all 0.2s ease-in-out;
+            margin: auto; font-size: 1.1rem; font-weight: bold; line-height: 1; transition: all 0.2s ease-in-out;
         }
         .attendance-box.attended { background-color: #dcfce7; color: #16a34a; border-color: #16a34a; }
         .attendance-box.absent { background-color: #fee2e2; color: #ef4444; border-color: #ef4444; }
-        .date-header {
-            vertical-align: bottom;
-            padding: 0.25rem;
-        }
+        .date-header { vertical-align: bottom; padding: 0.25rem; }
         .date-header div { transform: rotate(-90deg); white-space: nowrap; display: block; width: 30px; margin: 0 auto 25px auto; }
         td.attendance-cell { width: 60px; min-width: 60px; }
+        .attendance-bulk-btn { font-size: 0.75rem; padding: 2px 4px; border-radius: 4px; margin: 1px 0; display: block; width: 100%; border: 1px solid #fff; }
 
-        /* --- UI Elements & Responsive --- */
-        .message-box {
-            position: fixed; bottom: 1rem; right: 1rem; background-color: #4CAF50; color: white;
-            padding: 1rem; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: opacity 0.3s ease; z-index: 100;
-        }
-        .daily-schedule-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 1.5rem; }
-        .daily-group-block { display: flex; flex-direction: column; align-items: center; padding: 1rem; background-color: #e0e7eb; border-radius: 0.75rem; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); min-width: 150px; }
-        .daily-group-title { font-size: 1.125rem; font-weight: 700; color: #374151; margin-bottom: 0.75rem; text-align: center; width: 100%; }
+        /* --- UI Elements --- */
+        .controls-container { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+        .search-box { padding: 0.5rem; border: 1px solid var(--input-border-color); border-radius: 0.5rem; background-color: var(--card-bg-color); }
+        .action-button { background-color: #4b5563; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600; transition: background-color 0.2s; }
+        .action-button:hover { background-color: #374151; }
+        html.dark .action-button { background-color: #1f2937; }
+        html.dark .action-button:hover { background-color: #111827; }
+
+        /* Dark Mode Toggle */
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 28px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #3b82f6; }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        /* Tab Navigation Styles */
+        .daily-schedule-container { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
+        .daily-group-block { background-color: var(--tab-block-bg); border-radius: 0.75rem; padding: 0.75rem; box-shadow: 0 1px 3px 0 var(--shadow-color); }
+        .daily-group-title { font-weight: 600; text-align: center; margin-bottom: 0.5rem; color: var(--text-color); }
         .group-buttons-wrapper { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
-        .tab-button { padding: 0.75rem 1rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s ease; cursor: pointer; white-space: nowrap; }
-        .tab-button.active { background-color: #3b82f6; color: #ffffff; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5), 0 2px 4px -1px rgba(59, 130, 246, 0.25); }
-        .tab-button:not(.active) { background-color: #d1d5db; color: #4b5563; }
-        .footer-text { text-align: center; margin-top: 2rem; font-size: 0.875rem; color: #6b7280; }
+        .tab-button { padding: 0.25rem 0.75rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s ease; cursor: pointer; background-color: var(--tab-button-bg); color: var(--tab-button-text); }
+        .tab-button.active { background-color: #3b82f6; color: #ffffff; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5); }
 
-        @media (max-width: 768px) {
-            body { padding: 0; }
-            .container { padding: 1rem; max-width: 100%; border-radius: 0; }
-            h1.text-3xl { font-size: 1.5rem; }
-            h2#courseTitle { font-size: 1.25rem; }
-            .daily-schedule-container { flex-direction: column; gap: 1rem; }
-            .daily-group-block { width: 100%; }
-            th, td { padding: 0.5rem; font-size: 0.8rem; }
+        /* Modal Styles */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-content { background-color: var(--card-bg-color); padding: 2rem; border-radius: 0.75rem; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; }
+        .modal-content textarea { width: 100%; min-height: 150px; border: 1px solid var(--input-border-color); border-radius: 0.5rem; padding: 0.5rem; background-color: var(--bg-color); color: var(--text-color); }
+        .bulletin-content { border: 1px solid var(--border-color); padding: 1.5rem; }
+        
+        /* Stats Panel */
+        .stats-panel { display: flex; justify-content: space-around; flex-wrap: wrap; background-color: var(--bg-color); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; }
+        .stat-item { text-align: center; }
+
+        /* Action Icons in Table */
+        .action-icon { cursor: pointer; margin: 0 0.25rem; font-size: 1rem; }
+        .action-icon:hover { color: #3b82f6; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #bulletinModal .printable, #bulletinModal .printable * { visibility: visible; }
+            #bulletinModal { position: absolute; left: 0; top: 0; }
         }
     </style>
 </head>
-<body class="bg-gray-100 p-4 sm:p-8">
-    <div class="container bg-white shadow-xl rounded-xl p-4 sm:p-8 mt-4">
-        <h1 class="text-3xl sm:text-4xl font-bold text-center mb-6 text-gray-800">Control de Calificaciones y Asistencia</h1>
+<body class="p-4 sm:p-8">
+    <div class="container rounded-xl p-4 sm:p-8 mt-4">
+        <h1 class="text-3xl sm:text-4xl font-bold text-center mb-6">Control de Calificaciones y Asistencia</h1>
         <div id="tabNavigation" class="daily-schedule-container"></div>
-        <h2 id="courseTitle" class="text-2xl font-bold text-center mb-2 text-gray-700"></h2>
+        <h2 id="courseTitle" class="text-2xl font-bold text-center mb-2"></h2>
         <div id="courseInfo" class="text-center text-gray-600 mb-4"></div>
+
+        <!-- Controls -->
+        <div class="controls-container">
+            <input type="text" id="searchBox" class="search-box" placeholder="Buscar estudiante...">
+            <div class="flex items-center gap-4">
+                <button id="exportCsvBtn" class="action-button"><i class="fas fa-file-csv"></i> Exportar</button>
+                <button id="importBtn" class="action-button"><i class="fas fa-upload"></i> Importar</button>
+                <input type="file" id="importFile" class="hidden" accept=".txt">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="darkModeToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Stats Panel -->
+        <div id="statsPanel" class="stats-panel"></div>
+        
+        <!-- Table -->
         <div id="attendanceTableContainer" class="table-container"></div>
-        <div id="message-box" class="hidden message-box"></div>
-        <div class="footer-text">Diseñado por Juan Miguel Ríos Redondo</div>
+        
+        <!-- Modals -->
+        <div id="obsModal" class="modal-overlay">
+            <div class="modal-content">
+                <h3 class="text-xl font-bold mb-4">Observaciones para <span id="obsStudentName"></span></h3>
+                <textarea id="obsTextarea"></textarea>
+                <div class="flex justify-end gap-2 mt-4">
+                    <button id="closeObsModal" class="action-button">Cerrar</button>
+                    <button id="saveObs" class="action-button bg-blue-600">Guardar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="bulletinModal" class="modal-overlay">
+            <div class="modal-content">
+                <div id="bulletinContent" class="printable">
+                    <h3 class="text-2xl font-bold text-center mb-4">Boletín Informativo</h3>
+                    <p><strong>Estudiante:</strong> <span id="bulletinStudentName"></span></p>
+                    <p><strong>Curso:</strong> <span id="bulletinCourseName"></span></p>
+                    <hr class="my-4">
+                    <h4 class="text-lg font-bold mt-4">Calificaciones</h4>
+                    <div id="bulletinGrades" class="grid grid-cols-2 gap-2 mt-2"></div>
+                    <h4 class="text-lg font-bold mt-4">Asistencia</h4>
+                    <div id="bulletinAttendance" class="mt-2"></div>
+                    <h4 class="text-lg font-bold mt-4">Observaciones</h4>
+                    <p id="bulletinObs" class="mt-2"></p>
+                </div>
+                 <div class="flex justify-end gap-2 mt-4">
+                    <button id="closeBulletinModal" class="action-button">Cerrar</button>
+                    <button onclick="window.print()" class="action-button bg-blue-600"><i class="fas fa-print"></i> Imprimir</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-text mt-8">Diseñado por Juan Miguel Ríos Redondo</div>
     </div>
 
     <script>
-        // UI Elements & App State
+        // UI Elements
         const tableContainer = document.getElementById('attendanceTableContainer');
-        const messageBox = document.getElementById('message-box');
         const courseTitle = document.getElementById('courseTitle');
         const courseInfo = document.getElementById('courseInfo');
         const tabNavigation = document.getElementById('tabNavigation');
+        const searchBox = document.getElementById('searchBox');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const exportCsvBtn = document.getElementById('exportCsvBtn');
+        const importBtn = document.getElementById('importBtn');
+        const importFile = document.getElementById('importFile');
+        const statsPanel = document.getElementById('statsPanel');
+        const obsModal = document.getElementById('obsModal');
+        const obsStudentName = document.getElementById('obsStudentName');
+        const obsTextarea = document.getElementById('obsTextarea');
+        const bulletinModal = document.getElementById('bulletinModal');
+
+        // App State
         const dailySchedule = {'Lunes':['8C','9B'],'Martes':['8A','9C'],'Miércoles':['8B','9A'],'Jueves':['10C','11A','11B','11C','11D'],'Viernes':['8D','9D','7D']};
         const dayNameToNumber = { 'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5 };
         let activeCourse = dailySchedule[Object.keys(dailySchedule)[0]][0]; 
         let gradesData = {};
+        let allStudentsData = {'7D':["AHUMADA SIERRA THAEL SOFIA","AMARIS SIERRA JULEISY PAOLA","BENITEZ BOSSIO MARIA JOSE","BOLIVAR GOMEZ MARIA JOSE","CABALLERO SILVERA JOHELIS ANA","CARMONA SILVERA LEYNER LEONARDO","CARPINTERO SILVERA THALIA","CONSUEGRA ALVAREZ JHOINER DAVID","ESCORCIA RIVALDO CAMILO ANDRES","GERONIMO BARRAZA HELLEN SOFIA","GOEZ OTERO DANIEL JOSE","GONZALEZ BARRAZA DANNA SOFIA","GUANIPA GUTIERREZ ARANZA","GUTIERREZ OJEDA EMMANUEL","HERNANDEZ DIAZ JESUS DAVID","LLANOS SEGURA YAILETH PATRICIA","MARIN PALMA SANTIAGO","MARMOL HERNANDEZ SEBASTIAN ANDRES","NAVAS CEDEÑO ANGEL ALBERTO","NIETO ROLONG MARY ISABEL","ORTEGA BENITEZ IVIAN ALEJANDRA","ORTEGA MANGA ANGELLYS ISABEL","PATIÑO BORRERO HARRISON DANIEL","PEREZ ALVAREZ MARIA JOSE","PEREZ NATERA VALENTINA SOFIA","PIMIENTA OTERO LAURENS JULIANA","POLO REDONDO MARIA GUADALUPE","PRADA SARMIENTO BRAYAN JOSE","RADA RADA VALLERYE DE JESUS","SANTIAGO DACONTE ANDRES FELIPE","SIERRA CASTILLO MAURICIO JOSE","SIERRA GOMEZ LIZETH PAOLA","SMITH SANTIAGO VALERIA","SUAREZ GALLARDO MATEO JUSETH","TORRES FERNANDEZ SANTIAGO ENRIQUE","UZCATEGUI MONTILLA SANTIAGO ALEJANDRO","VEGA PLAZA NEIMAR","ZARATE REDONDO YAJAIRA NICOLL"],'8A':["ARIZA CONSUEGRA STEISY SOFÍA","BARRAZA HERNANDEZ RONALD ALFREDO","BARRIOS MOLINA LITZY MARIELL","BECERRA CRESPO MANOLO","BELLIDO CASIANO LEIDER JOSE","BERRUEZO ORTEGA SAMANTHA ISABEL","BLANCO REYES ANGEL RAFAEL","BOLIVAR ESCOBAR VALENTINA SARETH","CIRO ROMERO ANGELA SOFIA","DE LA CRUZ SIERRA ALAN DAVID","DITA ESCALANTE GILMAR JOSE","ESCALANTE OSPINO ANDERSON CAMILO","ESCOBAR ALGARIN LILIANA","GOMEZ VILLA ANA VALERIA","GUTIERREZ PAEZ ANA MILENA","JIMÉNEZ QUINTANA FREDDY DAVID","JIMENEZ RUA NASLI DANIELA","LLANOS REDONDO ADRIANA MICHELL","LLANOS REYES ANDRES FELIPE","MARQUEZ MARIN VALERIN VALENTINA","MARQUEZ VILORIA EMILY SOFÍA","MARTINEZ ORTEGA JESUS MANUEL","MOLINA GUTIERREZ JULIE PAOLA","NIETO ORTEGA MAILETH SMITH","ORDOÑEZ GARCIA LEONARDO ENRIQUE","PACHECO AVILA MARIA ANGEL","PEÑATE VEGA MARIA ALEJANDRA","PEREZ ARAUJO ANDRÉS CAMILO","REDONDO PATIÑO DELEVIS ENRIQUE","RODRIGUEZ SANJUAN SALOME","SANTIAGO JULIO ASLY PAOLA","SIERRA GOMEZ LUISA FERNANDA","SILVERA GOMEZ GABRIEL","SILVERA ORTEGA MAYLER JESHUA","TEJERA ORTEGA LUIS MARIO","TORRES CERA HEIDER JESUS","VANEGAS DE LA CRUZ DANIELA ANDREA","VEGA ORTIZ EYEELIN LORENA","VELASQUEZ GARCIA MANUEL ALEJANDRO"],'8B':["ACOSTA NATERA JAVITH DE JESUS","AREVALO ARCON JOSE DAVID","BARRETO ROLONG MARIANA SOFIA","BARRIOS PUENTES BLAYNER ESTEBAN","BULA PEREZ MARIA LUISA","BUSTOS BARRIOS HONEY SOPHIA","CASTRO CASTRO DASHARY MICHELL","CASTRO HARO JEAN LUCAS","CONTRERAS SANJUAN IVANNA MICHELL","CORREDOR BARBOSA SAMUEL ARTURO","COTES ESCALANTE YESID ANDRES","GARCIA VARELA SHADAY VALENTINA","GONZALEZ SILVERA LILIBETH ISABEL","HEREDIA LOPEZ EYLIN PAOLA","HERNANDEZ DE LA CRUZ MIGUEL ANGEL","HERNANDEZ LLANOS GUADALUPE MARIA","HERNANDEZ LLANOS JESE DAVID","HERRERA POLO LINA MILAGROS","JAIME ROA ANYELO JAVIER","LINARES ESTEVEZ MAYTE ALEJANDRA","LUQUE GONZALEZ YANKELIS ESTEFANIA","MONCADA NAVARRO YOHANI ZAFIRO","MONSALVO QUINTERO ADRIAN ANDRES","MONTERROSA CABALLERO LAURA VANESA","NORIEGA REDONDO WENDY PAOLA","POLO JIMENEZ NORELLA MARÍA","RADA GUTIERREZ AISHA MARIETT","REDONDO FRANCO LUIS ANGEL","RINCON PEREZ ANGIELIN ORIANA","SALAZAR ZAMBRANO RICHARD JOSE","SIERRA OROZCO ANGGY PAOLA","SILVERA ESCOBAR DAYAR AMETH","SILVERA JIMENEZ NICOLL DAYANA","SILVERA SANJUAN ADALYANA ISABEL","SOSA BERRIO DEICY JULIETH","SUAREZ DURAN JOSTIN DE JESUS","TOMASES RADA THIAGO ANDRES","URANGO PACHECO DEILER JOSEPH","VILLAMIL HERNANDEZ XIMENA ESTER"],'8C':["ACOSTA CAICEDO DAIMAR DE JESUS","ACUÑA VALENCIA LUIS ALEJANDRO","ARAUJO MENDOZA SIRIANA VALENTINA","BANDERA LLANOS SHAILETH VALENTINA","BURGUILLOS CARBONELL JHOSNIEL SAID","CARDENAS CHIQUILLO MICHAELL MANUEL","CASTRO GOMEZ SHERIL NICOLLE","CERVANTES LARA MAURO DE JESUS","DE LA CRUZ PIÑERES SERGIO ANDRES","DE LA CRUZ REDONDO ANTONY RICARDO","DE LA HOZ CABAS YEFFER DE JESUS","ESCORCIA MIRANDA GUADALUPE","FERRER SANTANDER DAMIAN CAMILO","GARCIA PEÑATE MARIA DEL CARMEN","GARCIA ROJAS TIFFANY DAYANA","GOMEZ OTERO JANNIER FARID","GONZALEZ SALCEDO MARIA DE LOS ANGELES","HURTADO ORTIZ ALAN DAVIDSON","LLANOS TAGUER BRANDON DE JESUS","MADERA ORTEGA ANA PAULA","MEZA SIERRA JAMES DE JESUS","MORALES PERCY KEREN SOFIA","OLANO PAZ YARIANGEL CHICHINQUIRA","ORTEGA SIERRA VALENTINA MISHEL","PEREZ GONZALEZ SHAIRA LUCIA","PEREZ NAVAS VALENTINA NICOLLE","POLO GUERRA XAVIER JOSUE","POSADA FRANCO MARIA CAMILA","RADA CORRO STEPHANIE SOFIA","RANGEL SIERRA LAUREN SOFIA","RICO ZAPATA DANNA SOFIA","RIVALDO PALMA MILAGRO DE JESUS","RIVALDO PALMA TANIA ISABEL","ROSANIA MINDIOLA DIEGO DAVID","SARMIENTO MARTINEZ MARI ANGEL","SILVA SILVERA SOFIA ISABEL","SILVERA CERVANTES MILTON DE JESUS","TRIGOS OROZCO SHELSY SOFIA","URRUCHURTO PEREZ ISABELLA"],'8D':["ACOSTA HERNANDEZ EMILY GISELL","ACUÑA MARTINEZ JOB DAVID","ANGULO DE LA CRUZ NAHIARA MICHEL","BALVIN ROMERO NORMA GABRIELA","CABALLERO ACEVEDO MARIA ALEJANDRA","CABELLO NATERA STEVE EMANUEL","CONTRERAS SARMIENTO ANGELLYS NICOLLE","COSSIO NARVAEZ ANGELA VICTORIA","ESTRADA LLANOS MOISES ALEXANDER","FRANCO RODRIGUEZ JUAN DAVID","GUZMAN PENATE LUIS ALBERTO","HERNANDEZ PALLARES FERNANDO JUNIOR","HERNANDEZ REDONDO SHAYRA NICOLL","JIMENEZ ACUÑA MARIANA ISABEL","JIMENEZ SIERRA KAROL SOFIA","LLERENA IMITOLA JADER JOSE","MADARIAGA LOPEZ LUISA FERNANDA","MAESTRE DE LA HOZ MARIELYS MILETH","MENDOZA GOEZ DANIELA ROSA","MOLINA PALLARES MATIAS","MONCADA SIERRA MARIA CAROLINA","MORALES ORTEGA JOSSUET","OROZCO GONZALEZ DULCE MARIA","ORTEGA HERNANDEZ SARAY DE JESUS","PACHECO SILVERA ANGILIS MILETH","PINO MARIANO MARIANA PATRICIA","POLO ORELLANO JUAN SEBASTIAN","POLO VERGARA SHARY SOFÍA","RANGEL MARTINEZ MELANI PAOLA","RINCON GOMEZ ALEJANDRO DAVID","ROA RADA DANIEL DE JESUS","ROA RADA EDGAR ANDRES","RODRIGUEZ BUSTILLO GABRIELA LUCIA","ROLONG GOEZ JUAN ANDRES","ROMERO PEÑA NEYMAR","RUDAS VARGAS YAIRIS MARIA","SANTIAGO REYES OMER DE JESUS","SIERRA CASTILLO LUIS JOSE","SIERRA VARELA ANDREA CAMILA"],'9A':["ACOSTA PADILLA OVER ENRIQUE","ACOSTA PALMA CRISTHIAN JASSER","AMADOR PALMA ALVARO JUNIOR","ARCON ALVAREZ SEBASTian","ARTETA CONSUEGRA JANNY LIZ","AVILA MEZA MAUREN JULIETH","BARRAZA SIERRA LUIS FERNANDO","BARRIOS LLANOS GERALDINE ISABEL","BARRIOS SIERRA BRIANA SOFIA","CAMARGO DE LA CRUZ LEINYS MAURETH","CAMARGO MARTINEZ MARIA ALEJANDRA","CANOSA CERVANTES VIVIANA CAROLINA","CORTES PIÑA JHOVANNY ESTEBAN","COSSIO NARVAEZ HEIDY ISABEL","DE LA HOZ VIZCAINO BUENDI BANESA","ESCORCIA BLANCO MELANY SOFIA","ESCORCIA MIRANDA JESUS DAVID","FERNANDEZ ANGULO SHARICK","GALINDO ESCALANTE SHARON MICHAELL","GALLARDO BRADFORD JHOYMAR DE JESUS","LOPEZ MITROBICH MARIMAR","MARRIAGA SANJUAN SOCHY","MURILLO SILVERA YEYCI MISHELL","ORELLANO MOLINA CICLALIS VALENTINA","ORTIZ PEREZ CRISTIAN DAVID","OTERO CARDENAS ADAN ELIAS","OTERO NIETO JAIR DE JESUS","PEÑA MEZA VICTOR ANDRES","POLO CONTRERAS ANDERSON","POLO PALMA SAILLY TATIANA","RADA JIMÉNEZ JESUS ALBERTO","RADA NIEVES DAMARIS SOFIA","REDONDO SALGADO ALEJANDRA SOFIA","RODRIGUEZ ANGULO DANNA NICOLLE","SALAZAR IGLESIAS TALIANA LISETH","SANTIAGO LOPEZ MARIA CAMILA","SARMIENTO CERVANTES VALEREE LUCIA","SARMIENTO DE LA RANS ALAN DAVID","TURBAY GOMEZ LAIONEL DAVID","ZARATA ROA LUIS ALEJANDRO"],'9B':["ANGULO BARRAGAN CARLOS DAVID","ARAUJO ESCALANTE YELIANYS","ARTETA ZARATE JHAN CARLOS","BARRAZA CAFIEL VALENTINA ESTHER","BLANCO ESTRADA JENIFER","BLANCO SILVERA YAIKOVIC ALEXANDER","BOLIVAR MARRIAGA YANDERSON DAVID","ESCOBAR ALGARIN JOSE MIGUEL","FERRER SANTANDER LOGAN SMITH","FONTALVO PUELLO CRISTIAN DAVID","GARCIA CAMARGO ANGELY PAOLA","GERONIMO ROJAS EMMANUEL DE JESUS","GIL GUTIERREZ ANA REYSHELL","GOENAGA LEJARDE JULIANNY KAROLAY","GUTIERREZ SIERRA SANTIAGO DAVID","HERNANDEZ LOPEZ MARIA CAMILA","HERNANDEZ MONTAÑO MARIA ALEXANDRA","JIMENEZ CONSUEGRA TANIA CAROLINA","MARIN MORALES GENESIS PAOLA","MARTINEZ DAZA EILYN DAYANA","MEDINA RIQUETT KELLY ROXANA","MOLINA VELASQUEZ LERVYS JAVIER","MORALES OTERO JESUS MANUEL","MOVILLA BOLIVAR EYMIS YOLANIS","NAVARRO GUTIERREZ ALEJANDRO DE JESUS","ORTEGA CUERVO KRISTEL ARIANNE","ORTIZ JIMENEZ ELIATH DAVID","PALMA SILVERA MARISOL","PATINO CONSUEGRA ANDRYS PAOLA","PEREZ ALGARIN LUCIANA","PEREZ BOLIVAR JHONEFFER","REDONDO RODRIGUEZ KARLA CRISTINA","RODRIGUEZ VEGA YESID JAVIER","RUIZ MARENCO JUAN CAMILO","SILVERA JIMENO THALIANA VANESA","TEJERA ORTEGA VALENTINA","TESILLO PEREZ CARLOS DANIEL","TORRADO NORENA CRISTIAN","ZAPATA SIERRA LUCYANA MARIA"],'9C':["BALLESTAS DE LA CRUZ OWEL ALBERTO","BARANDICA GUTIERREZ IKER DAVID","CAMARGO CABALLERO JHONNY ENRIQUE","CONSUEGRA HERNANDEZ ANGIE PAOLA","DIAZ DEL TORO SHARILYN PAOLA","ESCORCIA BORNACELLY NATHALIA ISABEL","ESCORCIA DE LA CRUZ LUISA FERNANDA","ESTRADA RUA JHON FREDY","GOENAGA DE AVILA CARLOS MAURICIO","GONZALEZ CONTRERAS YURLANYS MICHELL","GONZALEZ FERRER MAIRELYS DAYANA","GONZALEZ LLANOS ANA MILAGRO","GONZALEZ RICO JAVIER EDUARDO","HURTADO ORTIZ AMY","JIMENEZ BADILLO JUAN MIGUEL","JIMENEZ DE LA CRUZ JUSETH DAVID","LINARES TEJEDA MARCELA","LUBO JIMENEZ ALEJANDRO JOSE","MARTINEZ CASTILLO DANNA CAROLINA","MEDINA SILVERA DILAN DE JESUS","MIRANDA FERNANDEZ ANTONNY DAVID","MOLINA ARRIETA KAIRETH ALEJANDRA","OCHOA ORTEGA JOSE ANDRES","ORTEGA LUNAR DIEGO JESUS","PEREZ GERONIMO EYMER DE JESUS","PRADA SARMIENTO SHARICK ANDREA","QUIROZ POLO YINIVETH PAOLA","REDONDO BERDUGO MARIANA PAOLA","RICAURTE SANTANA MARIA PAULA","RIOS ARCON ARANZA LUCIA","RIOS NAVAS VICTOR MANUEL","ROA DE LA CRUZ PEDRO PABLO","RODRIGUEZ VASQUEZ LUIS MANUEL","ROMERO JIMENEZ STEVAN FELIPE","SILVERA LINARES ANDRES FELIPE","SILVERA VILORIA SNEYDER DE JESUS","VARGAS CASTRO SAMIR JOSE","VILORIA CABARCAS ESTEFANY PAOLA","ZARATE PALMA LINA MARCELA"],'9D':["AMAYA PAZ JEIVER DAVID","ARDILA ORDUZ ALISSON","BLANCO SIERRA ANDY CAMILO","BUSTOS BARRIOS ANGEL DAVID","CABRERA ORTEGA DAVID JESUS","CARBONELL BOSSA MAURICIO ANDRES","CELIN VELASQUEZ MARLIN LORAINE","ESCALANTE ACENDRA ANA VALENTINA","GAMARRA GONZALEZ GABRIEL ALEJANDRO","HERNANDEZ ARJONA JOSUE ALEJANDRO","JIMENEZ DE MOYA SARAY MILENA","LEJARDE PERTUZ ASLHEY DAVIELA","LOPEZ GARCIA ANGEL JESUS","LOPEZ RAMOS OSIEL DAVID","MARTINEZ GARCIA MELANIE CAROLINA","MENDOZA DE LA CRUZ LAURY DANIELA","MERIDIANO CARDENAS DIEGO ANDRES","MONCADA NAVARRO ELIANYS SOFIA","MUÑOZ RAMIREZ JEISIRE YURUBI","NITROBICH RIAÑO YEISON YESITH","ORELLANO PALMA ELIANA MARCELA","OROZCO GOMEZ JEISYS PAOLA","ORTEGA GIL ALLISON MITCHEL","OTERO JIMENO SHADYA VANESSA","OTERO MORALES DILAN MATIAS","PADILLA BORRERO AYLIM JOHANA","PALMA BARRAZA XAVI ALONSO","PALMA SILVERA MARILUNA","PEREZ MACIAS GISELL ANDREA","PINERES TRUYOL VALERY TATIANA","RANGEL MARTINEZ GENESIS PAOLA","REAL BARRIOS JUNIÑO MANUEL","ROBLES MARIN JASSER JESUS","RODRIGUEZ DEL VILLAR JOAN SEBASTIAN","SALAS MALDONADO ALIANYS PATRICIA","SANJUAN PERTUZ JOSSED DAVID","SANTIAGO SOLANO AXEL LEONY","VARGAS ALBIS YERSON DAVID","VARGAS MUÑOZ SHERIT DADIVA","VELILLA ACOSTA CAMILO ANDRES"],'10C':["ACOSTA DE LA CRUZ ISACC DAVID","ACUÑA RADA SARESTH CAROLINA","BENEDETTI GARCIA GLEINER DAVID","BORGE FLOREZ MARIA ALEJANDRA","CANTILLO NORIEGA KEIVEN STEVEN","CONSUEGRA GOYENECHE HANYDANIELS ISABELL","CONSUEGRA POLO EDU FERNANDO","CORRO IBAÑEZ DAVID ALEJANDRO","DE LA HOZ ARTETA ANGELINE LUCIA","GOMEZ MARTINEZ NADIA JALILA","GOMEZ OROZCO ANGIE SOFIA","GUTIERREZ OJEDA ANTONE ALEXANDER","LAFAURIE SILVERA JUAN DAVID","LEAL QUINTANILLA JESUS DAVID","MARIANO OROZCO NICOLL ANDREA","MELENDEZ CAMBERO WILIANNIS KARI","MENDOZA ESCALANTE DILAN SACHEL","NAVAS BOLIVAR JAMER DE JESUS","OROZCO ARAUJO MARIA DE LOS ANGELES","ORTEGA GARCIA JULIANA ANDREA","OSPINO DE LA CRUZ JOSE ENRIQUE","OVIEDO MOLINA THAILY SOFIA","PADILLA CONRADO JAIRO ANDRES","PALLARES DE LA RANS JUAN DANIEL","PALMA PEREZ DANNA MEIBELYN","PEREZ DE LA CRUZ LIS DAYANA","RADA TAMAYO JASIR ALFONSO","RANGEL MARTINEZ LIS ALEXANDRA","RODRIGUEZ BLANCO ZAMIRA SOFIA","SALGADO VERDEZA MARIA VALENTINA","SARMIENTO ACUÑA DULCE MARIA","SARMIENTO PALMA MANUEL ALFONSO","SIERRA DE LA CRUZ LAUREEN JAEL","SILVERA SANTIAGO JUAN SEBASTIAN","SUAREZ SIERRA MARIA ANGEL"],'11A':["ALBA BOLIVAR GABRIELA ISABEL","ARDILA ORDUZ KAREN DAYANNA","BLANCO SILVERA YUGEIDIS DEL CARMEN","BOLIVAR SANTIAGO EDWIN JESUS","CERA SILVERA BRIANDA SOFIA","CUETO REDONDO YULIFER PAOLA","DE LA HOZ LOPEZ ROSA ISABEL","DE MOYA PALLAREZ ADRIAN JOSUE","FLOREZ SOLANO JUAN ANGEL","FRANCO FRANCO VALERY ELENA","GONZALEZ DE LA CRUZ YICEL ANDREA","HERNANDEZ JULIO ISABELA","HERNANDEZ MARRIAGA KARLA SOFIA","HIGUITA ZAPATA VALENTINA MARIA","HOUSSET VALENCIA CRISTOBAL ALBERTO","HOUSSET VALENCIA TALIANA CAROLINA","IBAÑEZ NIETO MAYLAN CRISTINA","JIMENEZ ROA STALYN DE JESÚS","LOPEZ MERCADO YULIMAR","MORALES OTERO ANA MARIA","ORTEGA BOLIVAR MARIETH","OSPINO NIETO WANDA KATERIN","PALMA PACHECO JONATHAN DAVID","RADA POLO STIVE JOHAN","REYES VILLALOBOS SHEILYN","ROLONG SIERRA ANA SARAY","ROMERO RODRIGUEZ LUISA ESTHER","SANTIAGO CUETO KERLYN ANDREA","SANTIAGO DE LA ROSA RITA MERCEDES","SERJE GARCIA MISSELL ISABEL","VASQUEZ CHARRIS YELIS MARGARITA","VELASQUEZ ZAMBRANO DANIEL ALEJANDRO"],'11B':["ALBOR SILVERA ALEJANDRA","AMAYA QUINTERO DUVAN JHOSET","BAZA ESCOBAR YORELIS","CERVANTES LARA DEREEK FELIPE","CONSUEGRA DE LA CRUZ SERGIO LUIS","CORRO GONZALEZ ANDRES SEBASTIAN","CORRO HERRERA JULIAN RAFAEL","CUENTAS SIERRA LAUREN MELISA","ESCOBAR ALGARIN FELICIDAD MARIA","GONZALEZ GIL NATALIA MARIA","GONZALEZ HURTADO LAURA MICHEL","GUZMAN NUÑEZ LAUREN CAROLINA","MARQUEZ MIRANDA JOHAN","MAURY SALGADO ALISSON MICHELLE","MEJIA GONZALEZ ISABELLA","MIRANDA DE MOYA EVANGELLY SARIETH","MONTERROSA RODRIGUEZ ANDRES FELIPE","OROZCO VASQUEZ ROSAURA","ORTEGA SIERRA YULIANA PAOLA","PADILLA REDONDO YESSICA MARIA","PEREZ DE LA CRUZ JESUS ALFREDO","PEREZ FRANCO YORIANA LUCIA","QUINTERO COBA EDIER ALEJANDRO","REDONDO TORRES YESICA CAMILA","RODRIGUEZ CARPINTERO CAMILA YSLEN","ROJO CARDONA MISHELL","SANTIAGO NATERA JOHN DAVID","SIERRA FIGUEROA LUCILA ISABEL","UCROS HERNANDEZ SHEILA NICOLL","VALLEJO CASTILLO ISABELLA SOFIA","VARGAS MOLINA SEBASTIAN ANDRES"],'11C':["ALTAMAR CABALLERO PAOLA ANDREA","ARIZA PEREZ DILAN","ARROYO CORREDOR ANDRES FELIPE","BARRETO GUTIERREZ SLAYNETH SOFIA","BONILLA GUTIERREZ SHARON YULIANA","CASTIBLANCO IBAÑEZ IAN SANTIAGO","DE LA CRUZ ARRIETA ANGEL DANIEL","DE LA CRUZ CAMARGO SERGIO ANDRES","DE LA CRUZ SARMIENTO MARIA JOSE","DE LA HOZ MUÑOZ LUISA FERNANDA","DE LA HOZ SIERRA JOHAN JESUS","DE LOS REYES TAMAYO YOSETH DAVID","DELGADO HERNANDEZ SOFIA ELENA","ESCALANTE QUIROZ JESUS DAVID","ESCOBAR SALCEDO JUSEPH ENRIQUE","ESCORCIA JIMENEZ ANDRES CAMILO","GALLARDO PANCHA GABRIELA MARIA","GOEZ SERRANO EMMANUEL JOSE","HERNANDEZ CERVANTES PABLO ANDRES","HERNANDEZ MUÑOZ DANA GABRIELA","HERRERA MENDOZA ESTEBAN ENRIQUE","MARQUEZ MIRANDA JAZIR","ORELLANO BOLIVAR KEYDDER DAYAN","PACHECO SIERRA ADRIANA LUCIA","PARRA REDONDO JUAN CAMILO","REDONDO MENDOZA MARIANGEL","RIVERO COBA GLEIDYS PAOLA","SALAZAR LLANOS YAMITH ANDRES","SANCHEZ CELIS DIEGO ISAC","SANTAMARIA BORJA ANDREA DANITZA","SIERRA GARCIA OSCAR ANDRES","VASQUEZ ARZUZA ALAM MATIU","VERGARA BARRIOS KLEIVER MANUEL"],'11D':["ARIZA DE LA CRUZ SEBASTIAN DE JESUS","ARIZA SILVERA JORGE MARIO DE JESÚS","BLANCO ESCALANTE SAIDER ISABEL","BOLIVAR VIVANCO NICOL DANIELA","BORGE GOENAGA SHADIA MICHELLE","CABALLERO BARRIOS BREIDER JOSE","CHICO MARTINEZ DAIRON ANDRES","CONSUEGRA SILVERA SARAY MICHELL","ESCALANTE GONZALEZ DANIELA PAOLA","GALLARDO BRADFORD NAYALITH ANDREA","GARZON GALINDO LENIN","GONZALEZ DE LA RANS SHARLET MARIA","GUTIERREZ MENDOZA JOSE LUIS","GUTIERREZ VASQUEZ PAULA PATRICIA","MELENDRES VILLALBA KEIMER ANDRES","MEZA GARCIA CARLOS ANDRES","MORA SILVERA DEYNER ALEXANDER","ORTEGA GONZALEZ LEWIN STICK","PADILLA PARRA MARY ANGEL","PALMA DE LA HOZ LUIS ANGEL","PEDRAZA OLIVEROS MATHIAS KEITEL","PEDROZA GALLARDO SCARLETT SOFIA","PEREZ VEGA NICOL SHARITH","RODRIGUEZ SALAS YORYANIZ ANETH","SANTIAGO SOLANO AXEL LEONY","VARGAS ALBIS YERSON DAVID","VARGAS MUÑOZ SHERIT DADIVA","VELILLA ACOSTA CAMILO ANDRES"]};
+        let courseConfig = {};
+        const capitalizeWords = (str) => !str ? '' : str.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         
-        // Student & Course Data
-        const allStudentsData = {'7D':["AHUMADA SIERRA THAEL SOFIA","AMARIS SIERRA JULEISY PAOLA","BENITEZ BOSSIO MARIA JOSE","BOLIVAR GOMEZ MARIA JOSE","CABALLERO SILVERA JOHELIS ANA","CARMONA SILVERA LEYNER LEONARDO","CARPINTERO SILVERA THALIA","CONSUEGRA ALVAREZ JHOINER DAVID","ESCORCIA RIVALDO CAMILO ANDRES","GERONIMO BARRAZA HELLEN SOFIA","GOEZ OTERO DANIEL JOSE","GONZALEZ BARRAZA DANNA SOFIA","GUANIPA GUTIERREZ ARANZA","GUTIERREZ OJEDA EMMANUEL","HERNANDEZ DIAZ JESUS DAVID","LLANOS SEGURA YAILETH PATRICIA","MARIN PALMA SANTIAGO","MARMOL HERNANDEZ SEBASTIAN ANDRES","NAVAS CEDEÑO ANGEL ALBERTO","NIETO ROLONG MARY ISABEL","ORTEGA BENITEZ IVIAN ALEJANDRA","ORTEGA MANGA ANGELLYS ISABEL","PATIÑO BORRERO HARRISON DANIEL","PEREZ ALVAREZ MARIA JOSE","PEREZ NATERA VALENTINA SOFIA","PIMIENTA OTERO LAURENS JULIANA","POLO REDONDO MARIA GUADALUPE","PRADA SARMIENTO BRAYAN JOSE","RADA RADA VALLERYE DE JESUS","SANTIAGO DACONTE ANDRES FELIPE","SIERRA CASTILLO MAURICIO JOSE","SIERRA GOMEZ LIZETH PAOLA","SMITH SANTIAGO VALERIA","SUAREZ GALLARDO MATEO JUSETH","TORRES FERNANDEZ SANTIAGO ENRIQUE","UZCATEGUI MONTILLA SANTIAGO ALEJANDRO","VEGA PLAZA NEIMAR","ZARATE REDONDO YAJAIRA NICOLL"],'8A':["ARIZA CONSUEGRA STEISY SOFÍA","BARRAZA HERNANDEZ RONALD ALFREDO","BARRIOS MOLINA LITZY MARIELL","BECERRA CRESPO MANOLO","BELLIDO CASIANO LEIDER JOSE","BERRUEZO ORTEGA SAMANTHA ISABEL","BLANCO REYES ANGEL RAFAEL","BOLIVAR ESCOBAR VALENTINA SARETH","CIRO ROMERO ANGELA SOFIA","DE LA CRUZ SIERRA ALAN DAVID","DITA ESCALANTE GILMAR JOSE","ESCALANTE OSPINO ANDERSON CAMILO","ESCOBAR ALGARIN LILIANA","GOMEZ VILLA ANA VALERIA","GUTIERREZ PAEZ ANA MILENA","JIMÉNEZ QUINTANA FREDDY DAVID","JIMENEZ RUA NASLI DANIELA","LLANOS REDONDO ADRIANA MICHELL","LLANOS REYES ANDRES FELIPE","MARQUEZ MARIN VALERIN VALENTINA","MARQUEZ VILORIA EMILY SOFÍA","MARTINEZ ORTEGA JESUS MANUEL","MOLINA GUTIERREZ JULIE PAOLA","NIETO ORTEGA MAILETH SMITH","ORDOÑEZ GARCIA LEONARDO ENRIQUE","PACHECO AVILA MARIA ANGEL","PEÑATE VEGA MARIA ALEJANDRA","PEREZ ARAUJO ANDRÉS CAMILO","REDONDO PATIÑO DELEVIS ENRIQUE","RODRIGUEZ SANJUAN SALOME","SANTIAGO JULIO ASLY PAOLA","SIERRA GOMEZ LUISA FERNANDA","SILVERA GOMEZ GABRIEL","SILVERA ORTEGA MAYLER JESHUA","TEJERA ORTEGA LUIS MARIO","TORRES CERA HEIDER JESUS","VANEGAS DE LA CRUZ DANIELA ANDREA","VEGA ORTIZ EYEELIN LORENA","VELASQUEZ GARCIA MANUEL ALEJANDRO"],'8B':["ACOSTA NATERA JAVITH DE JESUS","AREVALO ARCON JOSE DAVID","BARRETO ROLONG MARIANA SOFIA","BARRIOS PUENTES BLAYNER ESTEBAN","BULA PEREZ MARIA LUISA","BUSTOS BARRIOS HONEY SOPHIA","CASTRO CASTRO DASHARY MICHELL","CASTRO HARO JEAN LUCAS","CONTRERAS SANJUAN IVANNA MICHELL","CORREDOR BARBOSA SAMUEL ARTURO","COTES ESCALANTE YESID ANDRES","GARCIA VARELA SHADAY VALENTINA","GONZALEZ SILVERA LILIBETH ISABEL","HEREDIA LOPEZ EYLIN PAOLA","HERNANDEZ DE LA CRUZ MIGUEL ANGEL","HERNANDEZ LLANOS GUADALUPE MARIA","HERNANDEZ LLANOS JESE DAVID","HERRERA POLO LINA MILAGROS","JAIME ROA ANYELO JAVIER","LINARES ESTEVEZ MAYTE ALEJANDRA","LUQUE GONZALEZ YANKELIS ESTEFANIA","MONCADA NAVARRO YOHANI ZAFIRO","MONSALVO QUINTERO ADRIAN ANDRES","MONTERROSA CABALLERO LAURA VANESA","NORIEGA REDONDO WENDY PAOLA","POLO JIMENEZ NORELLA MARÍA","RADA GUTIERREZ AISHA MARIETT","REDONDO FRANCO LUIS ANGEL","RINCON PEREZ ANGIELIN ORIANA","SALAZAR ZAMBRANO RICHARD JOSE","SIERRA OROZCO ANGGY PAOLA","SILVERA ESCOBAR DAYAR AMETH","SILVERA JIMENEZ NICOLL DAYANA","SILVERA SANJUAN ADALYANA ISABEL","SOSA BERRIO DEICY JULIETH","SUAREZ DURAN JOSTIN DE JESUS","TOMASES RADA THIAGO ANDRES","URANGO PACHECO DEILER JOSEPH","VILLAMIL HERNANDEZ XIMENA ESTER"],'8C':["ACOSTA CAICEDO DAIMAR DE JESUS","ACUÑA VALENCIA LUIS ALEJANDRO","ARAUJO MENDOZA SIRIANA VALENTINA","BANDERA LLANOS SHAILETH VALENTINA","BURGUILLOS CARBONELL JHOSNIEL SAID","CARDENAS CHIQUILLO MICHAELL MANUEL","CASTRO GOMEZ SHERIL NICOLLE","CERVANTES LARA MAURO DE JESUS","DE LA CRUZ PIÑERES SERGIO ANDRES","DE LA CRUZ REDONDO ANTONY RICARDO","DE LA HOZ CABAS YEFFER DE JESUS","ESCORCIA MIRANDA GUADALUPE","FERRER SANTANDER DAMIAN CAMILO","GARCIA PEÑATE MARIA DEL CARMEN","GARCIA ROJAS TIFFANY DAYANA","GOMEZ OTERO JANNIER FARID","GONZALEZ SALCEDO MARIA DE LOS ANGELES","HURTADO ORTIZ ALAN DAVIDSON","LLANOS TAGUER BRANDON DE JESUS","MADERA ORTEGA ANA PAULA","MEZA SIERRA JAMES DE JESUS","MORALES PERCY KEREN SOFIA","OLANO PAZ YARIANGEL CHICHINQUIRA","ORTEGA SIERRA VALENTINA MISHEL","PEREZ GONZALEZ SHAIRA LUCIA","PEREZ NAVAS VALENTINA NICOLLE","POLO GUERRA XAVIER JOSUE","POSADA FRANCO MARIA CAMILA","RADA CORRO STEPHANIE SOFIA","RANGEL SIERRA LAUREN SOFIA","RICO ZAPATA DANNA SOFIA","RIVALDO PALMA MILAGRO DE JESUS","RIVALDO PALMA TANIA ISABEL","ROSANIA MINDIOLA DIEGO DAVID","SARMIENTO MARTINEZ MARI ANGEL","SILVA SILVERA SOFIA ISABEL","SILVERA CERVANTES MILTON DE JESUS","TRIGOS OROZCO SHELSY SOFIA","URRUCHURTO PEREZ ISABELLA"],'8D':["ACOSTA HERNANDEZ EMILY GISELL","ACUÑA MARTINEZ JOB DAVID","ANGULO DE LA CRUZ NAHIARA MICHEL","BALVIN ROMERO NORMA GABRIELA","CABALLERO ACEVEDO MARIA ALEJANDRA","CABELLO NATERA STEVE EMANUEL","CONTRERAS SARMIENTO ANGELLYS NICOLLE","COSSIO NARVAEZ ANGELA VICTORIA","ESTRADA LLANOS MOISES ALEXANDER","FRANCO RODRIGUEZ JUAN DAVID","GUZMAN PENATE LUIS ALBERTO","HERNANDEZ PALLARES FERNANDO JUNIOR","HERNANDEZ REDONDO SHAYRA NICOLL","JIMENEZ ACUÑA MARIANA ISABEL","JIMENEZ SIERRA KAROL SOFIA","LLERENA IMITOLA JADER JOSE","MADARIAGA LOPEZ LUISA FERNANDA","MAESTRE DE LA HOZ MARIELYS MILETH","MENDOZA GOEZ DANIELA ROSA","MOLINA PALLARES MATIAS","MONCADA SIERRA MARIA CAROLINA","MORALES ORTEGA JOSSUET","OROZCO GONZALEZ DULCE MARIA","ORTEGA HERNANDEZ SARAY DE JESUS","PACHECO SILVERA ANGILIS MILETH","PINO MARIANO MARIANA PATRICIA","POLO ORELLANO JUAN SEBASTIAN","POLO VERGARA SHARY SOFÍA","RANGEL MARTINEZ MELANI PAOLA","RINCON GOMEZ ALEJANDRO DAVID","ROA RADA DANIEL DE JESUS","ROA RADA EDGAR ANDRES","RODRIGUEZ BUSTILLO GABRIELA LUCIA","ROLONG GOEZ JUAN ANDRES","ROMERO PEÑA NEYMAR","RUDAS VARGAS YAIRIS MARIA","SANTIAGO REYES OMER DE JESUS","SIERRA CASTILLO LUIS JOSE","SIERRA VARELA ANDREA CAMILA"],'9A':["ACOSTA PADILLA OVER ENRIQUE","ACOSTA PALMA CRISTHIAN JASSER","AMADOR PALMA ALVARO JUNIOR","ARCON ALVAREZ SEBASTian","ARTETA CONSUEGRA JANNY LIZ","AVILA MEZA MAUREN JULIETH","BARRAZA SIERRA LUIS FERNANDO","BARRIOS LLANOS GERALDINE ISABEL","BARRIOS SIERRA BRIANA SOFIA","CAMARGO DE LA CRUZ LEINYS MAURETH","CAMARGO MARTINEZ MARIA ALEJANDRA","CANOSA CERVANTES VIVIANA CAROLINA","CORTES PIÑA JHOVANNY ESTEBAN","COSSIO NARVAEZ HEIDY ISABEL","DE LA HOZ VIZCAINO BUENDI BANESA","ESCORCIA BLANCO MELANY SOFIA","ESCORcia MIRANDA JESUS DAVID","FERNANDEZ ANGULO SHARICK","GALINDO ESCALANTE SHARON MICHAELL","GALLARDO BRADFORD JHOYMAR DE JESUS","LOPEZ MITROBICH MARIMAR","MARRIAGA SANJUAN SOCHY","MURILLO SILVERA YEYCI MISHELL","ORELLANO MOLINA CICLALIS VALENTINA","ORTIZ PEREZ CRISTIAN DAVID","OTERO CARDENAS ADAN ELIAS","OTERO NIETO JAIR DE JESUS","PEÑA MEZA VICTOR ANDRES","POLO CONTRERAS ANDERSON","POLO PALMA SAILLY TATIANA","RADA JIMÉNEZ JESUS ALBERTO","RADA NIEVES DAMARIS SOFIA","REDONDO SALGADO ALEJANDRA SOFIA","RODRIGUEZ ANGULO DANNA NICOLLE","SALAZAR IGLESIAS TALIANA LISETH","SANTIAGO LOPEZ MARIA CAMILA","SARMIENTO CERVANTES VALEREE LUCIA","SARMIENTO DE LA RANS ALAN DAVID","TURBAY GOMEZ LAIONEL DAVID","ZARATA ROA LUIS ALEJANDRO"],'9B':["ANGULO BARRAGAN CARLOS DAVID","ARAUJO ESCALANTE YELIANYS","ARTETA ZARATE JHAN CARLOS","BARRAZA CAFIEL VALENTINA ESTHER","BLANCO ESTRADA JENIFER","BLANCO SILVERA YAIKOVIC ALEXANDER","BOLIVAR MARRIAGA YANDERSON DAVID","ESCOBAR ALGARIN JOSE MIGUEL","FERRER SANTANDER LOGAN SMITH","FONTALVO PUELLO CRISTIAN DAVID","GARCIA CAMARGO ANGELY PAOLA","GERONIMO ROJAS EMMANUEL DE JESUS","GIL GUTIERREZ ANA REYSHELL","GOENAGA LEJARDE JULIANNY KAROLAY","GUTIERREZ SIERRA SANTIAGO DAVID","HERNANDEZ LOPEZ MARIA CAMILA","HERNANDEZ MONTAÑO MARIA ALEXANDRA","JIMENEZ CONSUEGRA TANIA CAROLINA","MARIN MORALES GENESIS PAOLA","MARTINEZ DAZA EILYN DAYANA","MEDINA RIQUETT KELLY ROXANA","MOLINA VELASQUEZ LERVYS JAVIER","MORALES OTERO JESUS MANUEL","MOVILLA BOLIVAR EYMIS YOLANIS","NAVARRO GUTIERREZ ALEJANDRO DE JESUS","ORTEGA CUERVO KRISTEL ARIANNE","ORTIZ JIMENEZ ELIATH DAVID","PALMA SILVERA MARISOL","PATINO CONSUEGRA ANDRYS PAOLA","PEREZ ALGARIN LUCIANA","PEREZ BOLIVAR JHONEFFER","REDONDO RODRIGUEZ KARLA CRISTINA","RODRIGUEZ VEGA YESID JAVIER","RUIZ MARENCO JUAN CAMILO","SILVERA JIMENO THALIANA VANESA","TEJERA ORTEGA VALENTINA","TESILLO PEREZ CARLOS DANIEL","TORRADO NORENA CRISTIAN","ZAPATA SIERRA LUCYANA MARIA"],'9C':["BALLESTAS DE LA CRUZ OWEL ALBERTO","BARANDICA GUTIERREZ IKER DAVID","CAMARGO CABALLERO JHONNY ENRIQUE","CONSUEGRA HERNANDEZ ANGIE PAOLA","DIAZ DEL TORO SHARILYN PAOLA","ESCORCIA BORNACELLY NATHALIA ISABEL","ESCORCIA DE LA CRUZ LUISA FERNANDA","ESTRADA RUA JHON FREDY","GOENAGA DE AVILA CARLOS MAURICIO","GONZALEZ CONTRERAS YURLANYS MICHELL","GONZALEZ FERRER MAIRELYS DAYANA","GONZALEZ LLANOS ANA MILAGRO","GONZALEZ RICO JAVIER EDUARDO","HURTADO ORTIZ AMY","JIMENEZ BADILLO JUAN MIGUEL","JIMENEZ DE LA CRUZ JUSETH DAVID","LINARES TEJEDA MARCELA","LUBO JIMENEZ ALEJANDRO JOSE","MARTINEZ CASTILLO DANNA CAROLINA","MEDINA SILVERA DILAN DE JESUS","MIRANDA FERNANDEZ ANTONNY DAVID","MOLINA ARRIETA KAIRETH ALEJANDRA","OCHOA ORTEGA JOSE ANDRES","ORTEGA LUNAR DIEGO JESUS","PEREZ GERONIMO EYMER DE JESUS","PRADA SARMIENTO SHARICK ANDREA","QUIROZ POLO YINIVETH PAOLA","REDONDO BERDUGO MARIANA PAOLA","RICAURTE SANTANA MARIA PAULA","RIOS ARCON ARANZA LUCIA","RIOS NAVAS VICTOR MANUEL","ROA DE LA CRUZ PEDRO PABLO","RODRIGUEZ VASQUEZ LUIS MANUEL","ROMERO JIMENEZ STEVAN FELIPE","SILVERA LINARES ANDRES FELIPE","SILVERA VILORIA SNEYDER DE JESUS","VARGAS CASTRO SAMIR JOSE","VILORIA CABARCAS ESTEFANY PAOLA","ZARATE PALMA LINA MARCELA"],'9D':["AMAYA PAZ JEIVER DAVID","ARDILA ORDUZ ALISSON","BLANCO SIERRA ANDY CAMILO","BUSTOS BARRIOS ANGEL DAVID","CABRERA ORTEGA DAVID JESUS","CARBONELL BOSSA MAURICIO ANDRES","CELIN VELASQUEZ MARLIN LORAINE","ESCALANTE ACENDRA ANA VALENTINA","GAMARRA GONZALEZ GABRIEL ALEJANDRO","HERNANDEZ ARJONA JOSUE ALEJANDRO","JIMENEZ DE MOYA SARAY MILENA","LEJARDE PERTUZ ASLHEY DAVIELA","LOPEZ GARCIA ANGEL JESUS","LOPEZ RAMOS OSIEL DAVID","MARTINEZ GARCIA MELANIE CAROLINA","MENDOZA DE LA CRUZ LAURY DANIELA","MERIDIANO CARDENAS DIEGO ANDRES","MONCADA NAVARRO ELIANYS SOFIA","MUÑOZ RAMIREZ JEISIRE YURUBI","NITROBICH RIAÑO YEISON YESITH","ORELLANO PALMA ELIANA MARCELA","OROZCO GOMEZ JEISYS PAOLA","ORTEGA GIL ALLISON MITCHEL","OTERO JIMENO SHADYA VANESSA","OTERO MORALES DILAN MATIAS","PADILLA BORRERO AYLIM JOHANA","PALMA BARRAZA XAVI ALONSO","PALMA SILVERA MARILUNA","PEREZ MACIAS GISELL ANDREA","PINERES TRUYOL VALERY TATIANA","RANGEL MARTINEZ GENESIS PAOLA","REAL BARRIOS JUNIÑO MANUEL","ROBLES MARIN JASSER JESUS","RODRIGUEZ DEL VILLAR JOAN SEBASTIAN","SALAS MALDONADO ALIANYS PATRICIA","SANJUAN PERTUZ JOSSED DAVID","SANTIAGO SOLANO AXEL LEONY","VARGAS ALBIS YERSON DAVID","VARGAS MUÑOZ SHERIT DADIVA","VELILLA ACOSTA CAMILO ANDRES"],'10C':["ACOSTA DE LA CRUZ ISACC DAVID","ACUÑA RADA SARESTH CAROLINA","BENEDETTI GARCIA GLEINER DAVID","BORGE FLOREZ MARIA ALEJANDRA","CANTILLO NORIEGA KEIVEN STEVEN","CONSUEGRA GOYENECHE HANYDANIELS ISABELL","CONSUEGRA POLO EDU FERNANDO","CORRO IBAÑEZ DAVID ALEJANDRO","DE LA HOZ ARTETA ANGELINE LUCIA","GOMEZ MARTINEZ NADIA JALILA","GOMEZ OROZCO ANGIE SOFIA","GUTIERREZ OJEDA ANTONE ALEXANDER","LAFAURIE SILVERA JUAN DAVID","LEAL QUINTANILLA JESUS DAVID","MARIANO OROZCO NICOLL ANDREA","MELENDEZ CAMBERO WILIANNIS KARI","MENDOZA ESCALANTE DILAN SACHEL","NAVAS BOLIVAR JAMER DE JESUS","OROZCO ARAUJO MARIA DE LOS ANGELES","ORTEGA GARCIA JULIANA ANDREA","OSPINO DE LA CRUZ JOSE ENRIQUE","OVIEDO MOLINA THAILY SOFIA","PADILLA CONRADO JAIRO ANDRES","PALLARES DE LA RANS JUAN DANIEL","PALMA PEREZ DANNA MEIBELYN","PEREZ DE LA CRUZ LIS DAYANA","RADA TAMAYO JASIR ALFONSO","RANGEL MARTINEZ LIS ALEXANDRA","RODRIGUEZ BLANCO ZAMIRA SOFIA","SALGADO VERDEZA MARIA VALENTINA","SARMIENTO ACUÑA DULCE MARIA","SARMIENTO PALMA MANUEL ALFONSO","SIERRA DE LA CRUZ LAUREEN JAEL","SILVERA SANTIAGO JUAN SEBASTIAN","SUAREZ SIERRA MARIA ANGEL"],'11A':["ALBA BOLIVAR GABRIELA ISABEL","ARDILA ORDUZ KAREN DAYANNA","BLANCO SILVERA YUGEIDIS DEL CARMEN","BOLIVAR SANTIAGO EDWIN JESUS","CERA SILVERA BRIANDA SOFIA","CUETO REDONDO YULIFER PAOLA","DE LA HOZ LOPEZ ROSA ISABEL","DE MOYA PALLAREZ ADRIAN JOSUE","FLOREZ SOLANO JUAN ANGEL","FRANCO FRANCO VALERY ELENA","GONZALEZ DE LA CRUZ YICEL ANDREA","HERNANDEZ JULIO ISABELA","HERNANDEZ MARRIAGA KARLA SOFIA","HIGUITA ZAPATA VALENTINA MARIA","HOUSSET VALENCIA CRISTOBAL ALBERTO","HOUSSET VALENCIA TALIANA CAROLINA","IBAÑEZ NIETO MAYLAN CRISTINA","JIMENEZ ROA STALYN DE JESÚS","LOPEZ MERCADO YULIMAR","MORALES OTERO ANA MARIA","ORTEGA BOLIVAR MARIETH","OSPINO NIETO WANDA KATERIN","PALMA PACHECO JONATHAN DAVID","RADA POLO STIVE JOHAN","REYES VILLALOBOS SHEILYN","ROLONG SIERRA ANA SARAY","ROMERO RODRIGUEZ LUISA ESTHER","SANTIAGO CUETO KERLYN ANDREA","SANTIAGO DE LA ROSA RITA MERCEDES","SERJE GARCIA MISSELL ISABEL","VASQUEZ CHARRIS YELIS MARGARITA","VELASQUEZ ZAMBRANO DANIEL ALEJANDRO"],'11B':["ALBOR SILVERA ALEJANDRA","AMAYA QUINTERO DUVAN JHOSET","BAZA ESCOBAR YORELIS","CERVANTES LARA DEREEK FELIPE","CONSUEGRA DE LA CRUZ SERGIO LUIS","CORRO GONZALEZ ANDRES SEBASTIAN","CORRO HERRERA JULIAN RAFAEL","CUENTAS SIERRA LAUREN MELISA","ESCOBAR ALGARIN FELICIDAD MARIA","GONZALEZ GIL NATALIA MARIA","GONZALEZ HURTADO LAURA MICHEL","GUZMAN NUÑEZ LAUREN CAROLINA","MARQUEZ MIRANDA JOHAN","MAURY SALGADO ALISSON MICHELLE","MEJIA GONZALEZ ISABELLA","MIRANDA DE MOYA EVANGELLY SARIETH","MONTERROSA RODRIGUEZ ANDRES FELIPE","OROZCO VASQUEZ ROSAURA","ORTEGA SIERRA YULIANA PAOLA","PADILLA REDONDO YESSICA MARIA","PEREZ DE LA CRUZ JESUS ALFREDO","PEREZ FRANCO YORIANA LUCIA","QUINTERO COBA EDIER ALEJANDRO","REDONDO TORRES YESICA CAMILA","RODRIGUEZ CARPINTERO CAMILA YSLEN","ROJO CARDONA MISHELL","SANTIAGO NATERA JOHN DAVID","SIERRA FIGUEROA LUCILA ISABEL","UCROS HERNANDEZ SHEILA NICOLL","VALLEJO CASTILLO ISABELLA SOFIA","VARGAS MOLINA SEBASTIAN ANDRES"],'11C':["ALTAMAR CABALLERO PAOLA ANDREA","ARIZA PEREZ DILAN","ARROYO CORREDOR ANDRES FELIPE","BARRETO GUTIERREZ SLAYNETH SOFIA","BONILLA GUTIERREZ SHARON YULIANA","CASTIBLANCO IBAÑEZ IAN SANTIAGO","DE LA CRUZ ARRIETA ANGEL DANIEL","DE LA CRUZ CAMARGO SERGIO ANDRES","DE LA CRUZ SARMIENTO MARIA JOSE","DE LA HOZ MUÑOZ LUISA FERNANDA","DE LA HOZ SIERRA JOHAN JESUS","DE LOS REYES TAMAYO YOSETH DAVID","DELGADO HERNANDEZ SOFIA ELENA","ESCALANTE QUIROZ JESUS DAVID","ESCOBAR SALCEDO JUSEPH ENRIQUE","ESCORCIA JIMENEZ ANDRES CAMILO","GALLARDO PANCHA GABRIELA MARIA","GOEZ SERRANO EMMANUEL JOSE","HERNANDEZ CERVANTES PABLO ANDRES","HERNANDEZ MUÑOZ DANA GABRIELA","HERRERA MENDOZA ESTEBAN ENrique","MARQUEZ MIRANDA JAZIR","ORELLANO BOLIVAR KEYDDER DAYAN","PACHECO SIERRA ADRIANA LUCIA","PARRA REDONDO JUAN CAMILO","REDONDO MENDOZA MARIANGEL","RIVERO COBA GLEIDYS PAOLA","SALAZAR LLANOS YAMITH ANDRES","SANCHEZ CELIS DIEGO ISAC","SANTAMARIA BORJA ANDREA DANITZA","SIERRA GARCIA OSCAR ANDRES","VASQUEZ ARZUZA ALAM MATIU","VERGARA BARRIOS KLEIVER MANUEL"],'11D':["ARIZA DE LA CRUZ SEBASTIAN DE JESUS","ARIZA SILVERA JORGE MARIO DE JESÚS","BLANCO ESCALANTE SAIDER ISABEL","BOLIVAR VIVANCO NICOL DANIELA","BORGE GOENAGA SHADIA MICHELLE","CABALLERO BARRIOS BREIDER JOSE","CHICO MARTINEZ DAIRON ANDRES","CONSUEGRA SILVERA SARAY MICHELL","ESCALANTE GONZALEZ DANIELA PAOLA","GALLARDO BRADFORD NAYALITH ANDREA","GARZON GALINDO LENIN","GONZALEZ DE LA RANS SHARLET MARIA","GUTIERREZ MENDOZA JOSE LUIS","GUTIERREZ VASQUEZ PAULA PATRICIA","MELENDRES VILLALBA KEIMER ANDRES","MEZA GARCIA CARLOS ANDRES","MORA SILVERA DEYNER ALEXANDER","ORTEGA GONZALEZ LEWIN STICK","PADILLA PARRA MARY ANGEL","PALMA DE LA HOZ LUIS ANGEL","PEDRAZA OLIVEROS MATHIAS KEITEL","PEDROZA GALLARDO SCARLETT SOFIA","PEREZ VEGA NICOL SHARITH","RODRIGUEZ SALAS YORYANIZ ANETH","SANTIAGO SOLANO AXEL LEONY","VARGAS ALBIS YERSON DAVID","VARGAS MUÑOZ SHERIT DADIVA","VELILLA ACOSTA CAMILO ANDRES"]};
-        const courseConfig = {};
-        for (const group in allStudentsData) {
-            courseConfig[group] = { students: allStudentsData[group].map(s => !s ? '' : s.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')), title: `Grupo: ${group}`, professor: "Puertas Lopez Patricia Isabel", subject: "Artística Plástica y Visual" };
+        function setupCourseConfig() {
+            for (const group in allStudentsData) {
+                courseConfig[group] = { students: allStudentsData[group].map(capitalizeWords), title: `Grupo: ${group}`, professor: "Puertas Lopez Patricia Isabel", subject: "Artística Plástica y Visual" };
+            }
         }
 
         // --- Utility & Calculation Functions ---
@@ -164,7 +271,7 @@
             }
             return dates;
         };
-        const showMessage = (text, type = 'success') => { messageBox.textContent = text; messageBox.style.backgroundColor = type === 'success' ? '#4CAF50' : '#f44336'; messageBox.classList.remove('hidden'); setTimeout(() => { messageBox.classList.add('hidden'); }, 3000); };
+        const showMessage = (text, type = 'success') => { /* ... message logic ... */ };
         const getGradeValue = (grades, field) => parseFloat(grades[field]) || 0;
         const calculateAverage = (gradesArray) => { const valid = gradesArray.filter(g => g > 0); return valid.length === 0 ? 0 : valid.reduce((a, b) => a + b, 0) / valid.length; };
         const calculateDef = (grades = {}) => {
@@ -179,21 +286,24 @@
         // --- Table Rendering ---
         const renderTable = () => {
             const config = courseConfig[activeCourse];
+            if (!config) return;
             const data = gradesData[activeCourse] || {};
             const attendanceDates = getAttendanceDates(activeCourse);
-            
+            const searchTerm = searchBox.value.toLowerCase();
+            const filteredStudents = config.students.filter(s => s.toLowerCase().includes(searchTerm));
+
             courseTitle.textContent = config.title;
             courseInfo.innerHTML = `<p>Docente: ${config.professor}</p><p>Asignatura: ${config.subject}</p>`;
 
             const tableEl = document.createElement('table');
-            const tableMinWidth = 370 + (attendanceDates.length * 60) + 540 + 160;
-            tableEl.style.minWidth = `${tableMinWidth}px`;
+            tableEl.style.minWidth = `${490 + (attendanceDates.length * 60) + 700}px`;
 
             let tableHTML = `
                 <thead>
                     <tr>
                         <th rowspan="2" class="sticky-left sticky-col-no">No</th>
                         <th rowspan="2" class="sticky-left sticky-col-name">NOMBRE</th>
+                        <th rowspan="2" class="sticky-left sticky-col-actions">Acciones</th>
                         <th rowspan="2" class="sticky-left sticky-col-summary">ASIST.</th>
                         <th colspan="${attendanceDates.length}">ASISTENCIA POR FECHA</th>
                         <th colspan="3">COGNITIVO (40%)</th>
@@ -203,28 +313,27 @@
                         <th rowspan="2" class="col-nivel">NIVEL</th>
                     </tr>
                     <tr>
-                        ${attendanceDates.map(d => `<th class="date-header"><div>${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}</div></th>`).join('')}
-                        <th>C1</th><th>C2</th><th>C3</th>
-                        <th>P1</th><th>P2</th><th>P3</th>
-                        <th>A1</th><th>A2</th><th>A3</th>
+                        ${attendanceDates.map(d => `<th class="date-header"><div>${d.getDate()}/${d.getMonth()+1}</div><button class="attendance-bulk-btn bg-green-500" onclick="markAllAttendance('${d.toISOString().split('T')[0]}', true)">✓</button><button class="attendance-bulk-btn bg-red-500" onclick="markAllAttendance('${d.toISOString().split('T')[0]}', false)">✗</button></th>`).join('')}
+                        <th>C1</th><th>C2</th><th>C3</th><th>P1</th><th>P2</th><th>P3</th><th>A1</th><th>A2</th><th>A3</th>
                     </tr>
                 </thead>
                 <tbody>`;
-
-            config.students.forEach((student, index) => {
-                const studentData = data[student] || { grades: {}, attendance: {} };
+            
+            filteredStudents.forEach((student, index) => {
+                const studentData = data[student] || { grades: {}, attendance: {}, observations: "" };
                 const studentDef = calculateDef(studentData.grades);
-                const summary = calculateAttendanceSummary(studentData.attendance);
                 const nivel = determineNivel(studentDef);
-                const formatGrade = (g) => !isNaN(parseFloat(g))?parseFloat(g).toFixed(1):'';
+                const summary = calculateAttendanceSummary(studentData.attendance);
+                const formatGrade = (g) => !isNaN(parseFloat(g)) ? parseFloat(g).toFixed(1) : '';
 
                 tableHTML += `<tr>
                     <td class="sticky-left sticky-col-no">${index + 1}</td>
                     <td class="sticky-left sticky-col-name">${student}</td>
-                    <td class="sticky-left sticky-col-summary">
-                        <span>Asist.: ${summary.attended}</span><br>
-                        <span>Ausen.: ${summary.absent}</span>
-                    </td>`;
+                    <td class="sticky-left sticky-col-actions">
+                        <i class="fas fa-comment action-icon" onclick="showObservationsModal('${student}')"></i>
+                        <i class="fas fa-id-card action-icon" onclick="showBulletinModal('${student}')"></i>
+                    </td>
+                    <td class="sticky-left sticky-col-summary"><span>Asist.: ${summary.attended}</span><br><span>Ausen.: ${summary.absent}</span></td>`;
                 
                 attendanceDates.forEach(date => {
                     const dateString = date.toISOString().split('T')[0];
@@ -232,63 +341,117 @@
                     let a_class = 'attendance-box', a_content = '';
                     if (status === true) { a_class += ' attended'; a_content = '✓'; }
                     else if (status === false) { a_class += ' absent'; a_content = '✗'; }
-                    tableHTML += `<td class="attendance-cell"><div class="${a_class}" title="${date.toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long'})}" data-student="${student}" data-date="${dateString}">${a_content}</div></td>`;
+                    tableHTML += `<td class="attendance-cell"><div class="${a_class}" data-student="${student}" data-date="${dateString}">${a_content}</div></td>`;
                 });
                 
                 ['cognitivoC1','cognitivoC2','cognitivoC3','procedimentalP1','procedimentalP2','procedimentalP3','actitudinalA1','actitudinalA2','actitudinalA3'].forEach(f => {
                     tableHTML += `<td class="grade-cell" data-student="${student}" data-field="${f}">${formatGrade(studentData.grades[f])}</td>`;
                 });
                 
-                tableHTML += `
-                        <td class="col-def">${studentDef}</td>
-                        <td class="col-nivel">${nivel}</td>
-                    </tr>`;
+                const nivelClass = `nivel-${nivel.toLowerCase()}`;
+                tableHTML += `<td class="col-def ${nivelClass}">${studentDef}</td><td class="col-nivel ${nivelClass}">${nivel}</td></tr>`;
             });
             tableEl.innerHTML = tableHTML + `</tbody>`;
             tableContainer.innerHTML = '';
             tableContainer.appendChild(tableEl);
+            calculateAndDisplayStats();
         };
 
         // --- Event Handlers & Data Management ---
         const ensureStudentData = (student) => {
+            if (!gradesData[activeCourse]) gradesData[activeCourse] = {};
             if (!gradesData[activeCourse][student]) {
-                gradesData[activeCourse][student] = { grades: {}, attendance: {} };
+                gradesData[activeCourse][student] = { grades: {}, attendance: {}, observations: "" };
             }
         };
-
+        
         const enableEdit = (cell) => {
             if (cell.querySelector('input')) return;
             const { student, field } = cell.dataset;
             ensureStudentData(student);
             const currentVal = gradesData[activeCourse][student].grades[field] || '';
             const input = document.createElement('input');
-            input.type = 'number'; input.min = '1'; input.max = '5'; input.step = '0.1';
+            input.type = 'number';
+            input.min = '1';
+            input.max = '5';
+            input.step = '0.1';
             input.className = 'grade-input';
             input.value = !isNaN(parseFloat(currentVal)) ? parseFloat(currentVal).toFixed(1) : '';
-            cell.textContent = ''; cell.appendChild(input); input.focus();
-            const save = () => updateGrade(student, field, input.value, cell);
-            input.addEventListener('blur', save);
-            input.addEventListener('keydown', e => { if(e.key==='Enter'||e.key==='Tab'){ e.preventDefault(); save(); }});
+            cell.textContent = '';
+            cell.appendChild(input);
+            input.focus();
+
+            const saveAndExit = () => {
+                // Ensure the cell reverts even if the input is not attached anymore
+                const currentInput = cell.querySelector('input');
+                if (currentInput) {
+                    updateGrade(student, field, currentInput.value, cell);
+                }
+            }
+            
+            input.addEventListener('blur', saveAndExit);
+            input.addEventListener('keydown', (e) => {
+                const navKeys = ['Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'];
+                if (!navKeys.includes(e.key)) return;
+
+                e.preventDefault();
+                
+                const allGradeCells = Array.from(tableContainer.querySelectorAll('.grade-cell'));
+                const currentIndex = allGradeCells.indexOf(cell);
+                const inputsPerRow = 9;
+                let nextCell = null;
+
+                if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                    const nextIndex = currentIndex + inputsPerRow;
+                    if (nextIndex < allGradeCells.length) nextCell = allGradeCells[nextIndex];
+                } else if (e.key === 'ArrowUp') {
+                    const nextIndex = currentIndex - inputsPerRow;
+                    if (nextIndex >= 0) nextCell = allGradeCells[nextIndex];
+                } else if (e.key === 'ArrowRight' || e.key === 'Tab') {
+                    const nextIndex = currentIndex + 1;
+                    if (nextIndex < allGradeCells.length) nextCell = allGradeCells[nextIndex];
+                } else if (e.key === 'ArrowLeft') {
+                    const nextIndex = currentIndex - 1;
+                    if (nextIndex >= 0) nextCell = allGradeCells[nextIndex];
+                }
+
+                input.blur();
+
+                if (nextCell) {
+                    setTimeout(() => enableEdit(nextCell), 0); 
+                }
+            });
         };
+        
         const updateGrade = (student, field, value, cell) => {
-            ensureStudentData(student);
-            const studentData = gradesData[activeCourse][student];
-            let numVal = parseFloat(value);
-            if (value !== '' && (isNaN(numVal) || numVal < 1 || numVal > 5)) {
-                showMessage('La nota debe estar entre 1 y 5.', 'error');
-                cell.textContent = studentData.grades[field] || '';
-                return;
+            if(!cell.contains(document.activeElement)) { // Prevent double-saving on blur
+                ensureStudentData(student);
+                const studentData = gradesData[activeCourse][student];
+                let numVal = parseFloat(value);
+                if (value !== '' && (isNaN(numVal) || numVal < 1 || numVal > 5)) {
+                    showMessage('La nota debe estar entre 1 y 5.', 'error');
+                    cell.textContent = studentData.grades[field] || '';
+                    return;
+                }
+                studentData.grades[field] = value;
+                cell.textContent = value !== '' ? numVal.toFixed(1) : '';
+                const studentRow = cell.closest('tr');
+                if(studentRow) {
+                    const newDef = calculateDef(studentData.grades);
+                    const newNivel = determineNivel(newDef);
+                    const nivelClass = newNivel ? `nivel-${newNivel.toLowerCase()}` : '';
+                    const defCell = studentRow.querySelector('.col-def');
+                    const nivelCell = studentRow.querySelector('.col-nivel');
+                    defCell.textContent = newDef;
+                    nivelCell.textContent = newNivel;
+                    defCell.className = `col-def ${nivelClass}`;
+                    nivelCell.className = `col-nivel ${nivelClass}`;
+                }
+                saveData(true);
+                calculateAndDisplayStats();
             }
-            studentData.grades[field] = value;
-            cell.textContent = value !== '' ? numVal.toFixed(1) : '';
-            const studentRow = cell.closest('tr');
-            if(studentRow) {
-                const newDef = calculateDef(studentData.grades);
-                studentRow.querySelector('.col-def').textContent = newDef;
-                studentRow.querySelector('.col-nivel').textContent = determineNivel(newDef);
-            }
-            saveData(true);
         };
+
         const updateAttendance = (box) => {
             const { student, date } = box.dataset;
             ensureStudentData(student);
@@ -307,11 +470,214 @@
             const summaryCell = box.closest('tr').querySelector('.sticky-col-summary');
             if (summaryCell) summaryCell.innerHTML = `<span>Asist.: ${summary.attended}</span><br><span>Ausen.: ${summary.absent}</span>`;
             saveData(true);
+            calculateAndDisplayStats();
         };
-        const saveData = (isPartial = false) => { try { localStorage.setItem('gradesDataGroups', JSON.stringify(gradesData)); if (!isPartial) showMessage('Datos guardados.'); } catch (e) { console.error("Error saving data: ", e); showMessage('Error al guardar.', 'error'); } };
-        const loadData = () => { try { const d = localStorage.getItem('gradesDataGroups'); gradesData = d ? JSON.parse(d) : {}; } catch (e) { console.error("Error loading data:", e); gradesData = {}; } };
+
+        function markAllAttendance(dateString, status) {
+            const config = courseConfig[activeCourse];
+            if (!config) return;
+            const students = config.students;
+            const data = gradesData[activeCourse] || {};
+
+            const allCurrentlyMarked = students.every(student => {
+                const studentData = data[student] || { attendance: {} };
+                return studentData.attendance[dateString] === status;
+            });
+
+            const newStatus = allCurrentlyMarked ? undefined : status;
+
+            students.forEach(student => {
+                ensureStudentData(student);
+                if (newStatus === undefined) {
+                    delete gradesData[activeCourse][student].attendance[dateString];
+                } else {
+                    gradesData[activeCourse][student].attendance[dateString] = newStatus;
+                }
+            });
+            saveData();
+        }
+
+        const saveData = (isPartial = false) => { try { localStorage.setItem('gradesDataGroups', JSON.stringify(gradesData)); localStorage.setItem('allStudentsData', JSON.stringify(allStudentsData)); if (!isPartial) renderTable(); } catch (e) { console.error("Error saving data: ", e); } };
+        const loadData = () => {
+            try {
+                const savedGrades = localStorage.getItem('gradesDataGroups');
+                const savedStudents = localStorage.getItem('allStudentsData');
+                if (savedGrades) gradesData = JSON.parse(savedGrades);
+                if (savedStudents) allStudentsData = JSON.parse(savedStudents);
+            } catch (e) { 
+                console.error("Error loading data:", e);
+                gradesData = {};
+            }
+            setupCourseConfig();
+        };
+
+        // --- New Feature Functions ---
+        
+        // Dark Mode
+        function applyTheme(isDark) {
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+                darkModeToggle.checked = true;
+            } else {
+                document.documentElement.classList.remove('dark');
+                darkModeToggle.checked = false;
+            }
+        }
+        darkModeToggle.addEventListener('change', () => {
+            localStorage.setItem('darkMode', darkModeToggle.checked);
+            applyTheme(darkModeToggle.checked);
+        });
+
+        // Observations Modal
+        function showObservationsModal(student) {
+            ensureStudentData(student);
+            obsStudentName.textContent = student;
+            obsTextarea.value = gradesData[activeCourse][student].observations || '';
+            obsModal.classList.add('active');
+            obsModal.dataset.student = student;
+        }
+        document.getElementById('saveObs').addEventListener('click', () => {
+            const student = obsModal.dataset.student;
+            gradesData[activeCourse][student].observations = obsTextarea.value;
+            saveData(true);
+            obsModal.classList.remove('active');
+        });
+        document.getElementById('closeObsModal').addEventListener('click', () => obsModal.classList.remove('active'));
+
+        // Bulletin Modal
+        function showBulletinModal(student) {
+            ensureStudentData(student);
+            const studentData = gradesData[activeCourse][student];
+            const def = calculateDef(studentData.grades);
+            const nivel = determineNivel(def);
+            const attendance = calculateAttendanceSummary(studentData.attendance);
+
+            document.getElementById('bulletinStudentName').textContent = student;
+            document.getElementById('bulletinCourseName').textContent = courseConfig[activeCourse].title;
+            
+            let gradesHTML = `
+                <p><strong>Cognitivo C1:</strong> ${studentData.grades.cognitivoC1 || 'N/A'}</p>
+                <p><strong>Cognitivo C2:</strong> ${studentData.grades.cognitivoC2 || 'N/A'}</p>
+                <p><strong>Cognitivo C3:</strong> ${studentData.grades.cognitivoC3 || 'N/A'}</p>
+                <p><strong>Procedimental P1:</strong> ${studentData.grades.procedimentalP1 || 'N/A'}</p>
+                <p><strong>Procedimental P2:</strong> ${studentData.grades.procedimentalP2 || 'N/A'}</p>
+                <p><strong>Procedimental P3:</strong> ${studentData.grades.procedimentalP3 || 'N/A'}</p>
+                <p><strong>Actitudinal A1:</strong> ${studentData.grades.actitudinalA1 || 'N/A'}</p>
+                <p><strong>Actitudinal A2:</strong> ${studentData.grades.actitudinalA2 || 'N/A'}</p>
+                <p><strong>Actitudinal A3:</strong> ${studentData.grades.actitudinalA3 || 'N/A'}</p>
+                <p class="mt-2 font-bold"><strong>DEF: ${def} (${nivel})</strong></p>`;
+            document.getElementById('bulletinGrades').innerHTML = gradesHTML;
+
+            document.getElementById('bulletinAttendance').innerHTML = `<p><strong>Asistencias:</strong> ${attendance.attended}</p><p><strong>Ausencias:</strong> ${attendance.absent}</p>`;
+            document.getElementById('bulletinObs').textContent = studentData.observations || 'Sin observaciones.';
+            bulletinModal.classList.add('active');
+        }
+        document.getElementById('closeBulletinModal').addEventListener('click', () => bulletinModal.classList.remove('active'));
+        
+        // Export to CSV
+        exportCsvBtn.addEventListener('click', () => {
+             const config = courseConfig[activeCourse];
+             const data = gradesData[activeCourse] || {};
+             const attendanceDates = getAttendanceDates(activeCourse).map(d => d.toLocaleDateString('es-CO'));
+             let csvContent = "data:text/csv;charset=utf-8,";
+             const headers = ["No", "Estudiante", ...attendanceDates, "Obs.", "C1", "C2", "C3", "P1", "P2", "P3", "A1", "A2", "A3", "DEF", "NIVEL"];
+             csvContent += headers.join(",") + "\r\n";
+             
+             config.students.forEach((student, index) => {
+                 const studentData = data[student] || {};
+                 const def = calculateDef(studentData.grades);
+                 const nivel = determineNivel(def);
+                 let row = [
+                     index + 1,
+                     `"${student}"`,
+                     ...getAttendanceDates(activeCourse).map(d => {
+                         const status = studentData.attendance?.[d.toISOString().split('T')[0]];
+                         return status === true ? "P" : status === false ? "A" : "";
+                     }),
+                     `"${(studentData.observations || '').replace(/"/g, '""')}"`,
+                     studentData.grades?.cognitivoC1 || "", studentData.grades?.cognitivoC2 || "", studentData.grades?.cognitivoC3 || "",
+                     studentData.grades?.procedimentalP1 || "", studentData.grades?.procedimentalP2 || "", studentData.grades?.procedimentalP3 || "",
+                     studentData.grades?.actitudinalA1 || "", studentData.grades?.actitudinalA2 || "", studentData.grades?.actitudinalA3 || "",
+                     def, nivel
+                 ];
+                 csvContent += row.join(",") + "\r\n";
+             });
+
+             const encodedUri = encodeURI(csvContent);
+             const link = document.createElement("a");
+             link.setAttribute("href", encodedUri);
+             link.setAttribute("download", `calificaciones_${activeCourse}.csv`);
+             document.body.appendChild(link);
+             link.click();
+             document.body.removeChild(link);
+        });
+
+        // Import Students
+        importBtn.addEventListener('click', () => importFile.click());
+        importFile.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                const newStudents = text.split('\n').map(name => capitalizeWords(name.trim())).filter(name => name.length > 0);
+                if (newStudents.length > 0) {
+                    allStudentsData[activeCourse] = newStudents;
+                    gradesData[activeCourse] = {}; // Reset data for the new list
+                    setupCourseConfig();
+                    saveData();
+                }
+            };
+            reader.readAsText(file);
+            importFile.value = ''; // Reset input
+        });
+
+        // Stats Panel
+        function calculateAndDisplayStats() {
+            const data = gradesData[activeCourse] || {};
+            const students = courseConfig[activeCourse]?.students || [];
+            if (students.length === 0) {
+                statsPanel.innerHTML = "";
+                return;
+            }
+
+            let totalDef = 0, studentCountWithGrades = 0;
+            const nivelCounts = { "Bajo": 0, "Básico": 0, "Alto": 0, "Superior": 0, "N/A": 0 };
+            
+            let totalAttended = 0;
+            const totalPossibleSessions = students.length * getAttendanceDates(activeCourse).length;
+
+
+            students.forEach(student => {
+                const studentData = data[student] || {};
+                const def = parseFloat(calculateDef(studentData.grades));
+                if (!isNaN(def) && def > 0) {
+                    totalDef += def;
+                    studentCountWithGrades++;
+                }
+
+                const nivel = determineNivel(def) || "N/A";
+                nivelCounts[nivel]++;
+
+                const summary = calculateAttendanceSummary(studentData.attendance);
+                totalAttended += summary.attended;
+            });
+            
+            const avgDef = studentCountWithGrades > 0 ? (totalDef / studentCountWithGrades).toFixed(2) : "0.00";
+            const attendancePercent = totalPossibleSessions > 0 ? ((totalAttended / totalPossibleSessions) * 100).toFixed(1) : 0;
+
+            statsPanel.innerHTML = `
+                <div class="stat-item"><p class="font-bold text-lg">${avgDef}</p><p class="text-sm">Promedio General</p></div>
+                <div class="stat-item"><p class="font-bold text-lg">${attendancePercent}%</p><p class="text-sm">Asistencia Total</p></div>
+                <div class="stat-item"><p class="font-bold text-lg">${nivelCounts.Superior}</p><p class="text-sm">Superior</p></div>
+                <div class="stat-item"><p class="font-bold text-lg">${nivelCounts.Alto}</p><p class="text-sm">Alto</p></div>
+                <div class="stat-item"><p class="font-bold text-lg">${nivelCounts.Básico}</p><p class="text-sm">Básico</p></div>
+                <div class="stat-item"><p class="font-bold text-lg">${nivelCounts.Bajo}</p><p class="text-sm">Bajo</p></div>`;
+        }
 
         // --- App Initialization ---
+        searchBox.addEventListener('input', renderTable);
         tableContainer.addEventListener('click', (event) => {
             const gradeCell = event.target.closest('.grade-cell');
             const attendanceBox = event.target.closest('.attendance-box');
@@ -327,8 +693,10 @@
                 const wrapper = dayBlock.querySelector('.group-buttons-wrapper');
                 dailySchedule[day].forEach(group => {
                     const button = document.createElement('button');
-                    button.id = `tab-${group}`; button.className = 'tab-button';
-                    button.textContent = group; button.onclick = () => switchCourse(group);
+                    button.id = `tab-${group}`;
+                    button.className = 'tab-button';
+                    button.textContent = group;
+                    button.onclick = () => switchCourse(group);
                     wrapper.appendChild(button);
                 });
                 tabNavigation.appendChild(dayBlock);
@@ -338,12 +706,18 @@
             activeCourse = course;
             if (!gradesData[activeCourse]) gradesData[activeCourse] = {};
             document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-            document.getElementById(`tab-${activeCourse}`)?.classList.add('active');
+            const newTab = document.getElementById(`tab-${activeCourse}`);
+            if(newTab) newTab.classList.add('active');
             renderTable();
         };
-        window.onload = () => { generateTabs(); loadData(); switchCourse(activeCourse); };
+        window.onload = () => {
+            const isDarkMode = localStorage.getItem('darkMode') === 'true';
+            applyTheme(isDarkMode);
+            loadData();
+            generateTabs();
+            switchCourse(activeCourse);
+        };
     </script>
 </body>
 </html>
-
 
