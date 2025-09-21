@@ -71,6 +71,9 @@
         td, thead tr:last-child th {
             border-bottom: 1px solid var(--border-color);
         }
+        thead tr:first-child th {
+            border-bottom: 1px solid #6b7280;
+        }
         tr:last-child td { border-bottom: none; }
 
         /* --- STICKY & COLUMN STYLES --- */
@@ -287,7 +290,17 @@
             }
             return dates;
         };
-        const showMessage = (text, type = 'success') => { /* ... message logic ... */ };
+        const showMessage = (text, type = 'success') => {
+            const box = document.createElement('div');
+            box.className = 'message-box fixed bottom-4 right-4 p-4 rounded-lg shadow-lg text-white transition-opacity duration-300';
+            box.style.backgroundColor = type === 'success' ? '#4CAF50' : '#f44336';
+            box.textContent = text;
+            document.body.appendChild(box);
+            setTimeout(() => {
+                box.style.opacity = '0';
+                setTimeout(() => box.remove(), 300);
+            }, 3000);
+        };
         const getGradeValue = (grades, field) => parseFloat(grades[field]) || 0;
         const calculateAverage = (gradesArray) => { const valid = gradesArray.filter(g => g > 0); return valid.length === 0 ? 0 : valid.reduce((a, b) => a + b, 0) / valid.length; };
         const calculateDef = (grades = {}) => {
@@ -397,8 +410,91 @@
             }
         };
         
-        const enableEdit = (cell) => { /* ... existing code ... */ };
-        const updateGrade = (student, field, value, cell) => { /* ... existing code ... */ };
+        const enableEdit = (cell) => {
+            if (cell.querySelector('input')) return;
+            const { student, field } = cell.dataset;
+            ensureStudentData(student);
+            const currentVal = gradesData[activeCourse][student].grades[field] || '';
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.min = '1';
+            input.max = '5';
+            input.step = '0.1';
+            input.className = 'grade-input';
+            input.value = !isNaN(parseFloat(currentVal)) ? parseFloat(currentVal).toFixed(1) : '';
+            cell.textContent = '';
+            cell.appendChild(input);
+            input.focus();
+
+            const saveAndExit = () => {
+                const currentInput = cell.querySelector('input');
+                if (currentInput) {
+                    updateGrade(student, field, currentInput.value, cell);
+                }
+            }
+            
+            input.addEventListener('blur', saveAndExit);
+            input.addEventListener('keydown', (e) => {
+                const navKeys = ['Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'];
+                if (!navKeys.includes(e.key)) return;
+
+                e.preventDefault();
+                
+                const allGradeCells = Array.from(tableContainer.querySelectorAll('.grade-cell'));
+                const currentIndex = allGradeCells.indexOf(cell);
+                const inputsPerRow = 9;
+                let nextCell = null;
+
+                if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                    const nextIndex = currentIndex + inputsPerRow;
+                    if (nextIndex < allGradeCells.length) nextCell = allGradeCells[nextIndex];
+                } else if (e.key === 'ArrowUp') {
+                    const nextIndex = currentIndex - inputsPerRow;
+                    if (nextIndex >= 0) nextCell = allGradeCells[nextIndex];
+                } else if (e.key === 'ArrowRight' || e.key === 'Tab') {
+                    const nextIndex = currentIndex + 1;
+                    if (nextIndex < allGradeCells.length) nextCell = allGradeCells[nextIndex];
+                } else if (e.key === 'ArrowLeft') {
+                    const nextIndex = currentIndex - 1;
+                    if (nextIndex >= 0) nextCell = allGradeCells[nextIndex];
+                }
+
+                input.blur();
+
+                if (nextCell) {
+                    setTimeout(() => enableEdit(nextCell), 0); 
+                }
+            });
+        };
+        
+        const updateGrade = (student, field, value, cell) => {
+            if(!cell.contains(document.activeElement)) { // Prevent double-saving on blur
+                ensureStudentData(student);
+                const studentData = gradesData[activeCourse][student];
+                let numVal = parseFloat(value);
+                if (value !== '' && (isNaN(numVal) || numVal < 1 || numVal > 5)) {
+                    showMessage('La nota debe estar entre 1 y 5.', 'error');
+                    cell.textContent = studentData.grades[field] || '';
+                    return;
+                }
+                studentData.grades[field] = value;
+                cell.textContent = value !== '' ? numVal.toFixed(1) : '';
+                const studentRow = cell.closest('tr');
+                if(studentRow) {
+                    const newDef = calculateDef(studentData.grades);
+                    const newNivel = determineNivel(newDef);
+                    const nivelClass = newNivel ? `nivel-${newNivel.toLowerCase()}` : '';
+                    const defCell = studentRow.querySelector('.col-def');
+                    const nivelCell = studentRow.querySelector('.col-nivel');
+                    defCell.textContent = newDef;
+                    nivelCell.textContent = newNivel;
+                    defCell.className = `col-def ${nivelClass}`;
+                    nivelCell.className = `col-nivel ${nivelClass}`;
+                }
+                saveData(true);
+                calculateAndDisplayStats();
+            }
+        };
 
         const updateAttendance = (box) => {
             const { student, date } = box.dataset;
@@ -457,12 +553,33 @@
         // --- New Feature Functions ---
         
         // Dark Mode
-        function applyTheme(isDark) { /* ... existing code ... */ }
-        darkModeToggle.addEventListener('change', () => { /* ... existing code ... */ });
+        function applyTheme(isDark) {
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+            darkModeToggle.checked = isDark;
+        }
+        darkModeToggle.addEventListener('change', () => {
+            localStorage.setItem('darkMode', darkModeToggle.checked);
+            applyTheme(darkModeToggle.checked);
+        });
 
         // Observations Modal
-        function showObservationsModal(student) { /* ... existing code ... */ }
-        document.getElementById('saveObs').addEventListener('click', () => { /* ... existing code ... */ });
+        function showObservationsModal(student) {
+            ensureStudentData(student);
+            obsStudentName.textContent = student;
+            obsTextarea.value = gradesData[activeCourse][student].observations || '';
+            obsModal.classList.add('active');
+            obsModal.dataset.student = student;
+        }
+        document.getElementById('saveObs').addEventListener('click', () => {
+            const student = obsModal.dataset.student;
+            gradesData[activeCourse][student].observations = obsTextarea.value;
+            saveData(true);
+            obsModal.classList.remove('active');
+        });
         document.getElementById('closeObsModal').addEventListener('click', () => obsModal.classList.remove('active'));
 
         // Date Note Modal
@@ -489,18 +606,136 @@
         document.getElementById('closeDateNoteModal').addEventListener('click', () => dateNoteModal.classList.remove('active'));
 
         // Bulletin Modal
-        function showBulletinModal(student) { /* ... existing code ... */ }
+        function showBulletinModal(student) {
+            ensureStudentData(student);
+            const studentData = gradesData[activeCourse][student];
+            const def = calculateDef(studentData.grades);
+            const nivel = determineNivel(def);
+            const attendance = calculateAttendanceSummary(studentData.attendance);
+
+            document.getElementById('bulletinStudentName').textContent = student;
+            document.getElementById('bulletinCourseName').textContent = courseConfig[activeCourse].title;
+            
+            let gradesHTML = `
+                <p><strong>Cognitivo C1:</strong> ${studentData.grades.cognitivoC1 || 'N/A'}</p>
+                <p><strong>Cognitivo C2:</strong> ${studentData.grades.cognitivoC2 || 'N/A'}</p>
+                <p><strong>Cognitivo C3:</strong> ${studentData.grades.cognitivoC3 || 'N/A'}</p>
+                <p><strong>Procedimental P1:</strong> ${studentData.grades.procedimentalP1 || 'N/A'}</p>
+                <p><strong>Procedimental P2:</strong> ${studentData.grades.procedimentalP2 || 'N/A'}</p>
+                <p><strong>Procedimental P3:</strong> ${studentData.grades.procedimentalP3 || 'N/A'}</p>
+                <p><strong>Actitudinal A1:</strong> ${studentData.grades.actitudinalA1 || 'N/A'}</p>
+                <p><strong>Actitudinal A2:</strong> ${studentData.grades.actitudinalA2 || 'N/A'}</p>
+                <p><strong>Actitudinal A3:</strong> ${studentData.grades.actitudinalA3 || 'N/A'}</p>
+                <p class="mt-2 font-bold"><strong>DEF: ${def} (${nivel})</strong></p>`;
+            document.getElementById('bulletinGrades').innerHTML = gradesHTML;
+
+            document.getElementById('bulletinAttendance').innerHTML = `<p><strong>Asistencias:</strong> ${attendance.attended}</p><p><strong>Ausencias:</strong> ${attendance.absent}</p>`;
+            document.getElementById('bulletinObs').textContent = studentData.observations || 'Sin observaciones.';
+            bulletinModal.classList.add('active');
+        }
         document.getElementById('closeBulletinModal').addEventListener('click', () => bulletinModal.classList.remove('active'));
         
         // Export to CSV
-        exportCsvBtn.addEventListener('click', () => { /* ... existing code ... */ });
+        exportCsvBtn.addEventListener('click', () => {
+             const config = courseConfig[activeCourse];
+             const data = gradesData[activeCourse] || {};
+             const attendanceDates = getAttendanceDates(activeCourse).map(d => d.toLocaleDateString('es-CO'));
+             let csvContent = "data:text/csv;charset=utf-8,";
+             const headers = ["No", "Estudiante", ...attendanceDates, "Obs.", "C1", "C2", "C3", "P1", "P2", "P3", "A1", "A2", "A3", "DEF", "NIVEL"];
+             csvContent += headers.join(",") + "\r\n";
+             
+             config.students.forEach((student, index) => {
+                 const studentData = data[student] || {};
+                 const def = calculateDef(studentData.grades);
+                 const nivel = determineNivel(def);
+                 let row = [
+                     index + 1,
+                     `"${student}"`,
+                     ...getAttendanceDates(activeCourse).map(d => {
+                         const status = studentData.attendance?.[d.toISOString().split('T')[0]];
+                         return status === true ? "P" : status === false ? "A" : "";
+                     }),
+                     `"${(studentData.observations || '').replace(/"/g, '""')}"`,
+                     studentData.grades?.cognitivoC1 || "", studentData.grades?.cognitivoC2 || "", studentData.grades?.cognitivoC3 || "",
+                     studentData.grades?.procedimentalP1 || "", studentData.grades?.procedimentalP2 || "", studentData.grades?.procedimentalP3 || "",
+                     studentData.grades?.actitudinalA1 || "", studentData.grades?.actitudinalA2 || "", studentData.grades?.actitudinalA3 || "",
+                     def, nivel
+                 ];
+                 csvContent += row.join(",") + "\r\n";
+             });
+
+             const encodedUri = encodeURI(csvContent);
+             const link = document.createElement("a");
+             link.setAttribute("href", encodedUri);
+             link.setAttribute("download", `calificaciones_${activeCourse}.csv`);
+             document.body.appendChild(link);
+             link.click();
+             document.body.removeChild(link);
+        });
 
         // Import Students
         importBtn.addEventListener('click', () => importFile.click());
-        importFile.addEventListener('change', (event) => { /* ... existing code ... */ });
+        importFile.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                const newStudents = text.split('\n').map(name => capitalizeWords(name.trim())).filter(name => name.length > 0);
+                if (newStudents.length > 0) {
+                    allStudentsData[activeCourse] = newStudents;
+                    gradesData[activeCourse] = {}; // Reset data for the new list
+                    setupCourseConfig();
+                    saveData();
+                }
+            };
+            reader.readAsText(file);
+            importFile.value = ''; // Reset input
+        });
 
         // Stats Panel
-        function calculateAndDisplayStats() { /* ... existing code ... */ }
+        function calculateAndDisplayStats() {
+            const data = gradesData[activeCourse] || {};
+            const students = courseConfig[activeCourse]?.students || [];
+            if (students.length === 0) {
+                statsPanel.innerHTML = "";
+                return;
+            }
+
+            let totalDef = 0, studentCountWithGrades = 0;
+            const nivelCounts = { "Bajo": 0, "Básico": 0, "Alto": 0, "Superior": 0, "N/A": 0 };
+            
+            let totalAttended = 0;
+            const totalPossibleSessions = students.length * getAttendanceDates(activeCourse).length;
+
+
+            students.forEach(student => {
+                const studentData = data[student] || {};
+                const def = parseFloat(calculateDef(studentData.grades));
+                if (!isNaN(def) && def > 0) {
+                    totalDef += def;
+                    studentCountWithGrades++;
+                }
+
+                const nivel = determineNivel(def) || "N/A";
+                nivelCounts[nivel]++;
+
+                const summary = calculateAttendanceSummary(studentData.attendance);
+                totalAttended += summary.attended;
+            });
+            
+            const avgDef = studentCountWithGrades > 0 ? (totalDef / studentCountWithGrades).toFixed(2) : "0.00";
+            const attendancePercent = totalPossibleSessions > 0 ? ((totalAttended / totalPossibleSessions) * 100).toFixed(1) : 0;
+
+            statsPanel.innerHTML = `
+                <div class="stat-item"><p class="font-bold text-lg">${avgDef}</p><p class="text-sm">Promedio General</p></div>
+                <div class="stat-item"><p class="font-bold text-lg">${attendancePercent}%</p><p class="text-sm">Asistencia Total</p></div>
+                <div class="stat-item"><p class="font-bold text-lg">${nivelCounts.Superior}</p><p class="text-sm">Superior</p></div>
+                <div class="stat-item"><p class="font-bold text-lg">${nivelCounts.Alto}</p><p class="text-sm">Alto</p></div>
+                <div class="stat-item"><p class="font-bold text-lg">${nivelCounts.Básico}</p><p class="text-sm">Básico</p></div>
+                <div class="stat-item"><p class="font-bold text-lg">${nivelCounts.Bajo}</p><p class="text-sm">Bajo</p></div>`;
+        }
 
         // --- App Initialization ---
         searchBox.addEventListener('input', renderTable);
@@ -546,5 +781,4 @@
     </script>
 </body>
 </html>
-" because I want to quit the horizontal white line or space that is separating the attendance and the evaluation.
 
