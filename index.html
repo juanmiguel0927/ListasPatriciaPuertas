@@ -184,10 +184,7 @@
         .action-grades-btn { display: none; }
         
         #printable-area {
-            position: absolute;
-            left: -9999px;
-            top: auto;
-            color: black;
+            display: none;
         }
 
         @media (max-width: 1024px) { /* Adjusted breakpoint for tablets */
@@ -204,10 +201,15 @@
             }
              #printable-area {
                 position: static !important;
+                display: block !important;
             }
             .bulletin-page {
                 page-break-after: always;
                 background-color: white !important;
+                color: black !important;
+            }
+            .bulletin-page * {
+                color: black !important;
             }
         }
     </style>
