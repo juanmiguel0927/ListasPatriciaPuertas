@@ -280,7 +280,6 @@
                 </div>
                  <div class="flex justify-end gap-2 mt-4">
                     <button id="closeBulletinModal" class="action-button">Cerrar</button>
-                    <button id="printSingleBulletinBtn" class="action-button bg-blue-600"><i class="fas fa-print"></i> Imprimir</button>
                     <button id="downloadPngBtn" class="action-button bg-green-600"><i class="fas fa-file-image"></i> PNG</button>
                     <button id="downloadPdfBtn" class="action-button bg-red-600"><i class="fas fa-file-pdf"></i> PDF</button>
                 </div>
@@ -915,30 +914,40 @@
                 <div class="stat-item"><p class="font-bold text-lg">${nivelCounts.Bajo}</p><p class="text-sm">Bajo</p></div>`;
         }
         
-        function generateAndPrintBulletins(courses, studentList = null) {
-            const printableArea = document.getElementById('printable-area');
-            printableArea.innerHTML = '';
-            
+        async function generateAndExportPdf(courses, studentList = null) {
+            showMessage('Generando PDF, por favor espera...', 'success');
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'p',
+                unit: 'mm',
+                format: 'a4'
+            });
+
             const studentsToPrint = [];
-            if(studentList) { // If a specific list is provided
+            if(studentList) { 
                 studentsToPrint.push({ courseName: activeCourse, students: studentList });
-            } else { // Otherwise, get all students from the courses
+            } else { 
                 courses.forEach(courseName => {
                     studentsToPrint.push({ courseName: courseName, students: courseConfig[courseName]?.students || [] });
                 });
             }
-
+            
             const timestamp = new Date().toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' });
-
-            studentsToPrint.forEach(({ courseName, students }) => {
-                students.forEach(studentName => {
+            
+            let firstPage = true;
+            for (const { courseName, students } of studentsToPrint) {
+                for (const studentName of students) {
+                    if (!firstPage) {
+                        pdf.addPage();
+                    }
+                    
                     const studentData = gradesData[courseName]?.[studentName] || {};
                     const def = calculateDef(studentData.grades);
                     const nivel = determineNivel(def);
                     const attendance = calculateAttendanceSummary(studentData.attendance);
                     
                     const bulletinHTML = `
-                        <div class="bulletin-page p-4 bg-white" style="color: black !important;">
+                        <div class="bulletin-page p-4 bg-white" style="width: 210mm; color: black !important;">
                              <h3 class="text-2xl font-bold text-center mb-4">Boletín Informativo</h3>
                              <p><strong>Estudiante:</strong> ${studentName}</p>
                              <p><strong>Curso:</strong> ${courseConfig[courseName].title}</p>
@@ -968,14 +977,26 @@
                             </div>
                         </div>
                     `;
-                    printableArea.innerHTML += bulletinHTML;
-                });
-            });
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = bulletinHTML;
+                    document.body.appendChild(tempDiv);
+                    
+                    const canvas = await html2canvas(tempDiv.firstChild, { scale: 2 });
+                    const imgData = canvas.toDataURL('image/png');
+                    const imgProps = pdf.getImageProperties(imgData);
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                    let margin = 10;
+                    pdf.addImage(imgData, 'PNG', margin, margin, pdfWidth - (margin * 2), pdfHeight - (margin * 2));
+                    
+                    document.body.removeChild(tempDiv);
+                    firstPage = false;
+                }
+            }
             
-            setTimeout(() => {
-                window.print();
-                bulletinSelectionModal.classList.remove('active');
-            }, 100);
+            const fileName = studentList ? `boletines_${activeCourse}.pdf` : 'boletines_todos.pdf';
+            pdf.save(fileName);
+            bulletinSelectionModal.classList.remove('active');
         }
 
         // --- App Initialization ---
@@ -1115,11 +1136,11 @@
         
         document.getElementById('generateAllCoursesBulletinBtn').addEventListener('click', () => {
             const allCourses = Object.keys(allStudentsData);
-            generateAndPrintBulletins(allCourses);
+            generateAndExportPdf(allCourses);
         });
 
         document.getElementById('generateCurrentCourseBulletinBtn').addEventListener('click', () => {
-            generateAndPrintBulletins([activeCourse]);
+            generateAndExportPdf([activeCourse]);
         });
 
         document.getElementById('generateSelectedStudentsBtn').addEventListener('click', () => {
@@ -1128,7 +1149,7 @@
                  showMessage('Por favor, selecciona al menos un estudiante.', 'error');
                  return;
             }
-            generateAndPrintBulletins([activeCourse], selectedStudents);
+            generateAndExportPdf([activeCourse], selectedStudents);
         });
 
         document.getElementById('selectAllStudentsBtn').addEventListener('click', () => {
@@ -1138,14 +1159,6 @@
              document.querySelectorAll('#studentSelectionCheckboxes input').forEach(cb => cb.checked = false);
         });
 
-        document.getElementById('printSingleBulletinBtn').addEventListener('click', () => {
-            const printableArea = document.getElementById('printable-area');
-            printableArea.innerHTML = document.getElementById('bulletinContent').innerHTML;
-            setTimeout(() => {
-                window.print();
-                printableArea.innerHTML = '';
-            }, 100);
-        });
         document.getElementById('downloadPngBtn').addEventListener('click', () => downloadBulletinAsFile('png'));
         document.getElementById('downloadPdfBtn').addEventListener('click', () => downloadBulletinAsFile('pdf'));
 
