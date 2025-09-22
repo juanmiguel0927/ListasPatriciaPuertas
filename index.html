@@ -419,91 +419,101 @@
 
         // --- Table Rendering ---
         const renderTable = () => {
-            const config = courseConfig[activeCourse];
-            if (!config) return;
-            const data = gradesData[activeCourse] || {};
-            const attendanceDates = getAttendanceDates(activeCourse);
-            const searchTerm = searchBox.value.toLowerCase();
-            const filteredStudents = config.students.filter(s => s.toLowerCase().includes(searchTerm));
+            try {
+                const config = courseConfig[activeCourse];
+                if (!config || !config.students) {
+                    console.error(`Configuration for course "${activeCourse}" is missing or invalid.`);
+                    tableContainer.innerHTML = `<div class="p-4 text-center text-red-500">No se pudo cargar la configuración para este curso.</div>`;
+                    return;
+                }
 
-            courseTitle.textContent = `Grupo: ${activeCourse}`;
-            courseInfo.innerHTML = `<p>Docente: ${config.professor}</p><p>Asignatura: ${config.subject}</p>`;
+                const data = gradesData[activeCourse] || {};
+                const attendanceDates = getAttendanceDates(activeCourse);
+                const searchTerm = searchBox.value.toLowerCase();
+                const filteredStudents = config.students.filter(s => s.toLowerCase().includes(searchTerm));
 
-            const tableEl = document.createElement('table');
-            tableEl.style.minWidth = `${490 + (attendanceDates.length * 60) + 700}px`;
+                courseTitle.textContent = `Grupo: ${activeCourse}`;
+                courseInfo.innerHTML = `<p>Docente: ${config.professor}</p><p>Asignatura: ${config.subject}</p>`;
 
-            let tableHTML = `
-                <thead>
-                    <tr>
-                        <th rowspan="2" class="sticky-left sticky-col-no">No</th>
-                        <th rowspan="2" class="sticky-left sticky-col-name">NOMBRE</th>
-                        <th rowspan="2" class="sticky-left sticky-col-actions">Acciones</th>
-                        <th rowspan="2" class="sticky-left sticky-col-summary">ASIST.</th>
-                        <th class="attendance-column" colspan="${attendanceDates.length}">ASISTENCIA POR FECHA</th>
-                        <th class="grade-column" colspan="3">COGNITIVO (40%)</th>
-                        <th class="grade-column" colspan="3">PROCEDIMENTAL (30%)</th>
-                        <th class="grade-column" colspan="3">ACTITUDINAL (30%)</th>
-                        <th rowspan="2" class="grade-column col-def">DEF</th>
-                        <th rowspan="2" class="grade-column col-nivel">NIVEL</th>
-                    </tr>
-                    <tr>
-                        ${attendanceDates.map(d => {
-                            const dateString = d.toISOString().split('T')[0];
-                            const note = data.dateNotes?.[dateString] || '';
-                            const noteIconClass = note ? 'fas fa-comment-dots text-yellow-300' : 'fas fa-plus-circle text-gray-400';
-                             return `<th class="date-header attendance-column" title="${note}">
-                                <div>
-                                    ${d.getDate()}/${d.getMonth()+1} 
-                                    <i class="${noteIconClass} cursor-pointer hover:text-yellow-500 text-xs ml-1" onclick="showDateNoteModal('${dateString}')"></i>
-                                </div>
-                                <button class="attendance-bulk-btn bg-green-500" onclick="markAllAttendance('${dateString}', true)">✓</button>
-                                <button class="attendance-bulk-btn bg-red-500" onclick="markAllAttendance('${dateString}', false)">✗</button>
-                            </th>`;
-                        }).join('')}
-                        <th class="grade-column">C1</th><th class="grade-column">C2</th><th class="grade-column">C3</th>
-                        <th class="grade-column">P1</th><th class="grade-column">P2</th><th class="grade-column">P3</th>
-                        <th class="grade-column">A1</th><th class="grade-column">A2</th><th class="grade-column">A3</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-            
-            filteredStudents.forEach((student, index) => {
-                const studentData = data[student] || { grades: {}, attendance: {}, observations: "" };
-                const studentDef = calculateDef(studentData.grades);
-                const nivel = determineNivel(studentDef);
-                const summary = calculateAttendanceSummary(studentData.attendance);
-                const formatGrade = (g) => !isNaN(parseFloat(g)) ? parseFloat(g).toFixed(1) : '';
+                const tableEl = document.createElement('table');
+                tableEl.style.minWidth = `${490 + (attendanceDates.length * 60) + 700}px`;
 
-                tableHTML += `<tr>
-                    <td class="sticky-left sticky-col-no">${index + 1}</td>
-                    <td class="sticky-left sticky-col-name">${student}</td>
-                    <td class="sticky-left sticky-col-actions">
-                        <i class="fas fa-comment action-icon" onclick="showObservationsModal('${student}')"></i>
-                        <i class="fas fa-id-card action-icon" onclick="showBulletinModal('${student}')"></i>
-                        <i class="fas fa-edit action-icon action-grades-btn" onclick="showGradesModal('${student}')"></i>
-                    </td>
-                    <td class="sticky-left sticky-col-summary"><span>Asist.: ${summary.attended}</span><br><span>Ausen.: ${summary.absent}</span></td>`;
+                let tableHTML = `
+                    <thead>
+                        <tr>
+                            <th rowspan="2" class="sticky-left sticky-col-no">No</th>
+                            <th rowspan="2" class="sticky-left sticky-col-name">NOMBRE</th>
+                            <th rowspan="2" class="sticky-left sticky-col-actions">Acciones</th>
+                            <th rowspan="2" class="sticky-left sticky-col-summary">ASIST.</th>
+                            <th class="attendance-column" colspan="${attendanceDates.length}">ASISTENCIA POR FECHA</th>
+                            <th class="grade-column" colspan="3">COGNITIVO (40%)</th>
+                            <th class="grade-column" colspan="3">PROCEDIMENTAL (30%)</th>
+                            <th class="grade-column" colspan="3">ACTITUDINAL (30%)</th>
+                            <th rowspan="2" class="grade-column col-def">DEF</th>
+                            <th rowspan="2" class="grade-column col-nivel">NIVEL</th>
+                        </tr>
+                        <tr>
+                            ${attendanceDates.map(d => {
+                                const dateString = d.toISOString().split('T')[0];
+                                const note = data.dateNotes?.[dateString] || '';
+                                const noteIconClass = note ? 'fas fa-comment-dots text-yellow-300' : 'fas fa-plus-circle text-gray-400';
+                                return `<th class="date-header attendance-column" title="${note}">
+                                    <div>
+                                        ${d.getDate()}/${d.getMonth()+1} 
+                                        <i class="${noteIconClass} cursor-pointer hover:text-yellow-500 text-xs ml-1" onclick="showDateNoteModal('${dateString}')"></i>
+                                    </div>
+                                    <button class="attendance-bulk-btn bg-green-500" onclick="markAllAttendance('${dateString}', true)">✓</button>
+                                    <button class="attendance-bulk-btn bg-red-500" onclick="markAllAttendance('${dateString}', false)">✗</button>
+                                </th>`;
+                            }).join('')}
+                            <th class="grade-column">C1</th><th class="grade-column">C2</th><th class="grade-column">C3</th>
+                            <th class="grade-column">P1</th><th class="grade-column">P2</th><th class="grade-column">P3</th>
+                            <th class="grade-column">A1</th><th class="grade-column">A2</th><th class="grade-column">A3</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
                 
-                attendanceDates.forEach(date => {
-                    const dateString = date.toISOString().split('T')[0];
-                    const status = studentData.attendance[dateString];
-                    let a_class = 'attendance-box', a_content = '';
-                    if (status === true) { a_class += ' attended'; a_content = '✓'; }
-                    else if (status === false) { a_class += ' absent'; a_content = '✗'; }
-                    tableHTML += `<td class="attendance-cell"><div class="${a_class}" data-student="${student}" data-date="${dateString}">${a_content}</div></td>`;
+                filteredStudents.forEach((student, index) => {
+                    const studentData = data[student] || { grades: {}, attendance: {}, observations: "" };
+                    const studentDef = calculateDef(studentData.grades);
+                    const nivel = determineNivel(studentDef);
+                    const summary = calculateAttendanceSummary(studentData.attendance);
+                    const formatGrade = (g) => !isNaN(parseFloat(g)) ? parseFloat(g).toFixed(1) : '';
+
+                    tableHTML += `<tr>
+                        <td class="sticky-left sticky-col-no">${index + 1}</td>
+                        <td class="sticky-left sticky-col-name">${student}</td>
+                        <td class="sticky-left sticky-col-actions">
+                            <i class="fas fa-comment action-icon" onclick="showObservationsModal('${student}')"></i>
+                            <i class="fas fa-id-card action-icon" onclick="showBulletinModal('${student}')"></i>
+                            <i class="fas fa-edit action-icon action-grades-btn" onclick="showGradesModal('${student}')"></i>
+                        </td>
+                        <td class="sticky-left sticky-col-summary"><span>Asist.: ${summary.attended}</span><br><span>Ausen.: ${summary.absent}</span></td>`;
+                    
+                    attendanceDates.forEach(date => {
+                        const dateString = date.toISOString().split('T')[0];
+                        const status = studentData.attendance[dateString];
+                        let a_class = 'attendance-box', a_content = '';
+                        if (status === true) { a_class += ' attended'; a_content = '✓'; }
+                        else if (status === false) { a_class += ' absent'; a_content = '✗'; }
+                        tableHTML += `<td class="attendance-cell"><div class="${a_class}" data-student="${student}" data-date="${dateString}">${a_content}</div></td>`;
+                    });
+                    
+                    ['cognitivoC1','cognitivoC2','cognitivoC3','procedimentalP1','procedimentalP2','procedimentalP3','actitudinalA1','actitudinalA2','actitudinalA3'].forEach(f => {
+                        tableHTML += `<td class="grade-column grade-cell" data-student="${student}" data-field="${f}">${formatGrade(studentData.grades[f])}</td>`;
+                    });
+                    
+                    const nivelClass = nivel ? `nivel-${nivel.toLowerCase()}` : '';
+                    tableHTML += `<td class="grade-column col-def ${nivelClass}">${studentDef}</td><td class="grade-column col-nivel ${nivelClass}">${nivel}</td></tr>`;
                 });
-                
-                ['cognitivoC1','cognitivoC2','cognitivoC3','procedimentalP1','procedimentalP2','procedimentalP3','actitudinalA1','actitudinalA2','actitudinalA3'].forEach(f => {
-                    tableHTML += `<td class="grade-column grade-cell" data-student="${student}" data-field="${f}">${formatGrade(studentData.grades[f])}</td>`;
-                });
-                
-                const nivelClass = nivel ? `nivel-${nivel.toLowerCase()}` : '';
-                tableHTML += `<td class="grade-column col-def ${nivelClass}">${studentDef}</td><td class="grade-column col-nivel ${nivelClass}">${nivel}</td></tr>`;
-            });
-            tableEl.innerHTML = tableHTML + `</tbody>`;
-            tableContainer.innerHTML = '';
-            tableContainer.appendChild(tableEl);
-            calculateAndDisplayStats();
+                tableEl.innerHTML = tableHTML + `</tbody>`;
+                tableContainer.innerHTML = '';
+                tableContainer.appendChild(tableEl);
+                calculateAndDisplayStats();
+            } catch(e) {
+                console.error(`An error occurred while rendering the table for course "${activeCourse}":`, e);
+                tableContainer.innerHTML = `<div class="p-4 text-center text-red-500">Ocurrió un error al mostrar la lista de estudiantes.</div>`;
+            }
         };
 
         // --- Event Handlers & Data Management ---
@@ -645,12 +655,25 @@
         }
 
         const saveData = (isPartial = false) => { try { localStorage.setItem('gradesDataGroups', JSON.stringify(gradesData)); if (!isPartial) renderTable(); } catch (e) { console.error("Error saving data: ", e); } };
+        
+        // --- ROBUST DATA LOADING ---
         const loadData = () => {
-            try {
-                const savedGrades = localStorage.getItem('gradesDataGroups');
-                gradesData = savedGrades ? JSON.parse(savedGrades) : {};
-            } catch (e) { 
-                console.error("Error loading data:", e);
+            const savedGrades = localStorage.getItem('gradesDataGroups');
+            if (savedGrades) {
+                try {
+                    gradesData = JSON.parse(savedGrades);
+                    // Basic validation to check if the loaded data is a valid object
+                    if (typeof gradesData !== 'object' || gradesData === null || Array.isArray(gradesData)) {
+                        console.warn('Loaded data from localStorage is not a valid object. Resetting.');
+                        gradesData = {};
+                        localStorage.removeItem('gradesDataGroups'); // Clean up bad data
+                    }
+                } catch (e) { 
+                    console.error("Error parsing data from localStorage. Data will be reset.", e);
+                    gradesData = {}; // Reset data on parsing error
+                    localStorage.removeItem('gradesDataGroups'); // Clean up bad data
+                }
+            } else {
                 gradesData = {};
             }
             setupCourseConfig();
@@ -1219,7 +1242,7 @@
                 switchCourse(initialCourse);
             } catch (error) {
                 console.error("Error during page initialization:", error);
-                document.body.innerHTML = '<div style="color: red; padding: 20px;">Ocurrió un error al cargar la aplicación. Por favor, intenta limpiar la caché y los datos del sitio.</div>';
+                document.body.innerHTML = '<div style="background: #fff; color: #b71c1c; padding: 20px; text-align: center; font-family: sans-serif; height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column;"><h1>Ocurrió un error al cargar la aplicación</h1><p>Esto puede deberse a datos corruptos. Por favor, intenta limpiar la caché y los datos del sitio antes de volver a cargar la página.</p></div>';
             }
         };
     </script>
