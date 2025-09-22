@@ -305,10 +305,24 @@
             <div class="modal-content">
                 <h3 class="text-xl font-bold mb-4">Generar Boletines en PDF</h3>
                 <div class="flex flex-col gap-4">
+                    <!-- Option 1: All Courses -->
                     <button id="generateAllCoursesBulletinBtn" class="action-button w-full">Generar PDF de Todos los Cursos</button>
+                    
+                    <!-- Option 2: Current Course -->
                     <button id="generateCurrentCourseBulletinBtn" class="action-button w-full">Generar PDF del Curso Actual</button>
+                    
+                    <!-- Option 3: Selected Courses -->
                     <div>
-                        <h4 class="font-semibold mb-2 text-left">Selección Personalizada (Curso Actual):</h4>
+                        <h4 class="font-semibold mb-2 text-left">Selección por Cursos:</h4>
+                        <div id="bulletinCourseSelectionCheckboxes" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-2 border rounded" style="border-color: var(--input-border-color);">
+                            <!-- Course checkboxes will be inserted here by JS -->
+                        </div>
+                        <button id="generateSelectedCoursesBtn" class="action-button w-full mt-4">Generar PDF de Cursos Seleccionados</button>
+                    </div>
+
+                    <!-- Option 4: Selected Students in Current Course -->
+                    <div>
+                        <h4 class="font-semibold mb-2 text-left">Selección por Estudiantes (Curso Actual):</h4>
                         <div class="flex justify-between items-center mb-2">
                              <button id="selectAllStudentsBtn" class="text-sm text-blue-500 hover:underline">Seleccionar Todos</button>
                              <button id="deselectAllStudentsBtn" class="text-sm text-blue-500 hover:underline">Deseleccionar Todos</button>
@@ -316,7 +330,7 @@
                         <div id="studentSelectionCheckboxes" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border rounded" style="border-color: var(--input-border-color);">
                             <!-- Student checkboxes will be inserted here -->
                         </div>
-                        <button id="generateSelectedStudentsBtn" class="action-button w-full mt-4">Generar PDF de Seleccionados</button>
+                        <button id="generateSelectedStudentsBtn" class="action-button w-full mt-4">Generar PDF de Estudiantes Seleccionados</button>
                     </div>
                 </div>
                 <div class="flex justify-end mt-6">
@@ -383,7 +397,7 @@
         };
         const showMessage = (text, type = 'success') => {
             const box = document.createElement('div');
-            box.className = 'message-box fixed bottom-4 right-4 p-4 rounded-lg shadow-lg text-white transition-opacity duration-300';
+            box.className = 'message-box fixed bottom-4 right-4 p-4 rounded-lg shadow-lg text-white transition-opacity duration-300 z-50';
             box.style.backgroundColor = type === 'success' ? '#4CAF50' : '#f44336';
             box.textContent = text;
             document.body.appendChild(box);
@@ -984,7 +998,16 @@
                 }
             }
             
-            const fileName = studentList ? `boletines_${activeCourse}.pdf` : 'boletines_todos.pdf';
+            let fileName;
+            if (studentList) {
+                fileName = `boletines_${activeCourse}_seleccionados.pdf`;
+            } else if (courses.length === 1) {
+                fileName = `boletines_${courses[0]}.pdf`;
+            } else if (courses.length === Object.keys(allStudentsData).length) {
+                fileName = `boletines_todos_los_cursos.pdf`;
+            } else {
+                fileName = `boletines_cursos_seleccionados.pdf`;
+            }
             pdf.save(fileName);
             bulletinSelectionModal.classList.remove('active');
         }
@@ -1064,6 +1087,7 @@
         });
 
         bulletinBtn.addEventListener('click', () => {
+            // Populate student checkboxes
             const studentSelectionCheckboxes = document.getElementById('studentSelectionCheckboxes');
             studentSelectionCheckboxes.innerHTML = '';
             const students = courseConfig[activeCourse]?.students || [];
@@ -1074,6 +1098,18 @@
                         <span>${student}</span>
                     </label>`;
             });
+
+            // Populate course checkboxes
+            const bulletinCourseSelectionCheckboxes = document.getElementById('bulletinCourseSelectionCheckboxes');
+            bulletinCourseSelectionCheckboxes.innerHTML = '';
+            Object.keys(allStudentsData).sort().forEach(course => {
+                bulletinCourseSelectionCheckboxes.innerHTML += `
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" value="${course}" class="form-checkbox h-5 w-5 rounded">
+                        <span>${course}</span>
+                    </label>`;
+            });
+
             bulletinSelectionModal.classList.add('active');
         });
 
@@ -1132,6 +1168,15 @@
         document.getElementById('generateCurrentCourseBulletinBtn').addEventListener('click', () => {
             generateAndExportPdf([activeCourse]);
         });
+        
+        document.getElementById('generateSelectedCoursesBtn').addEventListener('click', () => {
+            const selectedCourses = Array.from(document.querySelectorAll('#bulletinCourseSelectionCheckboxes input:checked')).map(cb => cb.value);
+            if (selectedCourses.length > 0) {
+                generateAndExportPdf(selectedCourses);
+            } else {
+                showMessage('Por favor, selecciona al menos un curso.', 'error');
+            }
+        });
 
         document.getElementById('generateSelectedStudentsBtn').addEventListener('click', () => {
             const selectedStudents = Array.from(document.querySelectorAll('#studentSelectionCheckboxes input:checked')).map(cb => cb.value);
@@ -1139,7 +1184,7 @@
                  showMessage('Por favor, selecciona al menos un estudiante.', 'error');
                  return;
             }
-            generateAndExportPdf([activeCourse], selectedStudents);
+            generateAndExportPdf(null, selectedStudents);
         });
 
         document.getElementById('selectAllStudentsBtn').addEventListener('click', () => {
