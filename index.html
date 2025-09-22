@@ -942,13 +942,15 @@
 
             const dayMap = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
             const todayIndex = new Date().getDay();
-            const todayName = dayMap[todayIndex];
-            
-            let initialCourse = dailySchedule['Lunes'][0]; // Default to Monday's first course
-            if (dailySchedule[todayName] && dailySchedule[todayName].length > 0) {
-                initialCourse = dailySchedule[todayName][0];
+            let todayName = dayMap[todayIndex];
+
+            // If it's a weekend, default to Monday
+            if (todayIndex === 0 || todayIndex === 6) {
+                todayName = 'Lunes';
             }
             
+            // Set the initial course based on the current day
+            const initialCourse = dailySchedule[todayName]?.[0] || dailySchedule['Lunes'][0];
             switchCourse(initialCourse);
         };
     </script>
