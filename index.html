@@ -22,6 +22,7 @@
             --tab-block-bg: #f1f5f9;
             --tab-button-bg: #e2e8f0;
             --tab-button-text: #475569;
+            --row-selected-bg: #dbeafe;
         }
 
         html.dark {
@@ -36,6 +37,7 @@
             --tab-block-bg: #4b5563;
             --tab-button-bg: #64748b;
             --tab-button-text: #e2e8f0;
+            --row-selected-bg: #1e3a8a;
         }
 
         body {
@@ -93,6 +95,18 @@
         .sticky-col-actions { left: 270px; width: 100px; min-width: 100px; }
         .sticky-col-summary { left: 370px; width: 120px; min-width: 120px; }
         
+        /* Row Selection Highlight */
+        tbody tr:hover > td, tbody tr:hover > .sticky-left {
+            background-color: var(--sticky-col-bg);
+        }
+        tr.row-selected > td {
+            background-color: var(--row-selected-bg);
+        }
+        tr.row-selected > td.sticky-left {
+            background-color: var(--row-selected-bg);
+        }
+
+
         /* --- Grade & Input Styles --- */
         .grade-cell { width: 60px; min-width: 60px; cursor: pointer; }
         .grade-input { width: 100%; padding: 0.25rem; border: 1px solid var(--input-border-color); border-radius: 0.25rem; text-align: center; background-color: var(--card-bg-color); color: var(--text-color); }
@@ -107,6 +121,10 @@
         html.dark .nivel-basico { background-color: #713f12; color: #fef08a; }
         html.dark .nivel-alto { background-color: #14532d; color: #bbf7d0; }
         html.dark .nivel-superior { background-color: #1e3a8a; color: #bfdbfe; }
+        tr.row-selected .nivel-bajo, tr.row-selected .nivel-basico, tr.row-selected .nivel-alto, tr.row-selected .nivel-superior {
+            color: var(--text-color); /* Ensure text is readable when row is selected */
+        }
+
 
         /* --- Attendance Styles --- */
         .attendance-box {
@@ -301,7 +319,7 @@
         const gradesGrid = document.getElementById('gradesGrid');
 
         // App State
-        const dailySchedule = {'Lunes':['8C','9B'],'Martes':['8A','9C'],'Miércoles':['8B','9A'],'Jueves':['10C','11A','11B','11C','11D'],'Viernes':['8D','9D','7D']};
+        const dailySchedule = {'Lunes':['8C','9B'],'Martes':['8A','9C','11A','11B'],'Miércoles':['8B','9A'],'Jueves':['10C','11C','11D'],'Viernes':['8D','9D','7D']};
         const dayNameToNumber = { 'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5 };
         let activeCourse = dailySchedule[Object.keys(dailySchedule)[0]][0]; 
         let gradesData = {};
@@ -602,6 +620,7 @@
             darkModeToggle.checked = isDark;
         }
        
+
         // Observations Modal
         function showObservationsModal(student) {
             ensureStudentData(student);
@@ -799,6 +818,16 @@
         tableContainer.addEventListener('click', (event) => {
             const gradeCell = event.target.closest('.grade-cell');
             const attendanceBox = event.target.closest('.attendance-box');
+            
+            const clickedRow = event.target.closest('tr');
+            if (clickedRow && clickedRow.parentElement.tagName === 'TBODY') {
+                const currentlySelected = tableContainer.querySelector('tr.row-selected');
+                if (currentlySelected) {
+                    currentlySelected.classList.remove('row-selected');
+                }
+                clickedRow.classList.add('row-selected');
+            }
+
             if (gradeCell) enableEdit(gradeCell);
             if (attendanceBox) updateAttendance(attendanceBox);
         });
