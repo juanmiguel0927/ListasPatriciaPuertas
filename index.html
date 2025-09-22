@@ -195,7 +195,7 @@
         }
 
         .bulletin-page * {
-             color: black;
+             color: black !important;
         }
 
 
@@ -815,40 +815,45 @@
             exportModal.classList.remove('active');
         }
 
-        function downloadBulletinAsFile(format) {
+        async function downloadBulletinAsFile(format) {
             const studentName = document.getElementById('bulletinStudentName').textContent;
             const bulletinContent = document.getElementById('bulletinContent');
-            
-            html2canvas(bulletinContent.querySelector('.bulletin-page'), { scale: 2 }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const fileName = `boletin_${studentName.replace(/ /g, '_')}.${format}`;
+            const bulletinPage = bulletinContent.querySelector('.bulletin-page');
 
-                if (format === 'png') {
-                    const link = document.createElement('a');
-                    link.download = fileName;
-                    link.href = imgData;
-                    link.click();
-                } else if (format === 'pdf') {
-                    const { jsPDF } = window.jspdf;
-                    const pdf = new jsPDF({
-                        orientation: 'p',
-                        unit: 'mm',
-                        format: 'a4'
-                    });
-                    
-                    const imgProps = pdf.getImageProperties(imgData);
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-                    let margin = 10;
-                    if (pdfHeight > pdf.internal.pageSize.getHeight() - (margin * 2)) {
-                        margin = 5; // Reduce margin if content is too tall
-                    }
-                    
-                    pdf.addImage(imgData, 'PNG', margin, margin, pdfWidth - (margin * 2), pdfHeight - (margin * 2));
-                    pdf.save(fileName);
-                }
+            const canvas = await html2canvas(bulletinPage, { 
+                scale: 2, 
+                backgroundColor: 'white' // Ensure background for PNG
             });
+
+            const imgData = canvas.toDataURL('image/png');
+            const fileName = `boletin_${studentName.replace(/ /g, '_')}.${format}`;
+
+            if (format === 'png') {
+                const link = document.createElement('a');
+                link.download = fileName;
+                link.href = imgData;
+                link.click();
+            } else if (format === 'pdf') {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'p',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+                
+                const imgProps = pdf.getImageProperties(imgData);
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                let margin = 10;
+                if (pdfHeight > pdf.internal.pageSize.getHeight() - (margin * 2)) {
+                    margin = 5;
+                }
+                
+                pdf.addImage(imgData, 'PNG', margin, margin, pdfWidth - (margin * 2), pdfHeight - (margin * 2));
+                pdf.save(fileName);
+            }
         }
+
 
         // Import Students
         importBtn.addEventListener('click', () => importFile.click());
@@ -978,10 +983,12 @@
                         </div>
                     `;
                     const tempDiv = document.createElement('div');
+                    tempDiv.style.position = 'absolute';
+                    tempDiv.style.left = '-9999px';
                     tempDiv.innerHTML = bulletinHTML;
                     document.body.appendChild(tempDiv);
                     
-                    const canvas = await html2canvas(tempDiv.firstChild, { scale: 2 });
+                    const canvas = await html2canvas(tempDiv.firstChild, { scale: 2, backgroundColor: 'white' });
                     const imgData = canvas.toDataURL('image/png');
                     const imgProps = pdf.getImageProperties(imgData);
                     const pdfWidth = pdf.internal.pageSize.getWidth();
