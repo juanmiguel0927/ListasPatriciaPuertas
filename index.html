@@ -184,8 +184,20 @@
         .action-grades-btn { display: none; }
         
         #printable-area {
-            display: none;
+            position: absolute;
+            left: -9999px;
+            top: auto;
         }
+
+        .bulletin-page {
+             background-color: white;
+             color: black;
+        }
+
+        .bulletin-page * {
+             color: black;
+        }
+
 
         @media (max-width: 1024px) { /* Adjusted breakpoint for tablets */
             .grade-column { display: none; }
@@ -206,10 +218,6 @@
             .bulletin-page {
                 page-break-after: always;
                 background-color: white !important;
-                color: black !important;
-            }
-            .bulletin-page * {
-                color: black !important;
             }
         }
     </style>
@@ -313,10 +321,10 @@
         
         <div id="bulletinSelectionModal" class="modal-overlay">
             <div class="modal-content">
-                <h3 class="text-xl font-bold mb-4">Generar Boletines Informativos</h3>
+                <h3 class="text-xl font-bold mb-4">Generar Boletines en PDF</h3>
                 <div class="flex flex-col gap-4">
-                    <button id="generateAllCoursesBulletinBtn" class="action-button w-full">Generar de Todos los Cursos</button>
-                    <button id="generateCurrentCourseBulletinBtn" class="action-button w-full">Generar del Curso Actual</button>
+                    <button id="generateAllCoursesBulletinBtn" class="action-button w-full">Generar PDF de Todos los Cursos</button>
+                    <button id="generateCurrentCourseBulletinBtn" class="action-button w-full">Generar PDF del Curso Actual</button>
                     <div>
                         <h4 class="font-semibold mb-2 text-left">Selección Personalizada (Curso Actual):</h4>
                         <div class="flex justify-between items-center mb-2">
@@ -326,7 +334,7 @@
                         <div id="studentSelectionCheckboxes" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border rounded" style="border-color: var(--input-border-color);">
                             <!-- Student checkboxes will be inserted here -->
                         </div>
-                        <button id="generateSelectedStudentsBtn" class="action-button w-full mt-4">Generar Boletines Seleccionados</button>
+                        <button id="generateSelectedStudentsBtn" class="action-button w-full mt-4">Generar PDF de Seleccionados</button>
                     </div>
                 </div>
                 <div class="flex justify-end mt-6">
