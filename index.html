@@ -11,6 +11,8 @@
     <!-- PDF & Image Export Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Chart.js for statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* CSS Variables for theming */
         :root {
@@ -95,8 +97,8 @@
 
         .sticky-col-no { left: 0; width: 50px; min-width: 50px; }
         .sticky-col-name { left: 50px; width: 220px; min-width: 220px; text-align: left; }
-        .sticky-col-actions { left: 270px; width: 100px; min-width: 100px; }
-        .sticky-col-summary { left: 370px; width: 120px; min-width: 120px; }
+        .sticky-col-actions { left: 270px; width: 120px; min-width: 120px; }
+        .sticky-col-summary { left: 390px; width: 120px; min-width: 120px; }
         
         /* Row Selection Highlight */
         tbody tr:hover > td, tbody tr:hover > .sticky-left {
@@ -142,8 +144,9 @@
         }
         .attendance-box.attended { background-color: #dcfce7; color: #16a34a; border-color: #16a34a; }
         .attendance-box.absent { background-color: #fee2e2; color: #ef4444; border-color: #ef4444; }
+        .attendance-box.excused { background-color: #e0e7ff; color: #4338ca; border-color: #4338ca; }
         .date-header { vertical-align: bottom; padding: 0.25rem; }
-        .date-header div { transform: rotate(-90deg); white-space: nowrap; display: block; width: 30px; margin: 0 auto 25px auto; }
+        .date-header div:first-child { transform: rotate(-90deg); white-space: nowrap; display: block; width: 30px; margin: 0 auto 25px auto; }
         td.attendance-cell { width: 60px; min-width: 60px; }
         .attendance-bulk-btn { font-size: 0.75rem; padding: 2px 4px; border-radius: 4px; margin: 1px 0; display: block; width: 100%; border: 1px solid #fff; }
 
@@ -180,8 +183,9 @@
         .bulletin-content { border: 1px solid var(--border-color); padding: 1.5rem; }
         
         /* Stats Panel */
-        .stats-panel { display: flex; justify-content: space-around; flex-wrap: wrap; background-color: var(--bg-color); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; }
+        .stats-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 1rem; background-color: var(--bg-color); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; align-items: center;}
         .stat-item { text-align: center; }
+        #statsChartContainer { max-height: 120px; }
 
         /* Action Icons in Table */
         .action-icon { cursor: pointer; margin: 0 0.25rem; font-size: 1rem; transition: color 0.2s; }
@@ -217,12 +221,26 @@
         .bulletin-page * {
              color: black !important;
         }
+        
+        /* Print styles */
+        @media print {
+            body * { visibility: hidden; }
+            #studentReportContent, #studentReportContent * { visibility: visible; }
+            #studentReportContent { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none; }
+        }
 
     </style>
 </head>
 <body class="p-4 sm:p-8">
     <div class="container rounded-xl p-4 sm:p-8 mt-4">
         <h1 class="text-3xl sm:text-4xl font-bold text-center mb-6">Control de Calificaciones y Asistencia</h1>
+        
+        <div class="flex justify-center items-center mb-4">
+            <label for="periodSelector" class="mr-2 font-semibold">Periodo:</label>
+            <select id="periodSelector" class="search-box"></select>
+        </div>
+
         <div id="tabNavigation" class="daily-schedule-container"></div>
         <h2 id="courseTitle" class="text-2xl font-bold text-center mb-2"></h2>
         <div id="courseInfo" class="text-center text-gray-500 dark:text-gray-400 mb-4"></div>
@@ -230,17 +248,20 @@
         <!-- Controls -->
         <div class="controls-container">
             <input type="text" id="searchBox" class="search-box" placeholder="Buscar estudiante...">
-            <div class="flex items-center justify-between w-full sm:w-auto gap-4">
+            <div class="flex items-center justify-center sm:justify-end w-full sm:w-auto gap-4">
                 <div class="button-group">
                     <button id="bulletinBtn" class="action-button"><i class="fas fa-id-card mr-2"></i>Boletines</button>
                     <button id="exportBtn" class="action-button"><i class="fas fa-file-csv mr-2"></i>Exportar</button>
                     <button id="importBtn" class="action-button"><i class="fas fa-upload mr-2"></i>Importar</button>
                     <input type="file" id="importFile" class="hidden" accept=".txt">
                 </div>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="darkModeToggle">
-                    <span class="slider"></span>
-                </label>
+                <div class="flex items-center gap-2">
+                    <i id="settingsBtn" class="fas fa-cog text-2xl cursor-pointer text-gray-500 hover:text-blue-500 transition-colors"></i>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="darkModeToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
             </div>
         </div>
 
@@ -300,12 +321,87 @@
             </div>
         </div>
 
+        <div id="genericConfirmModal" class="modal-overlay">
+            <div class="modal-content">
+                <h3 id="genericConfirmTitle" class="text-xl font-bold mb-4">Confirmar Acción</h3>
+                <p id="genericConfirmText" class="mb-4 whitespace-normal">¿Estás seguro?</p>
+                <div class="flex justify-end gap-2 mt-4">
+                    <button id="closeGenericConfirmModal" class="action-button">Cancelar</button>
+                    <button id="confirmGenericBtn" class="action-button bg-red-600">Confirmar</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="settingsModal" class="modal-overlay">
+            <div class="modal-content">
+                <h3 class="text-xl font-bold mb-4">Configuración General</h3>
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-semibold mb-2">Información del Docente</h4>
+                        <div class="grid grid-cols-1 gap-4">
+                            <div><label for="professorNameInput">Nombre del Docente:</label><input type="text" id="professorNameInput" class="search-box w-full"></div>
+                            <div><label for="subjectNameInput">Nombre de la Asignatura:</label><input type="text" id="subjectNameInput" class="search-box w-full"></div>
+                        </div>
+                    </div>
+                     <div>
+                        <h4 class="font-semibold mb-2">Porcentajes de Evaluación (%)</h4>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div><label for="cognitivePercentage">Cognitivo:</label><input type="number" id="cognitivePercentage" class="search-box w-full"></div>
+                            <div><label for="proceduralPercentage">Procedimental:</label><input type="number" id="proceduralPercentage" class="search-box w-full"></div>
+                            <div><label for="attitudinalPercentage">Actitudinal:</label><input type="number" id="attitudinalPercentage" class="search-box w-full"></div>
+                        </div>
+                    </div>
+                     <div>
+                        <h4 class="font-semibold mb-2">Gestión de Periodos</h4>
+                        <div id="periodsList" class="space-y-2"></div>
+                        <div class="flex gap-2 mt-2">
+                           <input type="text" id="newPeriodName" class="search-box flex-grow" placeholder="Nombre del nuevo periodo">
+                           <button id="addPeriodBtn" class="action-button bg-green-600">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 mt-6">
+                    <button id="closeSettingsModal" class="action-button">Cerrar</button>
+                    <button id="saveSettingsBtn" class="action-button bg-blue-600">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+        
+         <div id="courseManagementModal" class="modal-overlay">
+            <div class="modal-content">
+                 <h3 class="text-xl font-bold mb-4">Gestión del Curso: <span id="courseManagementTitle"></span></h3>
+                 <div>
+                    <h4 class="font-semibold mb-2">Lista de Estudiantes</h4>
+                    <div id="studentManagementList" class="space-y-2 max-h-60 overflow-y-auto border p-2 rounded" style="border-color: var(--input-border-color);"></div>
+                    <div class="flex gap-2 mt-2">
+                       <input type="text" id="newStudentName" class="search-box flex-grow" placeholder="Nombre del nuevo estudiante">
+                       <button id="addStudentBtn" class="action-button bg-green-600">+</button>
+                    </div>
+                </div>
+                 <div class="flex justify-end gap-2 mt-6">
+                    <button id="closeCourseManagementModal" class="action-button">Cerrar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="studentReportModal" class="modal-overlay">
+            <div class="modal-content max-w-2xl">
+                <div id="studentReportContent">
+                    <!-- Report content will be generated here -->
+                </div>
+                <div class="flex justify-end gap-2 mt-4 no-print">
+                    <button id="closeStudentReportModal" class="action-button">Cerrar</button>
+                    <button id="printStudentReportBtn" class="action-button bg-blue-600"><i class="fas fa-print mr-2"></i>Imprimir</button>
+                </div>
+            </div>
+        </div>
+
         <div id="bulletinModal" class="modal-overlay">
             <div class="modal-content">
                 <div id="bulletinContent">
                     <!-- Content will be generated by JS -->
                 </div>
-                 <div class="flex justify-end gap-2 mt-4">
+                 <div class="flex justify-end gap-2 mt-4 no-print">
                     <button id="closeBulletinModal" class="action-button">Cerrar</button>
                     <button id="downloadPngBtn" class="action-button bg-green-600"><i class="fas fa-file-image"></i> PNG</button>
                     <button id="downloadPdfBtn" class="action-button bg-red-600"><i class="fas fa-file-pdf"></i> PDF</button>
@@ -404,6 +500,9 @@
         const dateNoteModal = document.getElementById('dateNoteModal');
         const gradeNoteModal = document.getElementById('gradeNoteModal');
         const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+        const settingsModal = document.getElementById('settingsModal');
+        const courseManagementModal = document.getElementById('courseManagementModal');
+        const studentReportModal = document.getElementById('studentReportModal');
         const bulletinModal = document.getElementById('bulletinModal');
         const exportModal = document.getElementById('exportModal');
         const gradesModal = document.getElementById('gradesModal');
@@ -411,19 +510,23 @@
         const gradesGrid = document.getElementById('gradesGrid');
         const bulletinBtn = document.getElementById('bulletinBtn');
         const bulletinSelectionModal = document.getElementById('bulletinSelectionModal');
+        const periodSelector = document.getElementById('periodSelector');
+        const settingsBtn = document.getElementById('settingsBtn');
 
 
         // App State
-        const dailySchedule = {'Lunes':['8C','9B'],'Martes':['8A','9C','11A','11B'],'Miércoles':['8B','9A'],'Jueves':['10C','11C','11D'],'Viernes':['8D','9D','7D']};
+        let dailySchedule = {'Lunes':['8C','9B'],'Martes':['8A','9C','11A','11B'],'Miércoles':['8B','9A'],'Jueves':['10C','11C','11D'],'Viernes':['8D','9D','7D']};
         const dayNameToNumber = { 'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5 };
-        let activeCourse; 
+        let activeCourse;
+        let activePeriod;
+        let appSettings;
         let gradesData = {};
-        const allStudentsData = {
+        let allStudentsData = {
             '7D':["AHUMADA SIERRA THAEL SOFIA","AMARIS SIERRA JULEISY PAOLA","BENITEZ BOSSIO MARIA JOSE","BOLIVAR GOMEZ MARIA JOSE","CABALLERO SILVERA JOHELIS ANA","CARMONA SILVERA LEYNER LEONARDO","CARPINTERO SILVERA THALIA","CONSUEGRA ALVAREZ JHOINER DAVID","ESCORCIA RIVALDO CAMILO ANDRES","GERONIMO BARRAZA HELLEN SOFIA","GOEZ OTERO DANIEL JOSE","GONZALEZ BARRAZA DANNA SOFIA","GUANIPA GUTIERREZ ARANZA","GUTIERREZ OJEDA EMMANUEL","HERNANDEZ DIAZ JESUS DAVID","LLANOS SEGURA YAILETH PATRICIA","MARIN PALMA SANTIAGO","MARMOL HERNANDEZ SEBASTIAN ANDRES","NAVAS CEDEÑO ANGEL ALBERTO","NIETO ROLONG MARY ISABEL","ORTEGA BENITEZ IVIAN ALEJANDRA","ORTEGA MANGA ANGELLYS ISABEL","PATIÑO BORRERO HARRISON DANIEL","PEREZ ALVAREZ MARIA JOSE","PEREZ NATERA VALENTINA SOFIA","PIMIENTA OTERO LAURENS JULIANA","POLO REDONDO MARIA GUADALUPE","PRADA SARMIENTO BRAYAN JOSE","SANTIAGO DACONTE ANDRES FELIPE","SIERRA CASTILLO MAURICIO JOSE","SIERRA GOMEZ LIZETH PAOLA","SMITH SANTIAGO VALERIA","SUAREZ GALLARDO MATEO JUSETH","TORRES FERNANDEZ SANTIAGO ENRIQUE","ZARATE REDONDO YAJAIRA NICOLL"],
             '8A':["ARIZA CONSUEGRA STEISY SOFÍA","BARRAZA HERNANDEZ RONALD ALFREDO","BARRIOS MOLINA LITZY MARIELL","BECERRA CRESPO MANOLO","BELLIDO CASIANO LEIDER JOSE","BERRUEZO ORTEGA SAMANTHA ISABEL","BLANCO REYES ANGEL RAFAEL","BOLIVAR ESCOBAR VALENTINA SARETH","CIRO ROMERO ANGELA SOFIA","DE LA CRUZ SIERRA ALAN DAVID","DITA ESCALANTE GILMAR JOSE","ESCALANTE OSPINO ANDERSON CAMILO","ESCOBAR ALGARIN LILIANA","GOMEZ VILLA ANA VALERIA","GUTIERREZ PAEZ ANA MILENA","JIMÉNEZ QUINTANA FREDDY DAVID","JIMENEZ RUA NASLI DANIELA","LLANOS REDONDO ADRIANA MICHELL","LLANOS REYES ANDRES FELIPE","MARQUEZ MARIN VALERIN VALENTina","MARQUEZ VILORIA EMILY SOFÍA","MARTINEZ ORTEGA JESUS MANUEL","MOLINA GUTIERREZ JULIE PAOLA","ORDOÑEZ GARCIA LEONARDO ENRIQUE","PACHECO AVILA MARIA ANGEL","PEREZ ARAUJO ANDRÉS CAMILO","REDONDO PATIÑO DELEVIS ENRIQUE","RODRIGUEZ SANJUAN SALOME","SANTIAGO JULIO ASLY PAOLA","SIERRA GOMEZ LUISA FERNANDA","SILVERA GOMEZ GABRIEL","SILVERA ORTEGA MAYLER JESHUA","TEJERA ORTEGA LUIS MARIO","VANEGAS DE LA CRUZ DANIELA ANDREA","VEGA ORTIZ EYEELIN LORENA","VELASQUEZ GARCIA MANUEL ALEJANDRO"],
             '8B':["ACOSTA NATERA JAVITH DE JESUS","AREVALO ARCON JOSE DAVID","BARRETO ROLONG MARIANA SOFIA","BARRIOS PUENTES BLAYNER ESTEBAN","BULA PEREZ MARIA LUISA","BUSTOS BARRIOS HONEY SOPHIA","CASTRO CASTRO DASHARY MICHELL","CASTRO HARO JEAN LUCAS","CONTRERAS SANJUAN IVANNA MICHELL","CORREDOR BARBOSA SAMUEL ARTURO","COTES ESCALANTE YESID ANDRES","GARCIA VARELA SHADAY VALENTINA","GONZALEZ SILVERA LILIBETH ISABEL","HEREDIA LOPEZ EYLIN PAOLA","HERNANDEZ DE LA CRUZ MIGUEL ANGEL","HERNANDEZ LLANOS GUADALUPE MARIA","HERNANDEZ LLANOS JESE DAVID","HERRERA POLO LINA MILAGROS","JAIME ROA ANYELO JAVIER","LINARES ESTEVEZ MAYTE ALEJANDRA","LUQUE GONZALEZ YANKELIS ESTEFANIA","MONSALVO QUINTERO ADRIAN ANDRES","MONTERROSA CABALLERO LAURA VANESA","NORIEGA REDONDO WENDY PAOLA","POLO JIMENEZ NORELLA MARÍA","RADA GUTIERREZ AISHA MARIETT","REDONDO FRANCO LUIS ANGEL","RINCON PEREZ ANGIELIN ORIANA","SALAZAR ZAMBRANO RICHARD JOSE","SIERRA OROZCO ANGGY PAOLA","SILVERA ESCOBAR DAYAR AMETH","SILVERA JIMENEZ NICOLL DAYANA","SILVERA SANJUAN ADALYANA ISABEL","SOSA BERRIO DEICY JULIETH","SUAREZ DURAN JOSTIN DE JESUS","TOMASES RADA THIAGO ANDRES","URANGO PACHECO DEILER JOSEPH","VILLAMIL HERNANDEZ XIMENA ESTER"],
             '8C':["ACOSTA CAICEDO DAIMAR DE JESUS","ACUÑA VALENCIA LUIS ALEJANDRO","ARAUJO MENDOZA SIRIANA VALENTINA","BANDERA LLANOS SHAILETH VALENTINA","BURGUILLOS CARBONELL JHOSNIEL SAID","CARDENAS CHIQUILLO MICHAELL MANUEL","CASTRO GOMEZ SHERIL NICOLLE","CERVANTES LARA MAURO DE JESUS","DE LA CRUZ PIÑERES SERGIO ANDRES","DE LA CRUZ REDONDO ANTONY RICARDO","DE LA HOZ CABAS YEFFER DE JESUS","ESCORCIA MIRANDA GUADALUPE","FERRER SANTANDER DAMIAN CAMILO","GARCIA PEÑATE MARIA DEL CARMEN","GARCIA ROJAS TIFFANY DAYANA","GOMEZ OTERO JANNIER FARID","GONZALEZ SALCEDO MARIA DE LOS ANGELES","HURTADO ORTIZ ALAN DAVIDSON","LLANOS TAGUER BRANDON DE JESUS","MADERA ORTEGA ANA PAULA","MEZA SIERRA JAMES DE JESUS","MORALES PERCY KEREN SOFIA","OLANO PAZ YARIANGEL CHICHINQUIRA","ORTEGA SIERRA VALENTINA MISHEL","PEREZ GONZALEZ SHAIRA LUCIA","PEREZ NAVAS VALENTINA NICOLLE","POLO GUERRA XAVIER JOSUE","RADA CORRO STEPHANIE SOFIA","RANGEL SIERRA LAUREN SOFIA","RICO ZAPATA DANNA SOFIA","RIVALDO PALMA MILAGRO DE JESUS","RIVALDO PALMA TANIA ISABEL","ROSANIA MINDIOLA DIEGO DAVID","SARMIENTO MARTINEZ MARI ANGEL","SILVA SILVERA SOFIA ISABEL","SILVERA CERVANTES MILTON DE JESUS","TRIGOS OROZCO SHELSY SOFIA"],
-            '8D':["ALVAREZ GOMEZ ANA SOFIA", "BARRIOS ORTIZ CARLOS DAVID", "CASTILLO PEREZ LAURA VALENTINA", "DIAZ RODRIGUEZ JUAN ESTEBAN", "FERNANDEZ MORA ISABELLA", "GARCIA LOPEZ MATEO", "HERNANDEZ JIMENEZ SOFIA", "LOPEZ MARTINEZ DANIEL ALEJANDRO", "MARTINEZ NUÑEZ VALERIA", "MENDOZA RAMIREZ SANTIAGO", "MORENO VARGAS GABRIELA", "ORTIZ CASTRO SEBASTIAN", "PEREZ GONZALEZ CAMILA", "RAMIREZ DIAZ ANDRES FELIPE", "RODRIGUEZ SANCHEZ MARIANA", "SANCHEZ TORRES NICOLAS", "TORRES GOMEZ ALEJANDRA", "VARGAS HERNANDEZ DAVID", "GOMEZ CRUZ VALENTINA", "PEÑA ROJAS JUAN JOSE"],
+            '8D':["ALVAREZ PEREZ SOFIA","BARROS GOMEZ CARLOS","CASTILLO DIAZ ISABELLA","DURAN ROJAS MATEO","ESTRADA MEJIA VALENTINA","FERNANDEZ MORA SANTIAGO","GARCIA LUNA LUCIANA","HERRERA PAZ SAMUEL","IGLESIAS RIO VALERIA","JIMENEZ SOTO ANDRES","LARA VEGA MARIANA","MARTINEZ SOLANO SEBASTIAN","NIETO CAMPO GABRIELA","ORTEGA BABILONIA DAVID","PINEDA ROCA DANIELA","QUINTERO LUNA ALEJANDRO","RAMIREZ BLANCO CAMILA","SUAREZ PEÑA NICOLAS","TORRES VILLALBA EMILIA","VARGAS GUZMAN MARTIN"],
             '9A':["ACOSTA PADILLA OVER ENRIQUE","ACOSTA PALMA CRISTHIAN JASSER","AMADOR PALMA ALVARO JUNIOR","ARCON ALVAREZ SEBASTian","ARTETA CONSUEGRA JANNY LIZ","AVILA MEZA MAUREN JULIETH","BARRAZA SIERRA LUIS FERNANDO","BARRIOS LLANOS GERALDINE ISABEL","BARRIOS SIERRA BRIANA SOFIA","CAMARGO DE LA CRUZ LEINYS MAURETH","CAMARGO MARTINEZ MARIA ALEJANDRA","CANOSA CERVANTES VIVIANA CAROLINA","CORTES PIÑA JHOVANNY ESTEBAN","COSSIO NARVAEZ HEIDY ISABEL","DE LA HOZ VIZCAINO BUENDI BANESA","ESCORCIA BLANCO MELANY SOFIA","ESCORCIA MIRANDA JESUS DAVID","FERNANDEZ ANGULO SHARICK","GALINDO ESCALANTE SHARON MICHAELL","GALLARDO BRADFORD JHOYMAR DE JESUS","LOPEZ MITROBICH MARIMAR","MARRIAGA SANJUAN SOCHY","MURILLO SILVERA YEYCI MISHELL","ORELLANO MOLINA CICLALIS VALENTINA","ORTIZ PEREZ CRISTIAN DAVID","OTERO CARDENAS ADAN ELIAS","OTERO NIETO JAIR DE JESUS","PEÑA MEZA VICTOR ANDRES","POLO CONTRERAS ANDERSON","POLO PALMA SAILLY TATIANA","RADA JIMÉNEZ JESUS ALBERTO","RADA NIEVES DAMARIS SOFIA","REDONDO SALGADO ALEJANDRA SOFIA","RODRIGUEZ ANGULO DANNA NICOLLE","SALAZAR IGLESIAS TALIANA LISETH","SANTIAGO LOPEZ MARIA CAMILA","SARMIENTO CERVANTES VALEREE LUCIA","SARMIENTO DE LA RANS ALAN DAVID","TURBAY GOMEZ LAIONEL DAVID","ZARATA ROA LUIS ALEJANDRO"],
             '9B':["ANGULO BARRAGAN CARLOS DAVID","ARAUJO ESCALANTE YELIANYS","ARTETA ZARATE JHAN CARLOS","BARRAZA CAFIEL VALENTINA ESTHER","BLANCO ESTRADA JENIFER","BLANCO SILVERA YAIKOVIC ALEXANDER","BOLIVAR MARRIAGA YANDERSON DAVID","ESCOBAR ALGARIN JOSE MIGUEL","FERRER SANTANDER LOGAN SMITH","FONTALVO PUELLO CRISTIAN DAVID","GARCIA CAMARGO ANGELY PAOLA","GERONIMO ROJAS EMMANUEL DE JESUS","GIL GUTIERREZ ANA REYSHELL","GOENAGA LEJARDE JULIANNY KAROLAY","GUTIERREZ SIERRA SANTIAGO DAVID","HERNANDEZ LOPEZ MARIA CAMILA","HERNANDEZ MONTAÑO MARIA ALEXANDRA","JIMENEZ CONSUEGRA TANIA CAROLINA","MARIN MORALES GENESIS PAOLA","MARTINEZ DAZA EILYN DAYANA","MEDINA RIQUETT KELLY ROXANA","MOLINA VELASQUEZ LERVYS JAVIER","MORALES OTERO JESUS MANUEL","MOVILLA BOLIVAR EYMIS YOLANIS","NAVARRO GUTIERREZ ALEJANDRO DE JESUS","ORTEGA CUERVO KRISTEL ARIANNE","ORTIZ JIMENEZ ELIATH DAVID","PALMA SILVERA MARISOL","PATINO CONSUEGRA ANDRYS PAOLA","PEREZ ALGARIN LUCIANA","PEREZ BOLIVAR JHONEFFER","REDONDO RODRIGUEZ KARLA CRISTINA","RODRIGUEZ VEGA YESID JAVIER","RUIZ MARENCO JUAN CAMILO","SILVERA JIMENO THALIANA VANESA","TEJERA ORTEGA VALENTina","TESILLO PEREZ CARLOS DANIEL","TORRADO NORENA CRISTIAN","ZAPATA SIERRA LUCYANA MARIA"],
             '9C':["BALLESTAS DE LA CRUZ OWEL ALBERTO","BARANDICA GUTIERREZ IKER DAVID","CAMARGO CABALLERO JHONNY ENRIQUE","CONSUEGRA HERNANDEZ ANGIE PAola","DIAZ DEL TORO SHARILYN PAOLA","ESCORCIA BORNACELLY NATHALIA ISABEL","ESCORCIA DE LA CRUZ LUISA FERNANDA","ESTRADA RUA JHON FREDY","GOENAGA DE AVILA CARLOS MAURICIO","GONZALEZ CONTRERAS YURLANYS MICHELL","GONZALEZ FERRER MAIRELYS DAYANA","GONZALEZ LLANOS ANA MILAGRO","GONZALEZ RICO JAVIER EDUARDO","HURTADO ORTIZ AMY","JIMENEZ BADILLO JUAN MIGUEL","JIMENEZ DE LA CRUZ JUSETH DAVID","LINARES TEJEDA MARCELA","LUBO JIMENEZ ALEJANDRO JOSE","MARTINEZ CASTILLO DANNA CAROLINA","MEDINA SILVERA DILAN DE JESUS","MIRANDA FERNANDEZ ANTONNY DAVID","MOLINA ARRIETA KAIRETH ALEJANDRA","OCHOA ORTEGA JOSE ANDRES","ORTEGA LUNAR DIEGO JESUS","PEREZ GERONIMO EYMER DE JESUS","PRADA SARMIENTO SHARICK ANDREA","REDONDO BERDUGO MARIANA PAOLA","RICAURTE SANTANA MARIA PAULA","RIOS ARCON ARANZA LUCIA","RIOS NAVAS VICTOR MANUEL","ROA DE LA CRUZ PEDRO PABLO","ROMERO JIMENEZ STEVAN FELIPE","SILVERA LINARES ANDRES FELIPE","SILVERA VILORIA SNEYDER DE JESUS","VARGAS CASTRO SAMIR JOSE","VILORIA CABARCAS ESTEFANY PAOLA"],
@@ -434,22 +537,23 @@
             '11C':["ALTAMAR CABALLERO PAOLA ANDREA","ARIZA PEREZ DILAN","ARROYO CORREDOR ANDRES FELIPE","BARRETO GUTIERREZ SLAYNETH SOFIA","BONILLA GUTIERREZ SHARON YULiana","CASTIBLANCO IBAÑEZ IAN SANTIAGO","DE LA CRUZ ARRIETA ANGEL DANIEL","DE LA CRUZ CAMARGO SERGIO ANDRES","DE LA CRUZ SARMIENTO MARIA JOSE","DE LA HOZ MUÑOZ LUISA FERNANDA","DE LA HOZ SIERRA JOHAN JESUS","DE LOS REYES TAMAYO YOSETH DAVID","DELGADO HERNANDEZ SOFIA ELENA","ESCALANTE QUIROZ JESUS DAVID","ESCOBAR SALCEDO JUSEPH ENRIQUE","ESCORCIA JIMENEZ ANDRES CAMILO","GALLARDO PANCHA GABRIELA MARIA","GOEZ SERRANO EMMANUEL JOSE","HERNANDEZ CERVANTES PABLO ANDRES","HERNANDEZ MUÑOZ DANA GABRIELA","HERRERA MENDOZA ESTEBAN ENRIQUE","MARQUEZ MIRANDA JAZIR","ORELLANO BOLIVAR KEYDDER DAYAN","PACHECO SIERRA ADRIANA LUCIA","PARRA REDONDO JUAN CAMILO","REDONDO MENDOZA MARIANGEL","RIVERO COBA GLEIDYS PAOLA","SALAZAR LLANOS YAMITH ANDRES","SANCHEZ CELIS DIEGO ISAC","SANTAMARIA BORJA ANDREA DANITZA","SIERRA GARCIA OSCAR ANDRES","VASQUEZ ARZUZA ALAM MATIU","VERGARA BARRIOS KLEIVER MANUEL"],
             '11D':["ARIZA DE LA CRUZ SEBASTIAN DE JESUS","ARIZA SILVERA JORGE MARIO DE JESÚS","BLANCO ESCALANTE SAIDER ISABEL","BOLIVAR VIVANCO NICOL DANIELA","BORGE GOENAGA SHADIA MICHELLE","CABALLERO BARRIOS BREIDER JOSE","CHICO MARTINEZ DAIRON ANDRES","CONSUEGRA SILVERA SARAY MICHELL","ESCALANTE GONZALEZ DANIELA PAOLA","GALLARDO BRADFORD NAYALITH ANDREA","GARZON GALINDO LENIN","GONZALEZ DE LA RANS SHARLET MARIA","GUTIERREZ MENDOZA JOSE LUIS","GUTIERREZ VASQUEZ PAULA PATRICIA","MELENDRES VILLALBA KEIMER ANDRES","MEZA GARCIA CARLOS ANDRES","MORA SILVERA DEYNER ALEXANDER","ORTEGA GONZALEZ LEWIN STICK","PADILLA PARRA MARY ANGEL","PALMA DE LA HOZ LUIS ANGEL","PEDRAZA OLIVEROS MATHIAS KEITEL","PEDROZA GALLARDO SCARLETT SOFIA","PEREZ VEGA NICOL SHARITH","RODRIGUEZ SALAS YORYANIZ ANETH","SANTIAGO SOLANO AXEL LEONY","VARGAS ALBIS YERSON DAVID","VARGAS MUÑOZ SHERIT DADIVA","VELILLA ACOSTA CAMILO ANDRES"]
         };
-        let courseConfig = {};
+        let searchTimeout;
+        let statsChart;
+        
         const capitalizeWords = (str) => !str ? '' : str.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         
-        function setupCourseConfig() {
-            for (const group in allStudentsData) {
-                courseConfig[group] = { students: allStudentsData[group].map(capitalizeWords), title: `Grupo: ${group}`, professor: "Puertas Lopez Patricia Isabel", subject: "Artística Plástica y Visual" };
-            }
-        }
-
         // --- Utility & Calculation Functions ---
-        const getDayForCourse = (course) => { for (const day in dailySchedule) { if (dailySchedule[day].includes(course)) return day; } return null; };
+        const getDayForCourse = (course) => { 
+            for (const day in dailySchedule) { 
+                if (dailySchedule[day].includes(course)) return day; 
+            } 
+            return null; 
+        };
         const getAttendanceDates = (course) => {
             const dayName = getDayForCourse(course);
             if (!dayName) return [];
             const dayNumber = dayNameToNumber[dayName];
-            const dates = [], start = new Date('2024-09-22T00:00:00'), end = new Date('2024-11-28T00:00:00');
+            const dates = [], start = new Date('2025-09-22T00:00:00'), end = new Date('2025-11-28T00:00:00');
             let current = new Date(start);
             while (current <= end) {
                 if (current.getDay() === dayNumber) dates.push(new Date(current));
@@ -473,42 +577,55 @@
         
         const calculateDef = (grades) => {
             const g = grades || {};
+            const p = appSettings.percentages;
             const cAvg = calculateAverage([getGradeValue(g,'cognitivoC1'), getGradeValue(g,'cognitivoC2'), getGradeValue(g,'cognitivoC3')]);
             const pAvg = calculateAverage([getGradeValue(g,'procedimentalP1'), getGradeValue(g,'procedimentalP2'), getGradeValue(g,'procedimentalP3')]);
             const aAvg = calculateAverage([getGradeValue(g,'actitudinalA1'), getGradeValue(g,'actitudinalA2'), getGradeValue(g,'actitudinalA3')]);
-            const def = ((cAvg * 0.40) + (pAvg * 0.30) + (aAvg * 0.30));
+            const def = ((cAvg * p.cognitive / 100) + (pAvg * p.procedural / 100) + (aAvg * p.attitudinal / 100));
             return isNaN(def) ? "0.00" : def.toFixed(2);
         };
         const determineNivel = (def) => { const s = parseFloat(def); if (s>=1&&s<=2.99)return"Bajo";if (s>=3&&s<=3.99)return"Básico";if (s>=4&&s<=4.59)return"Alto";if(s>=4.6&&s<=5)return"Superior";return""; };
         const calculateAttendanceSummary = (attendance) => {
             const att = attendance || {};
-            let a=0,p=0; 
+            let a=0,p=0,e=0; 
             for(const d in att) {
                 if(att[d]===true) p++;
                 else if(att[d]===false) a++;
+                else if(att[d]==='excused') e++;
             } 
-            return {attended: p, absent: a}; 
+            return {attended: p, absent: a, excused: e}; 
+        };
+        
+        const debounce = (func, delay) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(func, delay);
         };
 
         // --- Table Rendering ---
         const renderTable = () => {
             try {
-                const config = courseConfig[activeCourse];
-                if (!config || !config.students) {
-                    tableContainer.innerHTML = `<div class="p-4 text-center text-red-500">No se pudo cargar la configuración para este curso.</div>`;
+                const config = allStudentsData[activeCourse];
+                if (!config) {
+                    tableContainer.innerHTML = `<div class="p-4 text-center">No hay estudiantes en este curso. Puede añadirlos en la configuración del curso.</div>`;
+                    courseTitle.innerHTML = `Grupo: ${activeCourse} <i id="courseSettingsBtn" class="fas fa-edit text-lg text-gray-400 hover:text-blue-500 cursor-pointer ml-2"></i>`;
+                    document.getElementById('courseSettingsBtn').onclick = () => showCourseManagementModal();
+                    courseInfo.innerHTML = `<p>Docente: ${appSettings.professor}</p><p>Asignatura: ${appSettings.subject}</p>`;
+                    calculateAndDisplayStats();
                     return;
                 }
 
-                const data = gradesData[activeCourse] || {};
+                const data = gradesData[activePeriod]?.[activeCourse] || {};
                 const attendanceDates = getAttendanceDates(activeCourse);
                 const searchTerm = searchBox.value.toLowerCase();
-                const filteredStudents = config.students.filter(s => s && typeof s === 'string' && s.toLowerCase().includes(searchTerm));
+                const filteredStudents = config.filter(s => s && typeof s === 'string' && s.toLowerCase().includes(searchTerm));
 
-                courseTitle.textContent = `Grupo: ${activeCourse}`;
-                courseInfo.innerHTML = `<p>Docente: ${config.professor}</p><p>Asignatura: ${config.subject}</p>`;
+                courseTitle.innerHTML = `Grupo: ${activeCourse} <i id="courseSettingsBtn" class="fas fa-edit text-lg text-gray-400 hover:text-blue-500 cursor-pointer ml-2"></i>`;
+                document.getElementById('courseSettingsBtn').onclick = () => showCourseManagementModal();
+
+                courseInfo.innerHTML = `<p>Docente: ${appSettings.professor}</p><p>Asignatura: ${appSettings.subject}</p>`;
 
                 const tableEl = document.createElement('table');
-                tableEl.style.minWidth = `${490 + (attendanceDates.length * 60) + 700}px`;
+                tableEl.style.minWidth = `${510 + (attendanceDates.length * 60) + 700}px`;
 
                 let tableHTML = `
                     <thead>
@@ -518,9 +635,9 @@
                             <th rowspan="2" class="sticky-left sticky-col-actions">Acciones</th>
                             <th rowspan="2" class="sticky-left sticky-col-summary">ASIST.</th>
                             <th class="attendance-column" colspan="${attendanceDates.length}">ASISTENCIA POR FECHA</th>
-                            <th class="grade-column" colspan="3">COGNITIVO (40%)</th>
-                            <th class="grade-column" colspan="3">PROCEDIMENTAL (30%)</th>
-                            <th class="grade-column" colspan="3">ACTITUDINAL (30%)</th>
+                            <th class="grade-column" colspan="3">COGNITIVO (${appSettings.percentages.cognitive}%)</th>
+                            <th class="grade-column" colspan="3">PROCEDIMENTAL (${appSettings.percentages.procedural}%)</th>
+                            <th class="grade-column" colspan="3">ACTITUDINAL (${appSettings.percentages.attitudinal}%)</th>
                             <th rowspan="2" class="grade-column col-def">DEF</th>
                             <th rowspan="2" class="grade-column col-nivel">NIVEL</th>
                         </tr>
@@ -534,8 +651,11 @@
                                         ${d.getDate()}/${d.getMonth()+1} 
                                         <i class="${noteIconClass} cursor-pointer hover:text-yellow-500 text-xs ml-1" data-date-note="${dateString}" onclick="showDateNoteModal('${dateString}')"></i>
                                     </div>
-                                    <button class="attendance-bulk-btn bg-green-500" onclick="markAllAttendance('${dateString}', true)">✓</button>
-                                    <button class="attendance-bulk-btn bg-red-500" onclick="markAllAttendance('${dateString}', false)">✗</button>
+                                    <div class="flex flex-col items-center">
+                                      <button class="attendance-bulk-btn bg-green-500" onclick="markAllAttendance('${dateString}', true)">✓</button>
+                                      <button class="attendance-bulk-btn bg-red-500" onclick="markAllAttendance('${dateString}', false)">✗</button>
+                                      <button class="attendance-bulk-btn bg-indigo-500" onclick="markAllAttendance('${dateString}', 'excused')">E</button>
+                                    </div>
                                 </th>`;
                             }).join('')}
                             ${['C1', 'C2', 'C3', 'P1', 'P2', 'P3', 'A1', 'A2', 'A3'].map(h => {
@@ -561,11 +681,12 @@
                         <td class="sticky-left sticky-col-no">${index + 1}</td>
                         <td class="sticky-left sticky-col-name">${student}</td>
                         <td class="sticky-left sticky-col-actions">
-                            <i class="fas fa-comment action-icon ${hasObs ? 'has-obs' : ''}" data-student-obs="${student}" onclick="showObservationsModal('${student}')"></i>
-                            <i class="fas fa-id-card action-icon" onclick="showBulletinModal('${student}')"></i>
-                            <i class="fas fa-edit action-icon action-grades-btn" onclick="showGradesModal('${student}')"></i>
+                            <i class="fas fa-comment action-icon ${hasObs ? 'has-obs' : ''}" title="Observaciones" data-student-obs="${student}" onclick="showObservationsModal('${student}')"></i>
+                            <i class="fas fa-id-card action-icon" title="Boletín" onclick="showBulletinModal('${student}')"></i>
+                            <i class="fas fa-chart-line action-icon" title="Informe de Estudiante" onclick="showStudentReportModal('${student}')"></i>
+                            <i class="fas fa-edit action-icon action-grades-btn" title="Editar Notas" onclick="showGradesModal('${student}')"></i>
                         </td>
-                        <td class="sticky-left sticky-col-summary"><span>Asist.: ${summary.attended}</span><br><span>Ausen.: ${summary.absent}</span></td>`;
+                        <td class="sticky-left sticky-col-summary"><span>✓: ${summary.attended}</span><br><span>✗: ${summary.absent}</span><br><span>E: ${summary.excused}</span></td>`;
                     
                     attendanceDates.forEach(date => {
                         const dateString = date.toISOString().split('T')[0];
@@ -573,6 +694,7 @@
                         let a_class = 'attendance-box', a_content = '';
                         if (status === true) { a_class += ' attended'; a_content = '✓'; }
                         else if (status === false) { a_class += ' absent'; a_content = '✗'; }
+                        else if (status === 'excused') { a_class += ' excused'; a_content = 'E'; }
                         tableHTML += `<td class="attendance-cell"><div class="${a_class}" data-student="${student}" data-date="${dateString}">${a_content}</div></td>`;
                     });
                     
@@ -594,25 +716,28 @@
         };
 
         // --- Event Handlers & Data Management ---
-        const ensureCourseData = () => {
-            if (!gradesData[activeCourse]) gradesData[activeCourse] = {};
-            if (!gradesData[activeCourse].dateNotes) gradesData[activeCourse].dateNotes = {};
-            if (!gradesData[activeCourse].columnNotes) gradesData[activeCourse].columnNotes = {};
+        const ensureCourseData = (period, course) => {
+            if (!gradesData[period]) gradesData[period] = {};
+            if (!gradesData[period][course]) gradesData[period][course] = {};
+            const courseData = gradesData[period][course];
+            if (!courseData.dateNotes) courseData.dateNotes = {};
+            if (!courseData.columnNotes) courseData.columnNotes = {};
         };
-        const ensureStudentData = (student) => {
-            if (!gradesData[activeCourse]) gradesData[activeCourse] = { dateNotes: {}, columnNotes: {} };
-            if (!gradesData[activeCourse][student]) {
-                gradesData[activeCourse][student] = { grades: {}, attendance: {}, observations: [] };
-            } else if (!gradesData[activeCourse][student].observations) {
-                gradesData[activeCourse][student].observations = [];
+
+        const ensureStudentData = (period, course, student) => {
+            ensureCourseData(period, course);
+            if (!gradesData[period][course][student]) {
+                gradesData[period][course][student] = { grades: {}, attendance: {}, observations: [] };
+            } else if (!gradesData[period][course][student].observations) {
+                gradesData[period][course][student].observations = [];
             }
         };
         
         const enableEdit = (cell) => {
             if (cell.querySelector('input')) return;
             const { student, field } = cell.dataset;
-            ensureStudentData(student);
-            const currentVal = gradesData[activeCourse][student].grades?.[field] || '';
+            ensureStudentData(activePeriod, activeCourse, student);
+            const currentVal = gradesData[activePeriod][activeCourse][student].grades?.[field] || '';
             const input = document.createElement('input');
             input.type = 'number';
             input.min = '1';
@@ -651,8 +776,8 @@
         
         const updateGrade = (student, field, value, cell) => {
             if(!cell.contains(document.activeElement)) {
-                ensureStudentData(student);
-                const studentData = gradesData[activeCourse][student];
+                ensureStudentData(activePeriod, activeCourse, student);
+                const studentData = gradesData[activePeriod][activeCourse][student];
                 if (!studentData.grades) studentData.grades = {};
                 let numVal = parseFloat(value);
                 
@@ -676,66 +801,97 @@
                     defCell.className = `col-def ${nivelClass}`;
                     nivelCell.className = `col-nivel ${nivelClass}`;
                 }
-                saveData(true);
+                saveAllData(true);
                 calculateAndDisplayStats();
             }
         };
 
         const updateAttendance = (box) => {
             const { student, date } = box.dataset;
-            ensureStudentData(student);
-            const studentData = gradesData[activeCourse][student];
+            ensureStudentData(activePeriod, activeCourse, student);
+            const studentData = gradesData[activePeriod][activeCourse][student];
             if (!studentData.attendance) studentData.attendance = {};
             const currentStatus = studentData.attendance[date];
-            let newStatus = (currentStatus === undefined) ? true : (currentStatus === true) ? false : undefined;
+
+            const statusCycle = [true, false, 'excused', undefined]; // Attended, Absent, Excused, Not Marked
+            const currentIndex = statusCycle.indexOf(currentStatus);
+            const newStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
+
             if (newStatus === undefined) delete studentData.attendance[date];
             else studentData.attendance[date] = newStatus;
+
             box.className = 'attendance-box'; box.textContent = '';
             if (newStatus === true) { box.classList.add('attended'); box.textContent = '✓'; }
             else if (newStatus === false) { box.classList.add('absent'); box.textContent = '✗'; }
+            else if (newStatus === 'excused') { box.classList.add('excused'); box.textContent = 'E'; }
+
             const summary = calculateAttendanceSummary(studentData.attendance);
             const summaryCell = box.closest('tr').querySelector('.sticky-col-summary');
-            if (summaryCell) summaryCell.innerHTML = `<span>Asist.: ${summary.attended}</span><br><span>Ausen.: ${summary.absent}</span>`;
-            saveData(true);
+            if (summaryCell) summaryCell.innerHTML = `<span>✓: ${summary.attended}</span><br><span>✗: ${summary.absent}</span><br><span>E: ${summary.excused}</span>`;
+            saveAllData(true);
             calculateAndDisplayStats();
         };
 
         function markAllAttendance(dateString, status) {
-            const config = courseConfig[activeCourse];
+            const config = allStudentsData[activeCourse];
             if (!config) return;
-            const students = config.students;
-            const data = gradesData[activeCourse] || {};
+            const students = config;
+            const data = gradesData[activePeriod]?.[activeCourse] || {};
             const allCurrentlyMarked = students.every(student => (data[student]?.attendance?.[dateString] === status));
             const newStatus = allCurrentlyMarked ? undefined : status;
             students.forEach(student => {
-                ensureStudentData(student);
-                if (!gradesData[activeCourse][student].attendance) gradesData[activeCourse][student].attendance = {};
-                if (newStatus === undefined) delete gradesData[activeCourse][student].attendance[dateString];
-                else gradesData[activeCourse][student].attendance[dateString] = newStatus;
+                ensureStudentData(activePeriod, activeCourse, student);
+                if (!gradesData[activePeriod][activeCourse][student].attendance) gradesData[activePeriod][activeCourse][student].attendance = {};
+                if (newStatus === undefined) delete gradesData[activePeriod][activeCourse][student].attendance[dateString];
+                else gradesData[activePeriod][activeCourse][student].attendance[dateString] = newStatus;
             });
-            saveData();
+            saveAllData();
         }
 
-        const saveData = (isPartial = false) => { try { localStorage.setItem('gradesDataGroups', JSON.stringify(gradesData)); if (!isPartial) renderTable(); } catch (e) { console.error("Error saving data: ", e); } };
+        const saveAllData = (isPartial = false) => { 
+            try { 
+                localStorage.setItem('gradesData_v2', JSON.stringify(gradesData)); 
+                localStorage.setItem('allStudentsData_v2', JSON.stringify(allStudentsData)); 
+                localStorage.setItem('dailySchedule_v2', JSON.stringify(dailySchedule)); 
+                if(!isPartial) { renderTable(); }
+                else { showMessage("Guardado", "success"); }
+            } catch (e) { console.error("Error saving data: ", e); } 
+        };
         
-        const loadData = () => {
-            const savedGrades = localStorage.getItem('gradesDataGroups');
-            if (savedGrades) {
-                try {
-                    gradesData = JSON.parse(savedGrades);
-                    if (typeof gradesData !== 'object' || gradesData === null || Array.isArray(gradesData)) {
-                        gradesData = {};
-                        localStorage.removeItem('gradesDataGroups');
-                    }
-                } catch (e) { 
-                    console.error("Error parsing data from localStorage. Data will be reset.", e);
-                    gradesData = {};
-                    localStorage.removeItem('gradesDataGroups');
-                }
-            } else {
-                gradesData = {};
+        const loadAllData = () => {
+            const savedGrades = localStorage.getItem('gradesData_v2');
+            const savedStudents = localStorage.getItem('allStudentsData_v2');
+            const savedSchedule = localStorage.getItem('dailySchedule_v2');
+            
+            gradesData = savedGrades ? JSON.parse(savedGrades) : {};
+            allStudentsData = savedStudents ? JSON.parse(savedStudents) : allStudentsData;
+            dailySchedule = savedSchedule ? JSON.parse(savedSchedule) : dailySchedule;
+
+            // Migration from old structure if necessary
+            if (localStorage.getItem('gradesDataGroups') && Object.keys(gradesData).length === 0) {
+                const oldData = JSON.parse(localStorage.getItem('gradesDataGroups'));
+                gradesData['Periodo 1'] = oldData;
+                localStorage.removeItem('gradesDataGroups');
+                saveAllData();
             }
-            setupCourseConfig();
+        };
+        
+        const saveSettings = () => {
+            localStorage.setItem('appSettings_v2', JSON.stringify(appSettings));
+            showMessage("Configuración guardada", "success");
+        };
+
+        const loadSettings = () => {
+            const savedSettings = localStorage.getItem('appSettings_v2');
+            const defaultSettings = {
+                professor: "Puertas Lopez Patricia Isabel",
+                subject: "Artística Plástica y Visual",
+                percentages: { cognitive: 40, procedural: 30, attitudinal: 30 },
+                periods: ["Periodo 1"],
+                activePeriod: "Periodo 1"
+            };
+            appSettings = savedSettings ? JSON.parse(savedSettings) : defaultSettings;
+            activePeriod = appSettings.activePeriod;
         };
         
         function applyTheme(isDark) {
@@ -745,14 +901,14 @@
         }
        
         function showObservationsModal(student) {
-            ensureStudentData(student);
+            ensureStudentData(activePeriod, activeCourse, student);
             document.getElementById('obsStudentName').textContent = student;
             document.getElementById('obsTextarea').value = '';
             
             const historyContainer = document.getElementById('obsHistory');
             historyContainer.innerHTML = '';
 
-            const observations = gradesData[activeCourse][student].observations || [];
+            const observations = gradesData[activePeriod][activeCourse][student].observations || [];
 
             if (observations.length === 0) {
                 historyContainer.innerHTML = '<p class="text-gray-500">No hay observaciones registradas.</p>';
@@ -793,38 +949,38 @@
         }
 
         function deleteObservation(student, timestamp) {
-            ensureStudentData(student);
-            const studentData = gradesData[activeCourse][student];
+            ensureStudentData(activePeriod, activeCourse, student);
+            const studentData = gradesData[activePeriod][activeCourse][student];
             
             if (studentData && studentData.observations) {
                 studentData.observations = studentData.observations.filter(obs => obs.timestamp !== timestamp);
-                saveData();
+                saveAllData();
                 showObservationsModal(student); // Refresh the modal to show the change
                 showMessage("Observación borrada con éxito.", "success");
             }
         }
         
         function showDateNoteModal(dateString) {
-            ensureCourseData();
+            ensureCourseData(activePeriod, activeCourse);
             const date = new Date(dateString + 'T00:00:00');
             document.getElementById('dateNoteDate').textContent = date.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
-            document.getElementById('dateNoteTextarea').value = gradesData[activeCourse].dateNotes?.[dateString] || '';
+            document.getElementById('dateNoteTextarea').value = gradesData[activePeriod][activeCourse].dateNotes?.[dateString] || '';
             dateNoteModal.dataset.date = dateString;
             dateNoteModal.classList.add('active');
         }
         
         function showGradeNoteModal(noteGroup) {
-            ensureCourseData();
+            ensureCourseData(activePeriod, activeCourse);
             const titlePart = noteGroup === '1' ? 'Notas #1 (C1, P1, A1)' : noteGroup === '2' ? 'Notas #2 (C2, P2, A2)' : 'Notas #3 (C3, P3, A3)';
             document.getElementById('gradeNoteTitle').textContent = titlePart;
-            document.getElementById('gradeNoteTextarea').value = gradesData[activeCourse].columnNotes?.[noteGroup] || '';
+            document.getElementById('gradeNoteTextarea').value = gradesData[activePeriod][activeCourse].columnNotes?.[noteGroup] || '';
             gradeNoteModal.classList.add('active');
             gradeNoteModal.dataset.noteGroup = noteGroup;
         }
 
         function showGradesModal(student) {
-            ensureStudentData(student);
-            const studentData = gradesData[activeCourse][student];
+            ensureStudentData(activePeriod, activeCourse, student);
+            const studentData = gradesData[activePeriod][activeCourse][student];
             gradesStudentName.textContent = student;
             gradesGrid.innerHTML = '';
             const fields = ['cognitivoC1','cognitivoC2','cognitivoC3','procedimentalP1','procedimentalP2','procedimentalP3','actitudinalA1','actitudinalA2','actitudinalA3'];
@@ -838,8 +994,8 @@
         }
 
         function showBulletinModal(student) {
-            ensureStudentData(student);
-            const studentData = gradesData[activeCourse][student];
+            ensureStudentData(activePeriod, activeCourse, student);
+            const studentData = gradesData[activePeriod][activeCourse][student];
             const def = calculateDef(studentData.grades);
             const nivel = determineNivel(def);
             const attendance = calculateAttendanceSummary(studentData.attendance);
@@ -856,7 +1012,7 @@
                 }).join('<hr class="my-1">');
             }
 
-            document.getElementById('bulletinContent').innerHTML = `<div class="bulletin-page p-4 bg-white" style="color: black !important;"><h3 class="text-2xl font-bold text-center mb-4">Boletín Informativo</h3><p><strong>Estudiante:</strong> <span id="bulletinStudentName">${student}</span></p><p><strong>Curso:</strong> <span id="bulletinCourseName">${courseConfig[activeCourse].title}</span></p><hr class="my-4"><h4 class="text-lg font-bold mt-4">Calificaciones</h4><div id="bulletinGrades" class="grid grid-cols-2 gap-2 mt-2"><p><strong>Cognitivo C1:</strong> ${studentData.grades?.cognitivoC1||'N/A'}</p><p><strong>Cognitivo C2:</strong> ${studentData.grades?.cognitivoC2||'N/A'}</p><p><strong>Cognitivo C3:</strong> ${studentData.grades?.cognitivoC3||'N/A'}</p><p><strong>Procedimental P1:</strong> ${studentData.grades?.procedimentalP1||'N/A'}</p><p><strong>Procedimental P2:</strong> ${studentData.grades?.procedimentalP2||'N/A'}</p><p><strong>Procedimental P3:</strong> ${studentData.grades?.procedimentalP3||'N/A'}</p><p><strong>Actitudinal A1:</strong> ${studentData.grades?.actitudinalA1||'N/A'}</p><p><strong>Actitudinal A2:</strong> ${studentData.grades?.actitudinalA2||'N/A'}</p><p><strong>Actitudinal A3:</strong> ${studentData.grades?.actitudinalA3||'N/A'}</p><p class="mt-2 font-bold"><strong>DEF: ${def} (${nivel})</strong></p></div><h4 class="text-lg font-bold mt-4">Asistencia</h4><div id="bulletinAttendance" class="mt-2"><p><strong>Asistencias:</strong> ${attendance.attended}</p><p><strong>Ausencias:</strong> ${attendance.absent}</p></div><h4 class="text-lg font-bold mt-4">Observaciones</h4><div id="bulletinObs" class="mt-2">${obsHTML}</div><div class="text-xs text-gray-500 text-center mt-6" style="color: #555 !important;">Generado el: ${timestamp}</div></div>`;
+            document.getElementById('bulletinContent').innerHTML = `<div class="bulletin-page p-4 bg-white" style="color: black !important;"><h3 class="text-2xl font-bold text-center mb-4">Boletín Informativo - ${activePeriod}</h3><p><strong>Estudiante:</strong> <span id="bulletinStudentName">${student}</span></p><p><strong>Curso:</strong> ${activeCourse}</p><hr class="my-4"><h4 class="text-lg font-bold mt-4">Calificaciones</h4><div id="bulletinGrades" class="grid grid-cols-2 gap-2 mt-2"><p><strong>Cognitivo C1:</strong> ${studentData.grades?.cognitivoC1||'N/A'}</p><p><strong>Cognitivo C2:</strong> ${studentData.grades?.cognitivoC2||'N/A'}</p><p><strong>Cognitivo C3:</strong> ${studentData.grades?.cognitivoC3||'N/A'}</p><p><strong>Procedimental P1:</strong> ${studentData.grades?.procedimentalP1||'N/A'}</p><p><strong>Procedimental P2:</strong> ${studentData.grades?.procedimentalP2||'N/A'}</p><p><strong>Procedimental P3:</strong> ${studentData.grades?.procedimentalP3||'N/A'}</p><p><strong>Actitudinal A1:</strong> ${studentData.grades?.actitudinalA1||'N/A'}</p><p><strong>Actitudinal A2:</strong> ${studentData.grades?.actitudinalA2||'N/A'}</p><p><strong>Actitudinal A3:</strong> ${studentData.grades?.actitudinalA3||'N/A'}</p><p class="mt-2 font-bold"><strong>DEF: ${def} (${nivel})</strong></p></div><h4 class="text-lg font-bold mt-4">Asistencia</h4><div id="bulletinAttendance" class="mt-2"><p><strong>Asistencias:</strong> ${attendance.attended}</p><p><strong>Ausencias:</strong> ${attendance.absent}</p><p><strong>Excusas:</strong> ${attendance.excused}</p></div><h4 class="text-lg font-bold mt-4">Observaciones</h4><div id="bulletinObs" class="mt-2">${obsHTML}</div><div class="text-xs text-gray-500 text-center mt-6" style="color: #555 !important;">Generado el: ${timestamp}</div></div>`;
             bulletinModal.classList.add('active');
         }
         
@@ -864,13 +1020,12 @@
             let csvContent = "data:text/csv;charset=utf-8,";
             const coursesToExport = scope === 'all' ? Object.keys(allStudentsData).sort() : scope === 'selected' ? selectedCourses : [activeCourse];
             coursesToExport.forEach(course => {
-                 const config = courseConfig[course];
-                 const data = gradesData[course] || {};
-                 if (scope !== 'current') csvContent += `"${config.title}"\r\n`;
+                 const data = gradesData[activePeriod]?.[course] || {};
+                 if (scope !== 'current') csvContent += `"${course}" (${activePeriod})\r\n`;
                  const attendanceDates = getAttendanceDates(course).map(d => d.toLocaleDateString('es-CO'));
                  const headers = ["No", "Estudiante", ...attendanceDates, "Obs.", "C1", "C2", "C3", "P1", "P2", "P3", "A1", "A2", "A3", "DEF", "NIVEL"];
                  csvContent += headers.join(",") + "\r\n";
-                 config.students.forEach((student, index) => {
+                 allStudentsData[course].forEach((student, index) => {
                      const studentData = data[student] || {};
                      const obsText = (studentData.observations || [])
                         .map(obs => {
@@ -881,7 +1036,7 @@
 
                      const def = calculateDef(studentData.grades);
                      const nivel = determineNivel(def);
-                     let row = [index + 1, `"${student}"`, ...getAttendanceDates(course).map(d => { const s=studentData.attendance?.[d.toISOString().split('T')[0]]; return s===true?"P":s===false?"A":""; }), `"${obsText.replace(/"/g, '""')}"`, studentData.grades?.cognitivoC1||"", studentData.grades?.cognitivoC2||"", studentData.grades?.cognitivoC3||"", studentData.grades?.procedimentalP1||"", studentData.grades?.procedimentalP2||"", studentData.grades?.procedimentalP3||"", studentData.grades?.actitudinalA1||"", studentData.grades?.actitudinalA2||"", studentData.grades?.actitudinalA3||"", def, nivel];
+                     let row = [index + 1, `"${student}"`, ...getAttendanceDates(course).map(d => { const s=studentData.attendance?.[d.toISOString().split('T')[0]]; return s===true?"P":s===false?"A":s==='excused'?'E':""; }), `"${obsText.replace(/"/g, '""')}"`, studentData.grades?.cognitivoC1||"", studentData.grades?.cognitivoC2||"", studentData.grades?.cognitivoC3||"", studentData.grades?.procedimentalP1||"", studentData.grades?.procedimentalP2||"", studentData.grades?.procedimentalP3||"", studentData.grades?.actitudinalA1||"", studentData.grades?.actitudinalA2||"", studentData.grades?.actitudinalA3||"", def, nivel];
                      csvContent += row.join(",") + "\r\n";
                  });
                  if (scope !== 'current') csvContent += "\r\n";
@@ -889,7 +1044,7 @@
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `calificaciones_${scope}.csv`);
+            link.setAttribute("download", `calificaciones_${scope}_${activePeriod}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -927,9 +1082,8 @@
                 const newStudents = e.target.result.split('\n').map(name => capitalizeWords(name.trim())).filter(Boolean);
                 if (newStudents.length > 0) {
                     allStudentsData[activeCourse] = newStudents;
-                    gradesData[activeCourse] = {};
-                    setupCourseConfig();
-                    saveData();
+                    gradesData[activePeriod][activeCourse] = {};
+                    saveAllData();
                 }
             };
             reader.readAsText(file);
@@ -937,16 +1091,21 @@
         });
 
         function calculateAndDisplayStats() {
-            const data = gradesData[activeCourse] || {};
-            const students = courseConfig[activeCourse]?.students || [];
-            if (students.length === 0) {
-                statsPanel.innerHTML = "";
-                return;
-            }
+            const data = gradesData[activePeriod]?.[activeCourse] || {};
+            const students = allStudentsData[activeCourse] || [];
+
+            const statsContainer = document.getElementById('statsPanel');
+            statsContainer.innerHTML = ''; // Clear previous stats
+
+            if (students.length === 0) return;
+            
             let totalDef = 0, studentCountWithGrades = 0;
             const nivelCounts = { "Bajo": 0, "Básico": 0, "Alto": 0, "Superior": 0, "N/A": 0 };
-            let totalAttended = 0;
-            const totalPossibleSessions = students.length * getAttendanceDates(activeCourse).length;
+            let totalAttended = 0, totalPossibleSessions = 0;
+
+            const attendanceDatesCount = getAttendanceDates(activeCourse).length;
+            totalPossibleSessions = students.length * attendanceDatesCount;
+
             students.forEach(student => {
                 const studentData = data[student] || {};
                 const def = parseFloat(calculateDef(studentData.grades));
@@ -958,9 +1117,40 @@
                 nivelCounts[nivel]++;
                 totalAttended += calculateAttendanceSummary(studentData.attendance).attended;
             });
+            
             const avgDef = studentCountWithGrades > 0 ? (totalDef / studentCountWithGrades).toFixed(2) : "0.00";
             const attendancePercent = totalPossibleSessions > 0 ? ((totalAttended / totalPossibleSessions) * 100).toFixed(1) : 0;
-            statsPanel.innerHTML = `<div class="stat-item"><p class="font-bold text-lg">${avgDef}</p><p class="text-sm">Promedio Gral.</p></div><div class="stat-item"><p class="font-bold text-lg">${attendancePercent}%</p><p class="text-sm">Asistencia</p></div><div class="stat-item"><p class="font-bold text-lg">${nivelCounts.Superior}</p><p class="text-sm">Superior</p></div><div class="stat-item"><p class="font-bold text-lg">${nivelCounts.Alto}</p><p class="text-sm">Alto</p></div><div class="stat-item"><p class="font-bold text-lg">${nivelCounts.Básico}</p><p class="text-sm">Básico</p></div><div class="stat-item"><p class="font-bold text-lg">${nivelCounts.Bajo}</p><p class="text-sm">Bajo</p></div>`;
+            
+            statsContainer.innerHTML = `
+                <div class="stat-item"><p class="font-bold text-lg">${avgDef}</p><p class="text-sm">Promedio Gral.</p></div>
+                <div class="stat-item"><p class="font-bold text-lg">${attendancePercent}%</p><p class="text-sm">Asistencia</p></div>
+                <div id="statsChartContainer" class="stat-item" style="grid-column: 1 / -1; min-height: 120px;">
+                    <canvas id="nivelChart"></canvas>
+                </div>
+            `;
+            
+            const ctx = document.getElementById('nivelChart').getContext('2d');
+            if(statsChart) statsChart.destroy();
+            statsChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Superior', 'Alto', 'Básico', 'Bajo', 'N/A'],
+                    datasets: [{
+                        label: 'Niveles de Desempeño',
+                        data: [nivelCounts.Superior, nivelCounts.Alto, nivelCounts.Básico, nivelCounts.Bajo, nivelCounts['N/A']],
+                        backgroundColor: ['#dbeafe', '#dcfce7', '#fef9c3', '#fee2e2', '#e5e7eb'],
+                        borderColor: ['#1e40af', '#166534', '#854d0e', '#991b1b', '#6b7280'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 20 } }
+                    }
+                }
+            });
         }
         
         async function generateAndExportPdf(courses, studentList = null) {
@@ -971,18 +1161,18 @@
             if(studentList) { 
                 studentsToPrint.push({ courseName: activeCourse, students: studentList });
             } else { 
-                courses.forEach(courseName => studentsToPrint.push({ courseName: courseName, students: courseConfig[courseName]?.students || [] }));
+                courses.forEach(courseName => studentsToPrint.push({ courseName: courseName, students: allStudentsData[courseName] || [] }));
             }
             const timestamp = new Date().toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' });
             let firstPage = true;
             for (const { courseName, students } of studentsToPrint) {
                 for (const studentName of students) {
                     if (!firstPage) pdf.addPage();
-                    const studentData = gradesData[courseName]?.[studentName] || {};
+                    const studentData = gradesData[activePeriod]?.[courseName]?.[studentName] || {};
                     const def = calculateDef(studentData.grades);
                     const nivel = determineNivel(def);
                     const attendance = calculateAttendanceSummary(studentData.attendance);
-                    const bulletinHTML = `<div class="bulletin-page p-4 bg-white" style="width:210mm;color:black!important"><h3 class="text-2xl font-bold text-center mb-4">Boletín Informativo</h3><p><strong>Estudiante:</strong> ${studentName}</p><p><strong>Curso:</strong> ${courseConfig[courseName].title}</p><hr class="my-4"><h4 class="text-lg font-bold mt-4">Calificaciones</h4><div class="grid grid-cols-2 gap-2 mt-2"><p><strong>Cognitivo C1:</strong> ${studentData.grades?.cognitivoC1||'N/A'}</p><p><strong>Cognitivo C2:</strong> ${studentData.grades?.cognitivoC2||'N/A'}</p><p><strong>Cognitivo C3:</strong> ${studentData.grades?.cognitivoC3||'N/A'}</p><p><strong>Procedimental P1:</strong> ${studentData.grades?.procedimentalP1||'N/A'}</p><p><strong>Procedimental P2:</strong> ${studentData.grades?.procedimentalP2||'N/A'}</p><p><strong>Procedimental P3:</strong> ${studentData.grades?.procedimentalP3||'N/A'}</p><p><strong>Actitudinal A1:</strong> ${studentData.grades?.actitudinalA1||'N/A'}</p><p><strong>Actitudinal A2:</strong> ${studentData.grades?.actitudinalA2||'N/A'}</p><p><strong>Actitudinal A3:</strong> ${studentData.grades?.actitudinalA3||'N/A'}</p><p class="mt-2 font-bold"><strong>DEF: ${def} (${nivel})</strong></p></div><h4 class="text-lg font-bold mt-4">Asistencia</h4><div class="mt-2"><p><strong>Asistencias:</strong> ${attendance.attended}</p><p><strong>Ausencias:</strong> ${attendance.absent}</p></div><h4 class="text-lg font-bold mt-4">Observaciones</h4><p class="mt-2">${studentData.observations||'Sin observaciones.'}</p><div class="text-xs text-gray-500 text-center mt-6" style="color:#555!important">Generado el: ${timestamp}</div></div>`;
+                    const bulletinHTML = `<div class="bulletin-page p-4 bg-white" style="width:210mm;color:black!important"><h3 class="text-2xl font-bold text-center mb-4">Boletín Informativo</h3><p><strong>Estudiante:</strong> ${studentName}</p><p><strong>Curso:</strong> ${courseName}</p><hr class="my-4"><h4 class="text-lg font-bold mt-4">Calificaciones</h4><div class="grid grid-cols-2 gap-2 mt-2"><p><strong>Cognitivo C1:</strong> ${studentData.grades?.cognitivoC1||'N/A'}</p><p><strong>Cognitivo C2:</strong> ${studentData.grades?.cognitivoC2||'N/A'}</p><p><strong>Cognitivo C3:</strong> ${studentData.grades?.cognitivoC3||'N/A'}</p><p><strong>Procedimental P1:</strong> ${studentData.grades?.procedimentalP1||'N/A'}</p><p><strong>Procedimental P2:</strong> ${studentData.grades?.procedimentalP2||'N/A'}</p><p><strong>Procedimental P3:</strong> ${studentData.grades?.procedimentalP3||'N/A'}</p><p><strong>Actitudinal A1:</strong> ${studentData.grades?.actitudinalA1||'N/A'}</p><p><strong>Actitudinal A2:</strong> ${studentData.grades?.actitudinalA2||'N/A'}</p><p><strong>Actitudinal A3:</strong> ${studentData.grades?.actitudinalA3||'N/A'}</p><p class="mt-2 font-bold"><strong>DEF: ${def} (${nivel})</strong></p></div><h4 class="text-lg font-bold mt-4">Asistencia</h4><div class="mt-2"><p><strong>Asistencias:</strong> ${attendance.attended}</p><p><strong>Ausencias:</strong> ${attendance.absent}</p><p><strong>Excusas:</strong> ${attendance.excused}</p></div><h4 class="text-lg font-bold mt-4">Observaciones</h4><p class="mt-2">${(studentData.observations || []).map(o => `[${new Date(o.timestamp).toLocaleString()}] ${o.text}`).join('<br>')||'Sin observaciones.'}</p><div class="text-xs text-gray-500 text-center mt-6" style="color:#555!important">Generado el: ${timestamp}</div></div>`;
                     const tempDiv = document.createElement('div');
                     tempDiv.style.position='absolute'; tempDiv.style.left='-9999px';
                     tempDiv.innerHTML = bulletinHTML;
@@ -1009,7 +1199,7 @@
 
             if (target.matches('[data-student-obs]')) {
                 const student = target.dataset.studentObs;
-                const studentData = gradesData[activeCourse]?.[student];
+                const studentData = gradesData[activePeriod]?.[activeCourse]?.[student];
                 const observations = studentData?.observations || [];
                 if (observations.length > 0) {
                     observations.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -1022,10 +1212,10 @@
                 }
             } else if (target.matches('[data-col-note]')) {
                 const noteGroup = target.dataset.colNote;
-                tooltipText = gradesData[activeCourse]?.columnNotes?.[noteGroup] || 'Añadir comentario de actividad';
+                tooltipText = gradesData[activePeriod]?.[activeCourse]?.columnNotes?.[noteGroup] || 'Añadir comentario de actividad';
             } else if (target.matches('[data-date-note]')) {
                 const dateString = target.dataset.dateNote;
-                tooltipText = gradesData[activeCourse]?.dateNotes?.[dateString] || 'Añadir nota para esta fecha';
+                tooltipText = gradesData[activePeriod]?.[activeCourse]?.dateNotes?.[dateString] || 'Añadir nota para esta fecha';
             }
 
             if (tooltipText.trim()) {
@@ -1055,7 +1245,8 @@
             }
         });
 
-        searchBox.addEventListener('input', renderTable);
+        searchBox.addEventListener('input', () => debounce(renderTable, 300));
+
         tableContainer.addEventListener('click', (event) => {
             const gradeCell = event.target.closest('.grade-cell');
             const attendanceBox = event.target.closest('.attendance-box');
@@ -1089,7 +1280,7 @@
 
         const switchCourse = (course) => {
             activeCourse = course;
-            if (!gradesData[activeCourse]) gradesData[activeCourse] = { dateNotes: {}, columnNotes: {} };
+            ensureCourseData(activePeriod, activeCourse);
             document.querySelectorAll('.tab-button.active').forEach(b => b.classList.remove('active'));
             document.getElementById(`tab-${activeCourse}`)?.classList.add('active');
             renderTable();
@@ -1119,7 +1310,7 @@
         bulletinBtn.addEventListener('click', () => {
             const studentCheckboxes = document.getElementById('studentSelectionCheckboxes');
             studentCheckboxes.innerHTML = '';
-            (courseConfig[activeCourse]?.students || []).forEach(student => {
+            (allStudentsData[activeCourse] || []).forEach(student => {
                 studentCheckboxes.innerHTML += `<label class="flex items-center gap-2"><input type="checkbox" value="${student}" class="form-checkbox h-5 w-5 rounded"><span>${student}</span></label>`;
             });
             const courseCheckboxes = document.getElementById('bulletinCourseSelectionCheckboxes');
@@ -1137,6 +1328,10 @@
         document.getElementById('closeDateNoteModal').addEventListener('click', () => dateNoteModal.classList.remove('active'));
         document.getElementById('closeGradeNoteModal').addEventListener('click', () => gradeNoteModal.classList.remove('active'));
         document.getElementById('closeDeleteConfirmModal').addEventListener('click', () => deleteConfirmModal.classList.remove('active'));
+        document.getElementById('closeGenericConfirmModal').addEventListener('click', () => genericConfirmModal.classList.remove('active'));
+        document.getElementById('closeSettingsModal').addEventListener('click', () => settingsModal.classList.remove('active'));
+        document.getElementById('closeCourseManagementModal').addEventListener('click', () => courseManagementModal.classList.remove('active'));
+        document.getElementById('closeStudentReportModal').addEventListener('click', () => studentReportModal.classList.remove('active'));
         document.getElementById('closeBulletinModal').addEventListener('click', () => bulletinModal.classList.remove('active'));
         document.getElementById('closeExportModal').addEventListener('click', () => exportModal.classList.remove('active'));
         document.getElementById('closeGradesModal').addEventListener('click', () => gradesModal.classList.remove('active'));
@@ -1147,13 +1342,13 @@
             const newText = document.getElementById('obsTextarea').value.trim();
 
             if (newText) {
-                ensureStudentData(student);
+                ensureStudentData(activePeriod, activeCourse, student);
                 const newObs = {
                     text: newText,
                     timestamp: new Date().toISOString()
                 };
-                gradesData[activeCourse][student].observations.push(newObs);
-                saveData();
+                gradesData[activePeriod][activeCourse][student].observations.push(newObs);
+                saveAllData();
                 showObservationsModal(student); 
             }
         });
@@ -1172,35 +1367,43 @@
             }
         });
 
+        document.getElementById('deletePasswordInput').addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault(); 
+                document.getElementById('confirmDeleteBtn').click();
+            }
+        });
+
         document.getElementById('saveDateNote').addEventListener('click', () => {
             const noteText = document.getElementById('dateNoteTextarea').value.trim();
-            if (noteText) gradesData[activeCourse].dateNotes[dateNoteModal.dataset.date] = noteText;
-            else delete gradesData[activeCourse].dateNotes[dateNoteModal.dataset.date];
-            saveData();
+            ensureCourseData(activePeriod, activeCourse);
+            if (noteText) gradesData[activePeriod][activeCourse].dateNotes[dateNoteModal.dataset.date] = noteText;
+            else delete gradesData[activePeriod][activeCourse].dateNotes[dateNoteModal.dataset.date];
+            saveAllData();
             dateNoteModal.classList.remove('active');
         });
         document.getElementById('saveGradeNote').addEventListener('click', () => {
             const { noteGroup } = gradeNoteModal.dataset;
             const noteText = document.getElementById('gradeNoteTextarea').value;
-            ensureCourseData();
-            gradesData[activeCourse].columnNotes[noteGroup] = noteText;
-            saveData();
+            ensureCourseData(activePeriod, activeCourse);
+            gradesData[activePeriod][activeCourse].columnNotes[noteGroup] = noteText;
+            saveAllData();
             gradeNoteModal.classList.remove('active');
         });
         document.getElementById('saveGrades').addEventListener('click', () => {
             const student = gradesModal.dataset.student;
-            ensureStudentData(student);
+            ensureStudentData(activePeriod, activeCourse, student);
             gradesGrid.querySelectorAll('input').forEach(input => {
                 const { field } = input.dataset;
                 const { value } = input;
                 let numVal = parseFloat(value);
                  if (value !== '' && (isNaN(numVal) || numVal < 1 || numVal > 5)) {} 
                  else {
-                    if (!gradesData[activeCourse][student].grades) gradesData[activeCourse][student].grades = {};
-                    gradesData[activeCourse][student].grades[field] = value;
+                    if (!gradesData[activePeriod][activeCourse][student].grades) gradesData[activePeriod][activeCourse][student].grades = {};
+                    gradesData[activePeriod][activeCourse][student].grades[field] = value;
                  }
             });
-            saveData();
+            saveAllData();
             gradesModal.classList.remove('active');
             showMessage('Notas guardadas con éxito.', 'success');
         });
@@ -1221,16 +1424,314 @@
         document.getElementById('deselectAllStudentsBtn').addEventListener('click', () => document.querySelectorAll('#studentSelectionCheckboxes input').forEach(cb => cb.checked = false));
         document.getElementById('downloadPngBtn').addEventListener('click', () => downloadBulletinAsFile('png'));
         document.getElementById('downloadPdfBtn').addEventListener('click', () => downloadBulletinAsFile('pdf'));
+        settingsBtn.addEventListener('click', () => {
+            document.getElementById('professorNameInput').value = appSettings.professor;
+            document.getElementById('subjectNameInput').value = appSettings.subject;
+            document.getElementById('cognitivePercentage').value = appSettings.percentages.cognitive;
+            document.getElementById('proceduralPercentage').value = appSettings.percentages.procedural;
+            document.getElementById('attitudinalPercentage').value = appSettings.percentages.attitudinal;
+            renderPeriodsList();
+            settingsModal.classList.add('active');
+        });
+
+        function setupPeriodSelector() {
+            periodSelector.innerHTML = '';
+            appSettings.periods.forEach(period => {
+                const option = document.createElement('option');
+                option.value = period;
+                option.textContent = period;
+                if (period === activePeriod) {
+                    option.selected = true;
+                }
+                periodSelector.appendChild(option);
+            });
+        }
+
+        periodSelector.addEventListener('change', (e) => {
+            activePeriod = e.target.value;
+            appSettings.activePeriod = activePeriod;
+            saveSettings();
+            renderTable();
+        });
+
+        function renderPeriodsList() {
+            const periodsList = document.getElementById('periodsList');
+            periodsList.innerHTML = '';
+            appSettings.periods.forEach(period => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between';
+                div.innerHTML = `
+                    <input type="text" value="${period}" class="search-box w-full" onchange="updatePeriodName('${period}', this.value)">
+                    <button class="text-red-500 hover:text-red-700 text-xl ml-2 ${appSettings.periods.length <= 1 ? 'hidden' : ''}" onclick="deletePeriod('${period}')">&times;</button>
+                `;
+                periodsList.appendChild(div);
+            });
+        }
+        
+        document.getElementById('addPeriodBtn').addEventListener('click', () => {
+            const newPeriodNameInput = document.getElementById('newPeriodName');
+            const newPeriodName = newPeriodNameInput.value.trim();
+            if (newPeriodName && !appSettings.periods.includes(newPeriodName)) {
+                appSettings.periods.push(newPeriodName);
+                newPeriodNameInput.value = '';
+                renderPeriodsList();
+            }
+        });
+
+        function updatePeriodName(oldName, newName) {
+            const trimmedNewName = newName.trim();
+            if (!trimmedNewName || oldName === trimmedNewName) {
+                renderPeriodsList();
+                return;
+            }
+            if (appSettings.periods.includes(trimmedNewName)) {
+                showMessage(`El periodo "${trimmedNewName}" ya existe.`, 'error');
+                renderPeriodsList();
+                return;
+            }
+
+            const periodIndex = appSettings.periods.indexOf(oldName);
+            if (periodIndex > -1) {
+                appSettings.periods[periodIndex] = trimmedNewName;
+            }
+
+            if (gradesData[oldName]) {
+                gradesData[trimmedNewName] = gradesData[oldName];
+                delete gradesData[oldName];
+            }
+
+            if (activePeriod === oldName) {
+                activePeriod = trimmedNewName;
+                appSettings.activePeriod = trimmedNewName;
+            }
+
+            saveSettings();
+            saveAllData(true);
+            setupPeriodSelector();
+            renderPeriodsList();
+            showMessage('Periodo renombrado con éxito.', 'success');
+        }
+        
+        let genericConfirmCallback = null;
+        const genericConfirmModal = document.getElementById('genericConfirmModal');
+
+        function showGenericConfirmModal(title, text, onConfirm) {
+            document.getElementById('genericConfirmTitle').textContent = title;
+            document.getElementById('genericConfirmText').textContent = text;
+            genericConfirmCallback = onConfirm;
+            genericConfirmModal.classList.add('active');
+        }
+
+        document.getElementById('confirmGenericBtn').addEventListener('click', () => {
+            if (typeof genericConfirmCallback === 'function') {
+                genericConfirmCallback();
+            }
+            genericConfirmModal.classList.remove('active');
+        });
+
+        function deletePeriod(periodName) {
+            if (appSettings.periods.length <= 1) {
+                showMessage('Debe haber al menos un periodo.', 'error');
+                return;
+            }
+            
+            showGenericConfirmModal(
+                'Confirmar Borrado de Periodo',
+                `¿Estás seguro de que quieres borrar el periodo "${periodName}"? Todos los datos asociados se perderán de forma permanente.`,
+                () => {
+                    appSettings.periods = appSettings.periods.filter(p => p !== periodName);
+                    delete gradesData[periodName];
+                    if (activePeriod === periodName) {
+                        appSettings.activePeriod = appSettings.periods[0];
+                        activePeriod = appSettings.periods[0];
+                    }
+                    saveSettings();
+                    saveAllData(); // Full save and rerender
+                    setupPeriodSelector();
+                    renderPeriodsList();
+                }
+            );
+        }
+
+        document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+            appSettings.professor = document.getElementById('professorNameInput').value;
+            appSettings.subject = document.getElementById('subjectNameInput').value;
+            const cog = parseInt(document.getElementById('cognitivePercentage').value);
+            const proc = parseInt(document.getElementById('proceduralPercentage').value);
+            const att = parseInt(document.getElementById('attitudinalPercentage').value);
+
+            if (cog + proc + att !== 100) {
+                showMessage('La suma de los porcentajes debe ser 100.', 'error');
+                return;
+            }
+
+            appSettings.percentages.cognitive = cog;
+            appSettings.percentages.procedural = proc;
+            appSettings.percentages.attitudinal = att;
+            
+            saveSettings();
+            setupPeriodSelector();
+            settingsModal.classList.remove('active');
+            renderTable();
+        });
+        
+        function showCourseManagementModal() {
+            document.getElementById('courseManagementTitle').textContent = activeCourse;
+            renderStudentManagementList();
+            courseManagementModal.classList.add('active');
+        }
+
+        function renderStudentManagementList() {
+            const studentListDiv = document.getElementById('studentManagementList');
+            studentListDiv.innerHTML = '';
+            const students = allStudentsData[activeCourse] || [];
+            students.forEach((student, index) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-1';
+                div.innerHTML = `
+                    <input type="text" value="${student}" class="search-box w-full" onchange="updateStudentName(${index}, this.value)">
+                    <button class="text-red-500 hover:text-red-700 text-xl ml-2" onclick="deleteStudent(${index})">&times;</button>
+                `;
+                studentListDiv.appendChild(div);
+            });
+        }
+        
+        document.getElementById('addStudentBtn').addEventListener('click', () => {
+            const newStudentNameInput = document.getElementById('newStudentName');
+            const newStudentName = capitalizeWords(newStudentNameInput.value.trim());
+            if (newStudentName) {
+                if (!allStudentsData[activeCourse]) {
+                    allStudentsData[activeCourse] = [];
+                }
+                allStudentsData[activeCourse].push(newStudentName);
+                newStudentNameInput.value = '';
+                renderStudentManagementList();
+                saveAllData(true);
+            }
+        });
+
+        function updateStudentName(index, newName) {
+            const oldName = allStudentsData[activeCourse][index];
+            const capitalizedNewName = capitalizeWords(newName.trim());
+            if (capitalizedNewName && oldName !== capitalizedNewName) {
+                allStudentsData[activeCourse][index] = capitalizedNewName;
+                
+                Object.keys(gradesData).forEach(period => {
+                    if (gradesData[period][activeCourse] && gradesData[period][activeCourse][oldName]) {
+                        gradesData[period][activeCourse][capitalizedNewName] = gradesData[period][activeCourse][oldName];
+                        delete gradesData[period][activeCourse][oldName];
+                    }
+                });
+                
+                saveAllData();
+                renderStudentManagementList();
+            }
+        }
+        
+        function deleteStudent(index) {
+            const studentNameToDelete = allStudentsData[activeCourse][index];
+            allStudentsData[activeCourse].splice(index, 1);
+
+            Object.keys(gradesData).forEach(period => {
+                if (gradesData[period][activeCourse] && gradesData[period][activeCourse][studentNameToDelete]) {
+                    delete gradesData[period][activeCourse][studentNameToDelete];
+                }
+            });
+
+            saveAllData();
+            renderStudentManagementList();
+        }
+
+        function showStudentReportModal(student) {
+            ensureStudentData(activePeriod, activeCourse, student);
+            const studentData = gradesData[activePeriod][activeCourse][student];
+            const def = calculateDef(studentData.grades);
+            const nivel = determineNivel(def);
+            const attendance = calculateAttendanceSummary(studentData.attendance);
+
+            let obsHTML = 'Sin observaciones registradas.';
+            const observations = studentData.observations || [];
+            if (observations.length > 0) {
+                observations.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                obsHTML = '<ul>' + observations.map(obs => {
+                    const obsDate = new Date(obs.timestamp);
+                    const formattedDate = obsDate.toLocaleString('es-CO', { dateStyle: 'full', timeStyle: 'short' });
+                    return `<li class="mb-2"><strong class="font-semibold">${formattedDate}:</strong><p class="pl-4 whitespace-normal">${obs.text.replace(/\n/g, '<br>')}</p></li>`;
+                }).join('') + '</ul>';
+            }
+            
+            const reportContent = document.getElementById('studentReportContent');
+            reportContent.innerHTML = `
+                <div class="p-4">
+                    <h3 class="text-2xl font-bold text-center mb-4">Informe Individual del Estudiante</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm mb-4">
+                        <p><strong>Estudiante:</strong> ${student}</p>
+                        <p><strong>Curso:</strong> ${activeCourse}</p>
+                        <p><strong>Periodo:</strong> ${activePeriod}</p>
+                        <p><strong>Docente:</strong> ${appSettings.professor}</p>
+                        <p><strong>Asignatura:</strong> ${appSettings.subject}</p>
+                        <p><strong>Fecha del Informe:</strong> ${new Date().toLocaleDateString('es-CO')}</p>
+                    </div>
+                    
+                    <hr class="my-4">
+                    <h4 class="text-lg font-bold">Resumen de Calificaciones</h4>
+                    <table class="w-full text-left my-2 border-collapse">
+                      <thead>
+                        <tr class="border-b">
+                          <th class="p-2">Componente</th><th class="p-2">N1</th><th class="p-2">N2</th><th class="p-2">N3</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr class="border-b">
+                           <td class="p-2 font-semibold">Cognitivo (${appSettings.percentages.cognitive}%)</td>
+                           <td class="p-2">${studentData.grades?.cognitivoC1 || 'N/A'}</td>
+                           <td class="p-2">${studentData.grades?.cognitivoC2 || 'N/A'}</td>
+                           <td class="p-2">${studentData.grades?.cognitivoC3 || 'N/A'}</td>
+                        </tr>
+                        <tr class="border-b">
+                           <td class="p-2 font-semibold">Procedimental (${appSettings.percentages.procedural}%)</td>
+                           <td class="p-2">${studentData.grades?.procedimentalP1 || 'N/A'}</td>
+                           <td class="p-2">${studentData.grades?.procedimentalP2 || 'N/A'}</td>
+                           <td class="p-2">${studentData.grades?.procedimentalP3 || 'N/A'}</td>
+                        </tr>
+                        <tr>
+                           <td class="p-2 font-semibold">Actitudinal (${appSettings.percentages.attitudinal}%)</td>
+                           <td class="p-2">${studentData.grades?.actitudinalA1 || 'N/A'}</td>
+                           <td class="p-2">${studentData.grades?.actitudinalA2 || 'N/A'}</td>
+                           <td class="p-2">${studentData.grades?.actitudinalA3 || 'N/A'}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div class="text-right font-bold text-lg my-4">Definitiva: ${def} (Nivel ${nivel})</div>
+                    
+                    <hr class="my-4">
+                    <h4 class="text-lg font-bold">Resumen de Asistencia</h4>
+                    <p>Asistencias: ${attendance.attended} | Ausencias: ${attendance.absent} | Excusas: ${attendance.excused}</p>
+                    
+                    <hr class="my-4">
+                    <h4 class="text-lg font-bold">Historial de Observaciones</h4>
+                    <div class="mt-2 text-sm">${obsHTML}</div>
+                </div>
+            `;
+            studentReportModal.classList.add('active');
+        }
+
+        document.getElementById('printStudentReportBtn').addEventListener('click', () => {
+            window.print();
+        });
+
 
         window.onload = () => {
             try {
                 applyTheme(localStorage.getItem('darkMode') === 'true');
-                loadData();
+                loadSettings();
+                loadAllData();
+                setupPeriodSelector();
                 generateTabs();
                 const dayMap = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
                 const todayIndex = new Date().getDay();
                 const todayName = dayMap[todayIndex === 0 || todayIndex === 6 ? 1 : todayIndex];
-                const initialCourse = dailySchedule[todayName]?.[0] || Object.values(dailySchedule)[0][0];
+                const initialCourse = dailySchedule[todayName]?.[0] || Object.values(dailySchedule)[0]?.[0] || Object.keys(allStudentsData)[0];
                 switchCourse(initialCourse);
             } catch (error) {
                 console.error("Error during page initialization:", error);
@@ -1240,3 +1741,4 @@
     </script>
 </body>
 </html>
+
