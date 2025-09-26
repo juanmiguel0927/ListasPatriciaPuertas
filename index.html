@@ -540,7 +540,7 @@
         let searchTimeout;
         let statsChart;
         
-        const capitalizeWords = (str) => !str ? '' : str.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        const formatStudentName = (str) => !str ? '' : str.trim().toUpperCase();
         
         // --- Utility & Calculation Functions ---
         const getDayForCourse = (course) => { 
@@ -1079,10 +1079,13 @@
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
-                const newStudents = e.target.result.split('\n').map(name => capitalizeWords(name.trim())).filter(Boolean);
+                const newStudents = e.target.result.split('\n').map(name => formatStudentName(name)).filter(Boolean);
                 if (newStudents.length > 0) {
                     allStudentsData[activeCourse] = newStudents;
-                    gradesData[activePeriod][activeCourse] = {};
+                    allStudentsData[activeCourse].sort((a, b) => a.localeCompare(b));
+                    if(gradesData[activePeriod]) {
+                       gradesData[activePeriod][activeCourse] = {};
+                    }
                     saveAllData();
                 }
             };
@@ -1598,33 +1601,37 @@
         
         document.getElementById('addStudentBtn').addEventListener('click', () => {
             const newStudentNameInput = document.getElementById('newStudentName');
-            const newStudentName = capitalizeWords(newStudentNameInput.value.trim());
+            const newStudentName = formatStudentName(newStudentNameInput.value);
             if (newStudentName) {
                 if (!allStudentsData[activeCourse]) {
                     allStudentsData[activeCourse] = [];
                 }
                 allStudentsData[activeCourse].push(newStudentName);
+                allStudentsData[activeCourse].sort((a, b) => a.localeCompare(b));
                 newStudentNameInput.value = '';
                 renderStudentManagementList();
-                saveAllData(true);
+                saveAllData();
             }
         });
 
         function updateStudentName(index, newName) {
             const oldName = allStudentsData[activeCourse][index];
-            const capitalizedNewName = capitalizeWords(newName.trim());
-            if (capitalizedNewName && oldName !== capitalizedNewName) {
-                allStudentsData[activeCourse][index] = capitalizedNewName;
+            const formattedNewName = formatStudentName(newName);
+            if (formattedNewName && oldName !== formattedNewName) {
+                allStudentsData[activeCourse][index] = formattedNewName;
+                allStudentsData[activeCourse].sort((a, b) => a.localeCompare(b));
                 
                 Object.keys(gradesData).forEach(period => {
                     if (gradesData[period][activeCourse] && gradesData[period][activeCourse][oldName]) {
-                        gradesData[period][activeCourse][capitalizedNewName] = gradesData[period][activeCourse][oldName];
+                        gradesData[period][activeCourse][formattedNewName] = gradesData[period][activeCourse][oldName];
                         delete gradesData[period][activeCourse][oldName];
                     }
                 });
                 
                 saveAllData();
                 renderStudentManagementList();
+            } else {
+                 renderStudentManagementList();
             }
         }
         
@@ -1726,6 +1733,13 @@
                 applyTheme(localStorage.getItem('darkMode') === 'true');
                 loadSettings();
                 loadAllData();
+                for (const course in allStudentsData) {
+                    if (Array.isArray(allStudentsData[course])) {
+                        allStudentsData[course] = allStudentsData[course]
+                            .map(student => formatStudentName(student))
+                            .sort((a, b) => a.localeCompare(b));
+                    }
+                }
                 setupPeriodSelector();
                 generateTabs();
                 const dayMap = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
