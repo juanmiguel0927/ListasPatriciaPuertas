@@ -236,9 +236,12 @@
     <div class="container rounded-xl p-4 sm:p-8 mt-4">
         <h1 class="text-3xl sm:text-4xl font-bold text-center mb-6">Control de Calificaciones y Asistencia</h1>
         
-        <div class="flex justify-center items-center mb-4">
-            <label for="periodSelector" class="mr-2 font-semibold">Periodo:</label>
-            <select id="periodSelector" class="search-box"></select>
+        <div class="flex justify-center items-center mb-4 gap-4">
+            <div>
+                <label for="periodSelector" class="mr-2 font-semibold">Periodo:</label>
+                <select id="periodSelector" class="search-box"></select>
+            </div>
+            <button id="todayBtn" class="action-button" title="Ir al día de hoy"><i class="fas fa-calendar-day"></i></button>
         </div>
 
         <div id="tabNavigation" class="daily-schedule-container"></div>
@@ -277,6 +280,12 @@
                 <h3 class="text-xl font-bold mb-4">Observaciones para <span id="obsStudentName"></span></h3>
                 <div id="obsHistory" class="mb-4 p-2 border rounded max-h-48 overflow-y-auto" style="border-color: var(--input-border-color);">
                     <!-- History will be populated by JS -->
+                </div>
+                 <div class="mb-2">
+                    <h4 class="font-semibold text-sm mb-1">Observaciones Rápidas</h4>
+                    <div id="predefinedObs" class="flex flex-wrap gap-1">
+                        <!-- Predefined observation buttons will be inserted here -->
+                    </div>
                 </div>
                 <textarea id="obsTextarea" placeholder="Añadir nueva observación..."></textarea>
                 <div class="flex justify-end gap-2 mt-4">
@@ -341,6 +350,14 @@
                         <div class="grid grid-cols-1 gap-4">
                             <div><label for="professorNameInput">Nombre del Docente:</label><input type="text" id="professorNameInput" class="search-box w-full"></div>
                             <div><label for="subjectNameInput">Nombre de la Asignatura:</label><input type="text" id="subjectNameInput" class="search-box w-full"></div>
+                        </div>
+                    </div>
+                     <div>
+                        <h4 class="font-semibold mb-2">Estructura de Calificaciones</h4>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div><label for="cognitiveCount"># Cognitivo:</label><input type="number" id="cognitiveCount" class="search-box w-full" min="1" max="5"></div>
+                            <div><label for="proceduralCount"># Procedim.:</label><input type="number" id="proceduralCount" class="search-box w-full" min="1" max="5"></div>
+                            <div><label for="attitudinalCount"># Actitudinal:</label><input type="number" id="attitudinalCount" class="search-box w-full" min="1" max="5"></div>
                         </div>
                     </div>
                      <div>
@@ -512,6 +529,7 @@
         const bulletinSelectionModal = document.getElementById('bulletinSelectionModal');
         const periodSelector = document.getElementById('periodSelector');
         const settingsBtn = document.getElementById('settingsBtn');
+        const todayBtn = document.getElementById('todayBtn');
 
 
         // App State
@@ -578,9 +596,20 @@
         const calculateDef = (grades) => {
             const g = grades || {};
             const p = appSettings.percentages;
-            const cAvg = calculateAverage([getGradeValue(g,'cognitivoC1'), getGradeValue(g,'cognitivoC2'), getGradeValue(g,'cognitivoC3')]);
-            const pAvg = calculateAverage([getGradeValue(g,'procedimentalP1'), getGradeValue(g,'procedimentalP2'), getGradeValue(g,'procedimentalP3')]);
-            const aAvg = calculateAverage([getGradeValue(g,'actitudinalA1'), getGradeValue(g,'actitudinalA2'), getGradeValue(g,'actitudinalA3')]);
+            const gs = appSettings.gradeStructure;
+            let cognitiveGrades = [];
+            for(let i = 1; i <= gs.cognitive; i++) cognitiveGrades.push(getGradeValue(g, `cognitivoC${i}`));
+            
+            let proceduralGrades = [];
+            for(let i = 1; i <= gs.procedural; i++) proceduralGrades.push(getGradeValue(g, `procedimentalP${i}`));
+
+            let attitudinalGrades = [];
+            for(let i = 1; i <= gs.attitudinal; i++) attitudinalGrades.push(getGradeValue(g, `actitudinalA${i}`));
+
+            const cAvg = calculateAverage(cognitiveGrades);
+            const pAvg = calculateAverage(proceduralGrades);
+            const aAvg = calculateAverage(attitudinalGrades);
+
             const def = ((cAvg * p.cognitive / 100) + (pAvg * p.procedural / 100) + (aAvg * p.attitudinal / 100));
             return isNaN(def) ? "0.00" : def.toFixed(2);
         };
@@ -618,6 +647,7 @@
                 const attendanceDates = getAttendanceDates(activeCourse);
                 const searchTerm = searchBox.value.toLowerCase();
                 const filteredStudents = config.filter(s => s && typeof s === 'string' && s.toLowerCase().includes(searchTerm));
+                const gs = appSettings.gradeStructure;
 
                 courseTitle.innerHTML = `Grupo: ${activeCourse} <i id="courseSettingsBtn" class="fas fa-edit text-lg text-gray-400 hover:text-blue-500 cursor-pointer ml-2"></i>`;
                 document.getElementById('courseSettingsBtn').onclick = () => showCourseManagementModal();
@@ -625,7 +655,14 @@
                 courseInfo.innerHTML = `<p>Docente: ${appSettings.professor}</p><p>Asignatura: ${appSettings.subject}</p>`;
 
                 const tableEl = document.createElement('table');
-                tableEl.style.minWidth = `${510 + (attendanceDates.length * 60) + 700}px`;
+                tableEl.style.minWidth = `${510 + (attendanceDates.length * 60) + ((gs.cognitive + gs.procedural + gs.attitudinal) * 70)}px`;
+                
+                let cognitiveHeaders = '';
+                for(let i=1; i<=gs.cognitive; i++) cognitiveHeaders += `<th class="grade-column">C${i} <i class="fas fa-comment cursor-pointer text-xs ml-1 ${ (data.columnNotes?.[i] || '').trim() !== '' ? 'text-amber-400' : 'text-gray-400'} hover:text-amber-500" data-col-note="${i}" onclick="showGradeNoteModal('${i}')"></i></th>`;
+                let proceduralHeaders = '';
+                for(let i=1; i<=gs.procedural; i++) proceduralHeaders += `<th class="grade-column">P${i} <i class="fas fa-comment cursor-pointer text-xs ml-1 ${ (data.columnNotes?.[i] || '').trim() !== '' ? 'text-amber-400' : 'text-gray-400'} hover:text-amber-500" data-col-note="${i}" onclick="showGradeNoteModal('${i}')"></i></th>`;
+                let attitudinalHeaders = '';
+                for(let i=1; i<=gs.attitudinal; i++) attitudinalHeaders += `<th class="grade-column">A${i} <i class="fas fa-comment cursor-pointer text-xs ml-1 ${ (data.columnNotes?.[i] || '').trim() !== '' ? 'text-amber-400' : 'text-gray-400'} hover:text-amber-500" data-col-note="${i}" onclick="showGradeNoteModal('${i}')"></i></th>`;
 
                 let tableHTML = `
                     <thead>
@@ -635,9 +672,9 @@
                             <th rowspan="2" class="sticky-left sticky-col-actions">Acciones</th>
                             <th rowspan="2" class="sticky-left sticky-col-summary">ASIST.</th>
                             <th class="attendance-column" colspan="${attendanceDates.length}">ASISTENCIA POR FECHA</th>
-                            <th class="grade-column" colspan="3">COGNITIVO (${appSettings.percentages.cognitive}%)</th>
-                            <th class="grade-column" colspan="3">PROCEDIMENTAL (${appSettings.percentages.procedural}%)</th>
-                            <th class="grade-column" colspan="3">ACTITUDINAL (${appSettings.percentages.attitudinal}%)</th>
+                            <th class="grade-column" colspan="${gs.cognitive}">COGNITIVO (${appSettings.percentages.cognitive}%)</th>
+                            <th class="grade-column" colspan="${gs.procedural}">PROCEDIMENTAL (${appSettings.percentages.procedural}%)</th>
+                            <th class="grade-column" colspan="${gs.attitudinal}">ACTITUDINAL (${appSettings.percentages.attitudinal}%)</th>
                             <th rowspan="2" class="grade-column col-def">DEF</th>
                             <th rowspan="2" class="grade-column col-nivel">NIVEL</th>
                         </tr>
@@ -658,13 +695,9 @@
                                     </div>
                                 </th>`;
                             }).join('')}
-                            ${['C1', 'C2', 'C3', 'P1', 'P2', 'P3', 'A1', 'A2', 'A3'].map(h => {
-                                const noteGroup = h.slice(-1);
-                                const note = data.columnNotes?.[noteGroup] || '';
-                                const hasNote = note.trim() !== '';
-                                const icon = `<i class="fas fa-comment cursor-pointer text-xs ml-1 ${hasNote ? 'text-amber-400' : 'text-gray-400'} hover:text-amber-500" data-col-note="${noteGroup}" onclick="showGradeNoteModal('${noteGroup}')"></i>`;
-                                return `<th class="grade-column">${h}${icon}</th>`;
-                            }).join('')}
+                            ${cognitiveHeaders}
+                            ${proceduralHeaders}
+                            ${attitudinalHeaders}
                         </tr>
                     </thead>
                     <tbody>`;
@@ -676,6 +709,11 @@
                     const nivel = determineNivel(studentDef);
                     const summary = calculateAttendanceSummary(studentData.attendance);
                     const formatGrade = (g) => !isNaN(parseFloat(g)) ? parseFloat(g).toFixed(1) : '';
+
+                    let gradeCellsHTML = '';
+                    for(let i=1; i<=gs.cognitive; i++) gradeCellsHTML += `<td class="grade-column grade-cell" data-student="${student}" data-field="cognitivoC${i}">${formatGrade(studentData.grades?.[`cognitivoC${i}`])}</td>`;
+                    for(let i=1; i<=gs.procedural; i++) gradeCellsHTML += `<td class="grade-column grade-cell" data-student="${student}" data-field="procedimentalP${i}">${formatGrade(studentData.grades?.[`procedimentalP${i}`])}</td>`;
+                    for(let i=1; i<=gs.attitudinal; i++) gradeCellsHTML += `<td class="grade-column grade-cell" data-student="${student}" data-field="actitudinalA${i}">${formatGrade(studentData.grades?.[`actitudinalA${i}`])}</td>`;
 
                     tableHTML += `<tr>
                         <td class="sticky-left sticky-col-no">${index + 1}</td>
@@ -698,9 +736,7 @@
                         tableHTML += `<td class="attendance-cell"><div class="${a_class}" data-student="${student}" data-date="${dateString}">${a_content}</div></td>`;
                     });
                     
-                    ['cognitivoC1','cognitivoC2','cognitivoC3','procedimentalP1','procedimentalP2','procedimentalP3','actitudinalA1','actitudinalA2','actitudinalA3'].forEach(f => {
-                        tableHTML += `<td class="grade-column grade-cell" data-student="${student}" data-field="${f}">${formatGrade(studentData.grades?.[f])}</td>`;
-                    });
+                    tableHTML += gradeCellsHTML;
                     
                     const nivelClass = (nivel && typeof nivel === 'string') ? `nivel-${nivel.toLowerCase()}` : '';
                     tableHTML += `<td class="grade-column col-def ${nivelClass}">${studentDef}</td><td class="grade-column col-nivel ${nivelClass}">${nivel}</td></tr>`;
@@ -763,7 +799,7 @@
                 e.preventDefault();
                 const allGradeCells = Array.from(tableContainer.querySelectorAll('.grade-cell'));
                 const currentIndex = allGradeCells.indexOf(cell);
-                const inputsPerRow = 9;
+                const inputsPerRow = appSettings.gradeStructure.cognitive + appSettings.gradeStructure.procedural + appSettings.gradeStructure.attitudinal;
                 let nextCell = null;
                 if (e.key === 'Enter' || e.key === 'ArrowDown') nextCell = allGradeCells[currentIndex + inputsPerRow];
                 else if (e.key === 'ArrowUp') nextCell = allGradeCells[currentIndex - inputsPerRow];
@@ -853,8 +889,11 @@
                 localStorage.setItem('gradesData_v2', JSON.stringify(gradesData)); 
                 localStorage.setItem('allStudentsData_v2', JSON.stringify(allStudentsData)); 
                 localStorage.setItem('dailySchedule_v2', JSON.stringify(dailySchedule)); 
-                if(!isPartial) { renderTable(); }
-                else { showMessage("Guardado", "success"); }
+                if(!isPartial) { 
+                    renderTable();
+                } else { 
+                    showMessage("Guardado ✓", "success"); 
+                }
             } catch (e) { console.error("Error saving data: ", e); } 
         };
         
@@ -888,7 +927,9 @@
                 subject: "Artística Plástica y Visual",
                 percentages: { cognitive: 40, procedural: 30, attitudinal: 30 },
                 periods: ["Periodo 1"],
-                activePeriod: "Periodo 1"
+                activePeriod: "Periodo 1",
+                gradeStructure: { cognitive: 3, procedural: 3, attitudinal: 3 },
+                predefinedObs: ["Excelente participación", "No entregó la tarea", "Necesita mejorar la atención", "Comportamiento disruptivo"]
             };
             appSettings = savedSettings ? JSON.parse(savedSettings) : defaultSettings;
             activePeriod = appSettings.activePeriod;
@@ -907,6 +948,19 @@
             
             const historyContainer = document.getElementById('obsHistory');
             historyContainer.innerHTML = '';
+
+            const predefinedObsContainer = document.getElementById('predefinedObs');
+            predefinedObsContainer.innerHTML = '';
+            appSettings.predefinedObs.forEach(obs => {
+                const button = document.createElement('button');
+                button.className = "bg-gray-200 dark:bg-gray-600 text-xs p-1 rounded hover:bg-gray-300";
+                button.textContent = obs;
+                button.onclick = () => {
+                    const textarea = document.getElementById('obsTextarea');
+                    textarea.value += (textarea.value ? '\n' : '') + obs;
+                };
+                predefinedObsContainer.appendChild(button);
+            });
 
             const observations = gradesData[activePeriod][activeCourse][student].observations || [];
 
@@ -971,7 +1025,7 @@
         
         function showGradeNoteModal(noteGroup) {
             ensureCourseData(activePeriod, activeCourse);
-            const titlePart = noteGroup === '1' ? 'Notas #1 (C1, P1, A1)' : noteGroup === '2' ? 'Notas #2 (C2, P2, A2)' : 'Notas #3 (C3, P3, A3)';
+            const titlePart = `Actividad #${noteGroup}`;
             document.getElementById('gradeNoteTitle').textContent = titlePart;
             document.getElementById('gradeNoteTextarea').value = gradesData[activePeriod][activeCourse].columnNotes?.[noteGroup] || '';
             gradeNoteModal.classList.add('active');
@@ -983,11 +1037,15 @@
             const studentData = gradesData[activePeriod][activeCourse][student];
             gradesStudentName.textContent = student;
             gradesGrid.innerHTML = '';
-            const fields = ['cognitivoC1','cognitivoC2','cognitivoC3','procedimentalP1','procedimentalP2','procedimentalP3','actitudinalA1','actitudinalA2','actitudinalA3'];
+            const fields = [];
+            const gs = appSettings.gradeStructure;
+            for(let i=1; i<=gs.cognitive; i++) fields.push({key: `cognitivoC${i}`, label: `C${i}`});
+            for(let i=1; i<=gs.procedural; i++) fields.push({key: `procedimentalP${i}`, label: `P${i}`});
+            for(let i=1; i<=gs.attitudinal; i++) fields.push({key: `actitudinalA${i}`, label: `A${i}`});
+
             fields.forEach(field => {
-                const value = studentData.grades?.[field] || '';
-                const label = field.replace('cognitivo', 'C').replace('procedimental', 'P').replace('actitudinal', 'A').toUpperCase();
-                gradesGrid.innerHTML += `<div class="col-span-1 flex items-center"><label class="font-semibold">${label}:</label></div><div class="col-span-2"><input type="number" min="1" max="5" step="0.1" data-field="${field}" value="${value}" class="grade-input"></div>`;
+                const value = studentData.grades?.[field.key] || '';
+                gradesGrid.innerHTML += `<div class="col-span-1 flex items-center"><label class="font-semibold">${field.label}:</label></div><div class="col-span-2"><input type="number" min="1" max="5" step="0.1" data-field="${field.key}" value="${value}" class="grade-input"></div>`;
             });
             gradesModal.dataset.student = student;
             gradesModal.classList.add('active');
@@ -1012,7 +1070,13 @@
                 }).join('<hr class="my-1">');
             }
 
-            document.getElementById('bulletinContent').innerHTML = `<div class="bulletin-page p-4 bg-white" style="color: black !important;"><h3 class="text-2xl font-bold text-center mb-4">Boletín Informativo - ${activePeriod}</h3><p><strong>Estudiante:</strong> <span id="bulletinStudentName">${student}</span></p><p><strong>Curso:</strong> ${activeCourse}</p><hr class="my-4"><h4 class="text-lg font-bold mt-4">Calificaciones</h4><div id="bulletinGrades" class="grid grid-cols-2 gap-2 mt-2"><p><strong>Cognitivo C1:</strong> ${studentData.grades?.cognitivoC1||'N/A'}</p><p><strong>Cognitivo C2:</strong> ${studentData.grades?.cognitivoC2||'N/A'}</p><p><strong>Cognitivo C3:</strong> ${studentData.grades?.cognitivoC3||'N/A'}</p><p><strong>Procedimental P1:</strong> ${studentData.grades?.procedimentalP1||'N/A'}</p><p><strong>Procedimental P2:</strong> ${studentData.grades?.procedimentalP2||'N/A'}</p><p><strong>Procedimental P3:</strong> ${studentData.grades?.procedimentalP3||'N/A'}</p><p><strong>Actitudinal A1:</strong> ${studentData.grades?.actitudinalA1||'N/A'}</p><p><strong>Actitudinal A2:</strong> ${studentData.grades?.actitudinalA2||'N/A'}</p><p><strong>Actitudinal A3:</strong> ${studentData.grades?.actitudinalA3||'N/A'}</p><p class="mt-2 font-bold"><strong>DEF: ${def} (${nivel})</strong></p></div><h4 class="text-lg font-bold mt-4">Asistencia</h4><div id="bulletinAttendance" class="mt-2"><p><strong>Asistencias:</strong> ${attendance.attended}</p><p><strong>Ausencias:</strong> ${attendance.absent}</p><p><strong>Excusas:</strong> ${attendance.excused}</p></div><h4 class="text-lg font-bold mt-4">Observaciones</h4><div id="bulletinObs" class="mt-2">${obsHTML}</div><div class="text-xs text-gray-500 text-center mt-6" style="color: #555 !important;">Generado el: ${timestamp}</div></div>`;
+            let gradesHTML = '';
+            const gs = appSettings.gradeStructure;
+            for(let i=1; i<=gs.cognitive; i++) gradesHTML += `<p><strong>Cognitivo C${i}:</strong> ${studentData.grades?.[`cognitivoC${i}`]||'N/A'}</p>`;
+            for(let i=1; i<=gs.procedural; i++) gradesHTML += `<p><strong>Procedimental P${i}:</strong> ${studentData.grades?.[`procedimentalP${i}`]||'N/A'}</p>`;
+            for(let i=1; i<=gs.attitudinal; i++) gradesHTML += `<p><strong>Actitudinal A${i}:</strong> ${studentData.grades?.[`actitudinalA${i}`]||'N/A'}</p>`;
+
+            document.getElementById('bulletinContent').innerHTML = `<div class="bulletin-page p-4 bg-white" style="color: black !important;"><h3 class="text-2xl font-bold text-center mb-4">Boletín Informativo - ${activePeriod}</h3><p><strong>Estudiante:</strong> <span id="bulletinStudentName">${student}</span></p><p><strong>Curso:</strong> ${activeCourse}</p><hr class="my-4"><h4 class="text-lg font-bold mt-4">Calificaciones</h4><div id="bulletinGrades" class="grid grid-cols-2 gap-2 mt-2">${gradesHTML}<p class="mt-2 font-bold"><strong>DEF: ${def} (${nivel})</strong></p></div><h4 class="text-lg font-bold mt-4">Asistencia</h4><div id="bulletinAttendance" class="mt-2"><p><strong>Asistencias:</strong> ${attendance.attended}</p><p><strong>Ausencias:</strong> ${attendance.absent}</p><p><strong>Excusas:</strong> ${attendance.excused}</p></div><h4 class="text-lg font-bold mt-4">Observaciones</h4><div id="bulletinObs" class="mt-2">${obsHTML}</div><div class="text-xs text-gray-500 text-center mt-6" style="color: #555 !important;">Generado el: ${timestamp}</div></div>`;
             bulletinModal.classList.add('active');
         }
         
@@ -1023,8 +1087,16 @@
                  const data = gradesData[activePeriod]?.[course] || {};
                  if (scope !== 'current') csvContent += `"${course}" (${activePeriod})\r\n`;
                  const attendanceDates = getAttendanceDates(course).map(d => d.toLocaleDateString('es-CO'));
-                 const headers = ["No", "Estudiante", ...attendanceDates, "Obs.", "C1", "C2", "C3", "P1", "P2", "P3", "A1", "A2", "A3", "DEF", "NIVEL"];
+                 
+                 const gs = appSettings.gradeStructure;
+                 let gradeHeaders = [];
+                 for(let i=1; i<=gs.cognitive; i++) gradeHeaders.push(`C${i}`);
+                 for(let i=1; i<=gs.procedural; i++) gradeHeaders.push(`P${i}`);
+                 for(let i=1; i<=gs.attitudinal; i++) gradeHeaders.push(`A${i}`);
+
+                 const headers = ["No", "Estudiante", ...attendanceDates, "Obs.", ...gradeHeaders, "DEF", "NIVEL"];
                  csvContent += headers.join(",") + "\r\n";
+
                  allStudentsData[course].forEach((student, index) => {
                      const studentData = data[student] || {};
                      const obsText = (studentData.observations || [])
@@ -1036,7 +1108,13 @@
 
                      const def = calculateDef(studentData.grades);
                      const nivel = determineNivel(def);
-                     let row = [index + 1, `"${student}"`, ...getAttendanceDates(course).map(d => { const s=studentData.attendance?.[d.toISOString().split('T')[0]]; return s===true?"P":s===false?"A":s==='excused'?'E':""; }), `"${obsText.replace(/"/g, '""')}"`, studentData.grades?.cognitivoC1||"", studentData.grades?.cognitivoC2||"", studentData.grades?.cognitivoC3||"", studentData.grades?.procedimentalP1||"", studentData.grades?.procedimentalP2||"", studentData.grades?.procedimentalP3||"", studentData.grades?.actitudinalA1||"", studentData.grades?.actitudinalA2||"", studentData.grades?.actitudinalA3||"", def, nivel];
+
+                     let gradeValues = [];
+                     for(let i=1; i<=gs.cognitive; i++) gradeValues.push(studentData.grades?.[`cognitivoC${i}`]||"");
+                     for(let i=1; i<=gs.procedural; i++) gradeValues.push(studentData.grades?.[`procedimentalP${i}`]||"");
+                     for(let i=1; i<=gs.attitudinal; i++) gradeValues.push(studentData.grades?.[`actitudinalA${i}`]||"");
+
+                     let row = [index + 1, `"${student}"`, ...getAttendanceDates(course).map(d => { const s=studentData.attendance?.[d.toISOString().split('T')[0]]; return s===true?"P":s===false?"A":s==='excused'?'E':""; }), `"${obsText.replace(/"/g, '""')}"`, ...gradeValues, def, nivel];
                      csvContent += row.join(",") + "\r\n";
                  });
                  if (scope !== 'current') csvContent += "\r\n";
@@ -1175,7 +1253,13 @@
                     const def = calculateDef(studentData.grades);
                     const nivel = determineNivel(def);
                     const attendance = calculateAttendanceSummary(studentData.attendance);
-                    const bulletinHTML = `<div class="bulletin-page p-4 bg-white" style="width:210mm;color:black!important"><h3 class="text-2xl font-bold text-center mb-4">Boletín Informativo</h3><p><strong>Estudiante:</strong> ${studentName}</p><p><strong>Curso:</strong> ${courseName}</p><hr class="my-4"><h4 class="text-lg font-bold mt-4">Calificaciones</h4><div class="grid grid-cols-2 gap-2 mt-2"><p><strong>Cognitivo C1:</strong> ${studentData.grades?.cognitivoC1||'N/A'}</p><p><strong>Cognitivo C2:</strong> ${studentData.grades?.cognitivoC2||'N/A'}</p><p><strong>Cognitivo C3:</strong> ${studentData.grades?.cognitivoC3||'N/A'}</p><p><strong>Procedimental P1:</strong> ${studentData.grades?.procedimentalP1||'N/A'}</p><p><strong>Procedimental P2:</strong> ${studentData.grades?.procedimentalP2||'N/A'}</p><p><strong>Procedimental P3:</strong> ${studentData.grades?.procedimentalP3||'N/A'}</p><p><strong>Actitudinal A1:</strong> ${studentData.grades?.actitudinalA1||'N/A'}</p><p><strong>Actitudinal A2:</strong> ${studentData.grades?.actitudinalA2||'N/A'}</p><p><strong>Actitudinal A3:</strong> ${studentData.grades?.actitudinalA3||'N/A'}</p><p class="mt-2 font-bold"><strong>DEF: ${def} (${nivel})</strong></p></div><h4 class="text-lg font-bold mt-4">Asistencia</h4><div class="mt-2"><p><strong>Asistencias:</strong> ${attendance.attended}</p><p><strong>Ausencias:</strong> ${attendance.absent}</p><p><strong>Excusas:</strong> ${attendance.excused}</p></div><h4 class="text-lg font-bold mt-4">Observaciones</h4><p class="mt-2">${(studentData.observations || []).map(o => `[${new Date(o.timestamp).toLocaleString()}] ${o.text}`).join('<br>')||'Sin observaciones.'}</p><div class="text-xs text-gray-500 text-center mt-6" style="color:#555!important">Generado el: ${timestamp}</div></div>`;
+                    let gradesPDFHTML = '';
+                    const gs = appSettings.gradeStructure;
+                    for(let i=1; i<=gs.cognitive; i++) gradesPDFHTML += `<p><strong>Cognitivo C${i}:</strong> ${studentData.grades?.[`cognitivoC${i}`]||'N/A'}</p>`;
+                    for(let i=1; i<=gs.procedural; i++) gradesPDFHTML += `<p><strong>Procedimental P${i}:</strong> ${studentData.grades?.[`procedimentalP${i}`]||'N/A'}</p>`;
+                    for(let i=1; i<=gs.attitudinal; i++) gradesPDFHTML += `<p><strong>Actitudinal A${i}:</strong> ${studentData.grades?.[`actitudinalA${i}`]||'N/A'}</p>`;
+                    
+                    const bulletinHTML = `<div class="bulletin-page p-4 bg-white" style="width:210mm;color:black!important"><h3 class="text-2xl font-bold text-center mb-4">Boletín Informativo</h3><p><strong>Estudiante:</strong> ${studentName}</p><p><strong>Curso:</strong> ${courseName}</p><hr class="my-4"><h4 class="text-lg font-bold mt-4">Calificaciones</h4><div class="grid grid-cols-2 gap-2 mt-2">${gradesPDFHTML}<p class="mt-2 font-bold"><strong>DEF: ${def} (${nivel})</strong></p></div><h4 class="text-lg font-bold mt-4">Asistencia</h4><div class="mt-2"><p><strong>Asistencias:</strong> ${attendance.attended}</p><p><strong>Ausencias:</strong> ${attendance.absent}</p><p><strong>Excusas:</strong> ${attendance.excused}</p></div><h4 class="text-lg font-bold mt-4">Observaciones</h4><p class="mt-2">${(studentData.observations || []).map(o => `[${new Date(o.timestamp).toLocaleString()}] ${o.text}`).join('<br>')||'Sin observaciones.'}</p><div class="text-xs text-gray-500 text-center mt-6" style="color:#555!important">Generado el: ${timestamp}</div></div>`;
                     const tempDiv = document.createElement('div');
                     tempDiv.style.position='absolute'; tempDiv.style.left='-9999px';
                     tempDiv.innerHTML = bulletinHTML;
@@ -1433,6 +1517,9 @@
             document.getElementById('cognitivePercentage').value = appSettings.percentages.cognitive;
             document.getElementById('proceduralPercentage').value = appSettings.percentages.procedural;
             document.getElementById('attitudinalPercentage').value = appSettings.percentages.attitudinal;
+            document.getElementById('cognitiveCount').value = appSettings.gradeStructure.cognitive;
+            document.getElementById('proceduralCount').value = appSettings.gradeStructure.procedural;
+            document.getElementById('attitudinalCount').value = appSettings.gradeStructure.attitudinal;
             renderPeriodsList();
             settingsModal.classList.add('active');
         });
@@ -1572,6 +1659,10 @@
             appSettings.percentages.procedural = proc;
             appSettings.percentages.attitudinal = att;
             
+            appSettings.gradeStructure.cognitive = parseInt(document.getElementById('cognitiveCount').value) || 3;
+            appSettings.gradeStructure.procedural = parseInt(document.getElementById('proceduralCount').value) || 3;
+            appSettings.gradeStructure.attitudinal = parseInt(document.getElementById('attitudinalCount').value) || 3;
+
             saveSettings();
             setupPeriodSelector();
             settingsModal.classList.remove('active');
@@ -1655,6 +1746,8 @@
             const def = calculateDef(studentData.grades);
             const nivel = determineNivel(def);
             const attendance = calculateAttendanceSummary(studentData.attendance);
+            const gs = appSettings.gradeStructure;
+            const maxGrades = Math.max(gs.cognitive, gs.procedural, gs.attitudinal);
 
             let obsHTML = 'Sin observaciones registradas.';
             const observations = studentData.observations || [];
@@ -1666,6 +1759,37 @@
                     return `<li class="mb-2"><strong class="font-semibold">${formattedDate}:</strong><p class="pl-4 whitespace-normal">${obs.text.replace(/\n/g, '<br>')}</p></li>`;
                 }).join('') + '</ul>';
             }
+            
+            let tableHeader = '<th class="p-2">Componente</th>';
+            for (let i = 1; i <= maxGrades; i++) {
+                tableHeader += `<th class="p-2">N${i}</th>`;
+            }
+
+            let cognitiveRow = `<td class="p-2 font-semibold">Cognitivo (${appSettings.percentages.cognitive}%)</td>`;
+            for (let i = 1; i <= maxGrades; i++) {
+                cognitiveRow += `<td class="p-2">${i <= gs.cognitive ? (studentData.grades?.[`cognitivoC${i}`] || 'N/A') : ''}</td>`;
+            }
+
+            let proceduralRow = `<td class="p-2 font-semibold">Procedimental (${appSettings.percentages.procedural}%)</td>`;
+            for (let i = 1; i <= maxGrades; i++) {
+                proceduralRow += `<td class="p-2">${i <= gs.procedural ? (studentData.grades?.[`procedimentalP${i}`] || 'N/A') : ''}</td>`;
+            }
+
+            let attitudinalRow = `<td class="p-2 font-semibold">Actitudinal (${appSettings.percentages.attitudinal}%)</td>`;
+            for (let i = 1; i <= maxGrades; i++) {
+                attitudinalRow += `<td class="p-2">${i <= gs.attitudinal ? (studentData.grades?.[`actitudinalA${i}`] || 'N/A') : ''}</td>`;
+            }
+
+            const gradesTableHTML = `
+            <table class="w-full text-left my-2 border-collapse">
+              <thead><tr class="border-b">${tableHeader}</tr></thead>
+              <tbody>
+                <tr class="border-b">${cognitiveRow}</tr>
+                <tr class="border-b">${proceduralRow}</tr>
+                <tr>${attitudinalRow}</tr>
+              </tbody>
+            </table>
+            `;
             
             const reportContent = document.getElementById('studentReportContent');
             reportContent.innerHTML = `
@@ -1682,33 +1806,7 @@
                     
                     <hr class="my-4">
                     <h4 class="text-lg font-bold">Resumen de Calificaciones</h4>
-                    <table class="w-full text-left my-2 border-collapse">
-                      <thead>
-                        <tr class="border-b">
-                          <th class="p-2">Componente</th><th class="p-2">N1</th><th class="p-2">N2</th><th class="p-2">N3</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr class="border-b">
-                           <td class="p-2 font-semibold">Cognitivo (${appSettings.percentages.cognitive}%)</td>
-                           <td class="p-2">${studentData.grades?.cognitivoC1 || 'N/A'}</td>
-                           <td class="p-2">${studentData.grades?.cognitivoC2 || 'N/A'}</td>
-                           <td class="p-2">${studentData.grades?.cognitivoC3 || 'N/A'}</td>
-                        </tr>
-                        <tr class="border-b">
-                           <td class="p-2 font-semibold">Procedimental (${appSettings.percentages.procedural}%)</td>
-                           <td class="p-2">${studentData.grades?.procedimentalP1 || 'N/A'}</td>
-                           <td class="p-2">${studentData.grades?.procedimentalP2 || 'N/A'}</td>
-                           <td class="p-2">${studentData.grades?.procedimentalP3 || 'N/A'}</td>
-                        </tr>
-                        <tr>
-                           <td class="p-2 font-semibold">Actitudinal (${appSettings.percentages.attitudinal}%)</td>
-                           <td class="p-2">${studentData.grades?.actitudinalA1 || 'N/A'}</td>
-                           <td class="p-2">${studentData.grades?.actitudinalA2 || 'N/A'}</td>
-                           <td class="p-2">${studentData.grades?.actitudinalA3 || 'N/A'}</td>
-                        </tr>
-                      </tbody>
-                    </table>
+                    ${gradesTableHTML}
                     <div class="text-right font-bold text-lg my-4">Definitiva: ${def} (Nivel ${nivel})</div>
                     
                     <hr class="my-4">
@@ -1727,6 +1825,17 @@
             window.print();
         });
 
+        todayBtn.addEventListener('click', () => {
+            const dayMap = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const todayIndex = new Date().getDay();
+            const todayName = dayMap[todayIndex === 0 || todayIndex === 6 ? 1 : todayIndex];
+            const courseForToday = dailySchedule[todayName]?.[0];
+            if (courseForToday) {
+                switchCourse(courseForToday);
+            } else {
+                showMessage("No hay cursos programados para hoy.", "info");
+            }
+        });
 
         window.onload = () => {
             try {
