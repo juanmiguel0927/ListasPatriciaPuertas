@@ -254,9 +254,11 @@
             <div class="flex items-center justify-center sm:justify-end w-full sm:w-auto gap-4">
                 <div class="button-group">
                     <button id="bulletinBtn" class="action-button"><i class="fas fa-id-card mr-2"></i>Boletines</button>
-                    <button id="exportBtn" class="action-button"><i class="fas fa-file-csv mr-2"></i>Exportar</button>
-                    <button id="importBtn" class="action-button"><i class="fas fa-upload mr-2"></i>Importar</button>
+                    <button id="exportCsvBtn" class="action-button"><i class="fas fa-file-csv mr-2"></i>Exportar CSV</button>
+                    <button id="importStudentsBtn" class="action-button"><i class="fas fa-user-plus mr-2"></i>Importar Estudiantes</button>
+                    <button id="dataManagementBtn" class="action-button"><i class="fas fa-database mr-2"></i>Gestionar Datos</button>
                     <input type="file" id="importFile" class="hidden" accept=".txt">
+                    <input type="file" id="importJsonFile" class="hidden" accept=".json,application/json">
                 </div>
                 <div class="flex items-center gap-2">
                     <i id="settingsBtn" class="fas fa-cog text-2xl cursor-pointer text-gray-500 hover:text-blue-500 transition-colors"></i>
@@ -428,7 +430,7 @@
         
         <div id="exportModal" class="modal-overlay">
             <div class="modal-content">
-                <h3 class="text-xl font-bold mb-4">Opciones de Exportación</h3>
+                <h3 class="text-xl font-bold mb-4">Opciones de Exportación CSV</h3>
                 <div class="flex flex-col gap-4">
                     <button id="exportCurrentBtn" class="action-button w-full">Exportar Curso Actual</button>
                     <button id="exportAllBtn" class="action-button w-full">Exportar Todos los Cursos</button>
@@ -446,6 +448,26 @@
             </div>
         </div>
 
+        <div id="dataManagementModal" class="modal-overlay">
+            <div class="modal-content">
+                <h3 class="text-xl font-bold mb-4">Gestionar Datos (Exportar/Importar)</h3>
+                <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4" role="alert">
+                  <p class="font-bold">Exportar</p>
+                  <p>Guarda una copia de seguridad de todos tus datos (notas, estudiantes, configuración, etc.) en un único archivo <strong>.json</strong>.</p>
+                </div>
+                <button id="exportJsonBtn" class="action-button w-full bg-blue-600 mb-6"><i class="fas fa-download mr-2"></i>Exportar Copia de Seguridad</button>
+                
+                <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
+                  <p class="font-bold">Importar</p>
+                  <p>Carga un archivo <strong>.json</strong> para restaurar tus datos. <strong class="text-red-600">¡Atención! Se sobreescribirán todos los datos actuales.</strong></p>
+                </div>
+                <button id="importJsonBtn" class="action-button w-full bg-green-600"><i class="fas fa-upload mr-2"></i>Importar Copia de Seguridad</button>
+                
+                <div class="flex justify-end mt-6">
+                     <button id="closeDataManagementModal" class="action-button">Cerrar</button>
+                </div>
+            </div>
+        </div>
 
         <div id="gradesModal" class="modal-overlay">
             <div class="modal-content">
@@ -509,8 +531,8 @@
         const tabNavigation = document.getElementById('tabNavigation');
         const searchBox = document.getElementById('searchBox');
         const darkModeToggle = document.getElementById('darkModeToggle');
-        const exportBtn = document.getElementById('exportBtn');
-        const importBtn = document.getElementById('importBtn');
+        const exportCsvBtn = document.getElementById('exportCsvBtn');
+        const importStudentsBtn = document.getElementById('importStudentsBtn');
         const importFile = document.getElementById('importFile');
         const statsPanel = document.getElementById('statsPanel');
         const obsModal = document.getElementById('obsModal');
@@ -530,6 +552,14 @@
         const periodSelector = document.getElementById('periodSelector');
         const settingsBtn = document.getElementById('settingsBtn');
         const todayBtn = document.getElementById('todayBtn');
+        
+        // JSON Import/Export Elements
+        const dataManagementBtn = document.getElementById('dataManagementBtn');
+        const dataManagementModal = document.getElementById('dataManagementModal');
+        const exportJsonBtn = document.getElementById('exportJsonBtn');
+        const importJsonBtn = document.getElementById('importJsonBtn');
+        const importJsonFile = document.getElementById('importJsonFile');
+        const closeDataManagementModal = document.getElementById('closeDataManagementModal');
 
 
         // App State
@@ -546,8 +576,8 @@
             '8C':["ACOSTA CAICEDO DAIMAR","ACUÑA VALENCIA LUIS","ARAUJO MENDOZA SIRIANA","BANDERA LLANOS SHAILETH","BURGUILLOS CARBONELL JHOSNIEL","CARDENAS CHIQUILLO MICHAELL","CASTRO GOMEZ SHERIL","CERVANTES LARA MAURO","DE LA CRUZ PIÑERES SERGIO","DE LA CRUZ REDONDO ANTONY","DE LA HOZ CABAS YEFFER","ESCORCIA MIRANDA GUADALUPE","FERRER SANTANDER DAMIAN","GARCIA PEÑATE MARIA","GARCIA ROJAS TIFFANY","GOMEZ OTERO JANNIER","GONZALEZ SALCEDO MARIA","HURTADO ORTIZ ALAN","LLANOS TAGUER BRANDON","MADERA ORTEGA ANA","MEZA SIERRA JAMES","MORALES PERCY KEREN","OLANO PAZ YARIANGEL","ORTEGA SIERRA VALENTINA","PEREZ GONZALEZ SHAIRA","PEREZ NAVAS VALENTINA","POLO GUERRA XAVIER","RADA CORRO STEPHANIE","RANGEL SIERRA LAUREN","RICO ZAPATA DANNA","RIVALDO PALMA MILAGRO","RIVALDO PALMA TAΝΙΑ","ROSANIA MINDIOLA DIEGO","SARMIENTO MARTINEZ MARI","SILVA SILVERA SOFIA","SILVERA CERVANTES MILTON","TRIGOS OROZCO SHELSY"],
             '8D':["ACOSTA HERNANDEZ EMILY GISELL","ACUÑA MARTINEZ JOB DAVID","ANGULO DE LA CRUZ NAHIARA MICHEL","BALVIN ROMERO NORMA GABRIELA","CABALLERO ACEVEDO MARIA ALEJANDRA","CABELLO NATERA STEVE EMANUEL","CONTRERAS SARMIENTO ANGELLYS NICOLLE","COSSIO NARVAEZ ANGELA VICTORIA","ESTRADA LLANOS MOISES ALEXANDER","FRANCO RODRIGUEZ JUAN DAVID","GUZMAN PEÑATE LUIS ALBERTO","HERNANDEZ PALLARES FERNANDO JUNIOR","HERNANDEZ REDONDO SHAYRA NICOLL","JIMENEZ ACUÑA MARIANA ISABEL","JIMENEZ SIERRA KAROL SOFIA","LLERENA IMITOLA JADER JOSE","MADARIAGA LOPEZ LUISA FERNANDA","MAESTRE DE LA HOZ MARIELYS MILETH","MENDOZA GOEZ DANIELA ROSA","MOLINA PALLARES MATIAS","MONCADA SIERRA MARIA CAROLINA","MORALES ORTEGA JOSSUET","OROZCO GONZALEZ DULCE MARIA","ORTEGA HERNANDEZ SARAY DE JESUS","PACHECO SILVERA ANGILIS MILETH","PINO MARIANO MARIANA PATRICIA","POLO ORELLANO JUAN SEBASTIAN","POLO VERGARA SHARY SOFÍA","RANGEL MARTINEZ MELANI PAOLA","RINCON GOMEZ ALEJANDRO DAVID","ROA RADA DANIEL DE JESUS","ROA RADA EDGAR ANDRES","RODRIGUEZ BUSTILLO GABRIELA LUCIA","ROLONG GOEZ JUAN ANDRES","ROMERO PEÑA NEYMAR","RUDAS VARGAS YAIRIS MARIA","SANTIAGO REYES OMER DE JESUS","SIERRA CASTILLO LUIS JOSE","SIERRA VARELA ANDREA CAMILA"],
             '9A':["ACOSTA PADILLA OVER","ACOSTA PALMA CRISTHIAN","AMADOR PALMA ALVARO","ARCON ALVAREZ SEBASTIAN","ARTETA CONSUEGRA JANNY","AVILA MEZA MAUREN","BARRAZA SIERRA LUIS","BARRIOS LLANOS GERALDINE","BARRIOS SIERRA BRIANA","CAMARGO DE LA CRUZ LEINYS","CAMARGO MARTINEZ MARIA","CANOSA CERVANTES VIVIANA","CORTES PIÑA JHOVANNY","COSSIO NARVAEZ HEIDY","DE LA HOZ VIZCAINO BUENDI","ESCORCIA BLANCO MELANY","ESCORCIA MIRANDA JESUS","FERNANDEZ ANGULO SHARICK","GALINDO ESCALANTE SHARON","GALLARDO BRADFORD JHOYMAR","LOPEZ MITROBICH MARIMAR","MARRIAGA SANJUAN SOCHY","MURILLO SILVERA YEYCI","ORELLANO MOLINA CICLALIS","ORTIZ PEREZ CRISTIAN","OTERO CARDENAS ADAN","OTERO NIETO JAIR","PEÑA MEZA VICTOR","POLO CONTRERAS ANDERSON","POLO PALMA SAILLY","RADA JIMÉNEZ JESUS","RADA NIEVES DAMARIS","REDONDO SALGADO ALEJANDRA","RODRIGUEZ ANGULO DANNA","SALAZAR IGLESIAS TALIANA","SANTIAGO LOPEZ MARIA","SARMIENTO CERVANTES VALEREE","SARMIENTO DE LA RANS ALAN","TURBAY GOMEZ LAIONEL","ZAPATA ROA LUIS"],
-            '9B':["ANGULO BARRAGAN CARLOS","ARAUJO ESCALANTE YELIANYS","ARTETA ZARATE JHAN","BARRAZA CAFIEL VALENTINA","BLANCO ESTRADA JENIFER","BLANCO SILVERA YAIKOVIC","BOLIVAR MARRIAGA YANDERSON","ESCOBAR ALGARIN JOSE","FERRER SANTANDER LOGAN","FONTALVO PUELLO CRISTIAN","GARCIA CAMARGO ANGELY","GERONIMO ROJAS EMMANUEL","GIL GUTIERREZ AΝΑ","GOENAGA LEJARDE JULIANNY","GUTIERREZ SIERRA SANTIAGO","HERNANDEZ LOPEZ MARIA","HERNANDEZ MONTAÑO MARIA","JIMENEZ CONSUEGRA TANIA","MARIN MORALES GENESIS","MARTINEZ DAZA EILYN","MEDINA RIQUETT KELLY","MOLINA VELASQUEZ LERVYS","MORALES OTERO JESUS","MOVILLA BOLIVAR EYMIS","NAVARRO GUTIERREZ ALEJANDRO","ORTEGA CUERVO KRISTEL","ORTIZ JIMENEZ ELIATH","PALMA SILVERA MARISOL","PATIÑO CONSUEGRA ANDRYS","PEREZ ALGARIN LUCIANA","PEREZ BOLIVAR JHONEFFER","REDONDO RODRIGUEZ KARLA","RODRIGUEZ VEGA YESID","RUIZ MARENCO JUAN","SILVERA JIMENO THALIANA","TEJERA ORTEGA VALENTINA","TESILLO PEREZ CARLOS","TORRADO NOREÑA CRISTIAN","ZAPATA SIERRA LUCYANA"],
-            '9C':["BALLESTAS DE LA CRUZ OWEL","BARANDICA GUTIERREZ IKER","CAMARGO CABALLERO JHONNY","CONSUEGRA HERNANDEZ ANGIE","DIAZ DEL TORO SHARILYN","ESCORCIA BORNACELLY NATHALIA","ESCORCIA DE LA CRUZ LUISA","ESTRADA RUA JHON","GOENAGA DE AVILA CARLOS","GONZALEZ CONTRERAS YURLANYS","GONZALEZ FERRER MAIRELYS","GONZALEZ LLANOS ANA","GONZALEZ RICO JAVIER","HURTADO ORTIZ AMY","JIMENEZ BADILLO JUAN","JIMENEZ DE LA CRUZ JUSETH","LINARES TEJEDA MARCELA","LUBO JIMENEZ ALEJANDRO","MARTINEZ CASTILLO DANNA","MEDINA SILVERA DILAN","MIRANDA FERNANDEZ ANTONNY","MOLINA ARRIETA KAIRETH","OCHOA ORTEGA JOSE","ORTEGA LUNAR DIEGO","PEREZ GERONIMO EYMER","PRADA SARMIENTO SHARICK","REDONDO BERDUGO MARIANA","RICAURTE SANTANA MARIA","RIOS ARCON ARANZA","RIOS NAVAS VICTOR","ROA DE LA CRUZ PEDRO","ROMERO JIMENEZ STEVAN","SILVERA LINARES ANDRES","SILVERA VILORIA SNEYDER","VARGAS CASTRO SAMIR","VILORIA CABARCAS ESTEFANY"],
+            '9B':["ANGULO BARRAGAN CARLOS","ARAUJO ESCALANTE YELIANYS","ARTETA ZARATE JHAN","BARRAZA CAFIEL VALENTINA","BLANCO ESTRADA JENIFER","BLANCO SILVERA YAIKOVIC","BOLIVAR MARRIAGA YANDERSON","ESCOBAR ALGARIN JOSE","FERRER SANTANDER LOGAN","FONTALVO PUELLO CRISTIAN","GARCIA CAMARGO ANGELY","GERONIMO ROJAS EMMANUEL","GIL GUTIERREZ AΝΑ","GOENAGA LEJARDE JULIANNY","GUTIERREZ SIERRA SANTIAGO","HERNANDEZ LOPEZ MARIA","HERNANDEZ MONTAÑO MARIA","JIMENEZ CONSUEGRA TANIA","MARIN MORALES GENESIS","MARTINEZ DAZA EILYN","MEDINA RIQUETT KELLY","MOLINA VELASQUEZ LERVYS","MORALES OTERO JESUS","MOVILLA BOLIVAR EYMIS","NAVARRO GUTIERREZ ALEJANDRO","ORTEGA CUERVO KRISTEL","ORTIZ JIMENEZ ELIATH","PALMA SILVERA MARISOL","PATIÑO CONSUEGRA ANDRYS","PEREZ ALGARIN LUCIANA","PEREZ BOLIVAR JHONEFFER","REDONDO RODRIGUEZ KARLA","RODRIGUEZ VEGA YESID","RUIZ MARENco JUAN","SILVERA JIMENO THALIANA","TEJERA ORTEGA VALENTINA","TESILLO PEREZ CARLOS","TORRADO NOREÑA CRISTIAN","ZAPATA SIERRA LUCYANA"],
+            '9C':["BALLESTAS DE LA CRUZ OWEL","BARANDICA GUTIERREZ IKER","CAMARGO CABALLERO JHONNY","CONSUEGRA HERNANDEZ ANGIE","DIAZ DEL TORO SHARILYN","ESCORCIA BORNACELLY NATHALIA","ESCORcia DE LA CRUZ LUISA","ESTRADA RUA JHON","GOENAGA DE AVILA CARLOS","GONZALEZ CONTRERAS YURLANYS","GONZALEZ FERRER MAIRELYS","GONZALEZ LLANOS ANA","GONZALEZ RICO JAVIER","HURTADO ORTIZ AMY","JIMENEZ BADILLO JUAN","JIMENEZ DE LA CRUZ JUSETH","LINARES TEJEDA MARCELA","LUBO JIMENEZ ALEJANDRO","MARTINEZ CASTILLO DANNA","MEDINA SILVERA DILAN","MIRANDA FERNANDEZ ANTONNY","MOLINA ARRIETA KAIRETH","OCHOA ORTEGA JOSE","ORTEGA LUNAR DIEGO","PEREZ GERONIMO EYMER","PRADA SARMIENTO SHARICK","REDONDO BERDUGO MARIANA","RICAURTE SANTANA MARIA","RIOS ARCON ARANZA","RIOS NAVAS VICTOR","ROA DE LA CRUZ PEDRO","ROMERO JIMENEZ STEVAN","SILVERA LINARES ANDRES","SILVERA VILORIA SNEYDER","VARGAS CASTRO SAMIR","VILORIA CABARCAS ESTEFANY"],
             '9D':["AMAYA PAZ JEIVER","ARDILA ORDUZ ALISSON","BLANCO SIERRA ANDY","BUSTOS BARRIOS ANGEL","CABRERA ORTEGA DAVID","CARBONELL BOSSA MAURICIO","CELIN VELASQUEZ MARLIN","ESCALANTE ACENDRA ANA","GAMARRA GONZALEZ GABRIEL","HERNANDEZ ARJONA JOSUE","JIMENEZ DE MOYA SARAY","LEJARDE PERTUZ ASLHEY","LOPEZ GARCIA ANGEL","LOPEZ RAMOS OSIEL","MARTINEZ GARCIA MELANIE","MENDOZA DE LA CRUZ LAURY","MERIDIANO CARDENAS DIEGO","NITROBICH RIAÑO YEISON","ORELLANO PALMA ELIANA","OROZCO GOMEZ JEISYS","ORTEGA GIL ALLISON","OTERO JIMENO SHADYA","OTERO MORALES DILAN","PADILLA BORRERO AYLIM","PALMA BARRAZA XAVI","PALMA SILVERA MARILUNA","RANGEL MARTINEZ GENESIS","REAL BARRIOS JUNIÑO","ROBLES MARIN JASSER","RODRIGUEZ DEL VILLAR JOAN","SALAS MALDONADO ALIANYS","SANJUAN PERTUZ JOSSED","SANTIAGO BARROS SHEILA","SILVERA ORTEGA ALEJANDRO","TORRES DE LA HOZ DUVAN"],
             '10C':["ACOSTA DE LA CRUZ ISACC","ACUÑA RADA SARESTH","BENEDETTI GARCIA GLEINER","BORGE FLOREZ MARIA","CANTILLO NORIEGA KEIVEN","CONSUEGRA GOYENECHE HANYDANIELS","CONSUEGRA JARAMILLO MARIA","CONSUEGRA POLO EDU","CORRO IBAÑEZ DAVID","DE LA HOZ ARTETA ANGELINE","GOMEZ MARTINEZ NADIA","GOMEZ OROZCO ANGIE","GUTIERREZ OJEDA ANTONE","LAFAURIE SILVERA JUAN","LEAL QUINTANILLA JESUS","MARIANO OROZCO NICOLL","MELENDEZ CAMBERO WILIANNIS","MENDOZA ESCALANTE DILAN","NAVAS BOLIVAR JAMER","OROZCO ARAUJO MARIA","ORTEGA GARCIA JULIANA","OSPINO DE LA CRUZ JOSE","OVIEDO MOLINA THAILY","PADILLA CONRADO JAIRO","PALLARES DE LA RANS JUAN","PALMA PEREZ DANNA","PEREZ DE LA CRUZ LIS","RADA TAMAYO JASIR","RANGEL MARTINEZ LIS","RODRIGUEZ BLANCO ZAMIRA","SALGADO VERDEZA MARIA","SARMIENTO ACUÑA DULCE","SARMIENTO PALMA MANUEL","SIERRA DE LA CRUZ LAUREEN","SILVERA SANTIAGO JUAN","SUAREZ SIERRA MARIA"],
             '11A':["ALBA BOLIVAR GABRIELA","ARDILA ORDUZ KAREN","BLANCO SILVERA YUGEIDIS","BOLIVAR SANTIAGO EDWIN","CERA SILVERA BRIANDA","CUETO REDONDO YULIFER","DE LA HOZ LOPEZ ROSA","DE MOYA PALLAREZ ADRIAN","FLOREZ SOLANO JUAN","FRANCO FRANCO VALERY","GONZALEZ DE LA CRUZ YICEL","HERNANDEZ JULIO ISABELA","HERNANDEZ MARRIAGA KARLA","HIGUITA ZAPATA VALENTINA","HOUSSET VALENCIA CRISTOBAL","HOUSSET VALENCIA TALIANA","IBAÑEZ NIETO MAYLAN","JIMENEZ ROA STALYN","LOPEZ MERCADO YULIMAR","MORALES OTERO ANA","ORTEGA BOLIVAR MARIETH","OSPINO NIETO WANDA","PALMA PACHECO JONATHAN","RADA POLO STIVE","REYES VILLALOBOS SHEILYN","ROLONG SIERRA ΑΝΑ","ROMERO RODRIGUEZ LUISA","SANTIAGO CUETO KERLYN","SANTIAGO DE LA ROSA RITA","SERJE GARCIA MISSELL","VASQUEZ CHARRIS YELIS","VELASQUEZ ZAMBRANO DANIEL"],
@@ -1150,8 +1180,88 @@
                 pdf.save(fileName);
             }
         }
+        
+        const exportAllDataToJson = () => {
+            const dataToExport = {
+                version: '2.0', // to handle future migrations
+                exportDate: new Date().toISOString(),
+                appSettings,
+                dailySchedule,
+                allStudentsData,
+                gradesData
+            };
 
-        importBtn.addEventListener('click', () => importFile.click());
+            const dataStr = JSON.stringify(dataToExport, null, 2); // pretty print
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const date = new Date();
+            const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            link.setAttribute('href', url);
+            link.setAttribute('download', `copia_seguridad_calificaciones_${dateString}.json`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            dataManagementModal.classList.remove('active');
+            showMessage('Copia de seguridad exportada con éxito.', 'success');
+        };
+
+        const importAllDataFromJson = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+
+                    // Basic validation
+                    if (!importedData.appSettings || !importedData.allStudentsData || !importedData.gradesData) {
+                        throw new Error('El archivo no parece ser una copia de seguridad válida.');
+                    }
+                    
+                    // Restore data
+                    appSettings = importedData.appSettings;
+                    dailySchedule = importedData.dailySchedule || {'Lunes':[],'Martes':[],'Miércoles':[],'Jueves':[],'Viernes':[]}; // provide default if missing
+                    allStudentsData = importedData.allStudentsData;
+                    gradesData = importedData.gradesData;
+                    
+                    // Persist and reload UI
+                    saveSettings();
+                    saveAllData(true); // save without re-rendering yet
+                    
+                    showMessage('Datos importados con éxito. Recargando...', 'success');
+                    
+                    // Reload the entire UI based on new data
+                    setTimeout(() => {
+                        activePeriod = appSettings.activePeriod || appSettings.periods[0];
+                        applyTheme(localStorage.getItem('darkMode') === 'true'); // Re-apply theme
+                        setupPeriodSelector();
+                        generateTabs();
+                        const firstCourse = Object.values(dailySchedule)[0]?.[0] || Object.keys(allStudentsData)[0];
+                        if (firstCourse) {
+                            switchCourse(firstCourse);
+                        } else {
+                            // Handle case with no courses
+                            courseTitle.textContent = 'Sin Cursos';
+                            tableContainer.innerHTML = '<p class="text-center p-4">No hay cursos definidos. Importe datos o configure la aplicación.</p>';
+                        }
+                    }, 500);
+
+                } catch (error) {
+                    console.error("Error al importar JSON:", error);
+                    showMessage(`Error al importar: ${error.message}`, 'error');
+                } finally {
+                    // Reset file input
+                    importJsonFile.value = '';
+                    dataManagementModal.classList.remove('active');
+                }
+            };
+            reader.readAsText(file);
+        };
+
+        importStudentsBtn.addEventListener('click', () => importFile.click());
         importFile.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (!file) return;
@@ -1378,7 +1488,7 @@
             applyTheme(darkModeToggle.checked);
         });
         
-        exportBtn.addEventListener('click', () => {
+        exportCsvBtn.addEventListener('click', () => {
             const courseSelectionCheckboxes = document.getElementById('courseSelectionCheckboxes');
             courseSelectionCheckboxes.innerHTML = '';
             Object.keys(allStudentsData).sort().forEach(course => {
@@ -1424,6 +1534,14 @@
         document.getElementById('closeGradesModal').addEventListener('click', () => gradesModal.classList.remove('active'));
         document.getElementById('closeBulletinSelectionModal').addEventListener('click', () => bulletinSelectionModal.classList.remove('active'));
         
+        // New/Updated Listeners
+        dataManagementBtn.addEventListener('click', () => dataManagementModal.classList.add('active'));
+        closeDataManagementModal.addEventListener('click', () => dataManagementModal.classList.remove('active'));
+        exportJsonBtn.addEventListener('click', exportAllDataToJson);
+        importJsonBtn.addEventListener('click', () => importJsonFile.click());
+        importJsonFile.addEventListener('change', importAllDataFromJson);
+
+
         document.getElementById('saveObs').addEventListener('click', () => {
             const student = obsModal.dataset.student;
             const newText = document.getElementById('obsTextarea').value.trim();
