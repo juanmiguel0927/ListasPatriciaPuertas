@@ -95,10 +95,11 @@
         th.sticky-left { z-index: 22; background-color: var(--header-bg-color); }
         td.sticky-left { z-index: 21; background-color: var(--sticky-col-bg); }
 
-        .sticky-col-no { left: 0; width: 50px; min-width: 50px; }
-        .sticky-col-name { left: 50px; width: 220px; min-width: 220px; text-align: left; }
-        .sticky-col-actions { left: 270px; width: 120px; min-width: 120px; }
-        .sticky-col-summary { left: 390px; width: 120px; min-width: 120px; }
+        .sticky-col-select { left: 0; width: 50px; min-width: 50px; }
+        .sticky-col-no { left: 50px; width: 50px; min-width: 50px; }
+        .sticky-col-name { left: 100px; width: 220px; min-width: 220px; text-align: left; }
+        .sticky-col-actions { left: 320px; width: 120px; min-width: 120px; }
+        .sticky-col-summary { left: 440px; width: 120px; min-width: 120px; }
         
         /* Row Selection Highlight */
         tbody tr:hover > td, tbody tr:hover > .sticky-left {
@@ -145,6 +146,8 @@
         .attendance-box.attended { background-color: #dcfce7; color: #16a34a; border-color: #16a34a; }
         .attendance-box.absent { background-color: #fee2e2; color: #ef4444; border-color: #ef4444; }
         .attendance-box.excused { background-color: #e0e7ff; color: #4338ca; border-color: #4338ca; }
+        .attendance-box.late { background-color: #fef3c7; color: #b45309; border-color: #b45309; }
+        html.dark .attendance-box.late { background-color: #78350f; color: #fde68a; }
         .date-header { vertical-align: bottom; padding: 0.25rem; }
         .date-header div:first-child { transform: rotate(-90deg); white-space: nowrap; display: block; width: 30px; margin: 0 auto 25px auto; }
         td.attendance-cell { width: 60px; min-width: 60px; }
@@ -338,6 +341,17 @@
             </div>
         </div>
 
+        <div id="editObsModal" class="modal-overlay">
+            <div class="modal-content">
+                <h3 class="text-xl font-bold mb-4">Editar Observación</h3>
+                <textarea id="editObsTextarea"></textarea>
+                <div class="flex justify-end gap-2 mt-4">
+                    <button id="closeEditObsModal" class="action-button">Cancelar</button>
+                    <button id="saveEditObs" class="action-button bg-blue-600">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+
         <div id="dateNoteModal" class="modal-overlay">
             <div class="modal-content">
                 <h3 class="text-xl font-bold mb-4">Anotación para la fecha: <span id="dateNoteDate"></span></h3>
@@ -360,26 +374,27 @@
             </div>
         </div>
 
-        <div id="deleteConfirmModal" class="modal-overlay">
+        <div id="passwordConfirmModal" class="modal-overlay">
             <div class="modal-content">
-                <h3 class="text-xl font-bold mb-4">Confirmar Borrado</h3>
-                <p class="mb-4">Para borrar esta observación, por favor ingresa la clave de seguridad.</p>
-                <input type="password" id="deletePasswordInput" class="search-box w-full" placeholder="Clave de seguridad...">
-                <div id="deleteErrorMsg" class="text-red-500 text-sm mt-2 hidden">Clave incorrecta.</div>
+                <h3 id="passwordConfirmTitle" class="text-xl font-bold mb-4">Confirmar Acción</h3>
+                <p class="mb-4">Para continuar, por favor ingresa la clave de seguridad.</p>
+                <input type="password" id="passwordInput" class="search-box w-full" placeholder="Clave de seguridad...">
+                <div id="passwordErrorMsg" class="text-red-500 text-sm mt-2 hidden">Clave incorrecta.</div>
                 <div class="flex justify-end gap-2 mt-4">
-                    <button id="closeDeleteConfirmModal" class="action-button">Cancelar</button>
-                    <button id="confirmDeleteBtn" class="action-button bg-red-600">Confirmar Borrado</button>
+                    <button id="closePasswordConfirmModal" class="action-button">Cancelar</button>
+                    <button id="confirmPasswordBtn" class="action-button bg-red-600">Confirmar</button>
                 </div>
             </div>
         </div>
 
-        <div id="genericConfirmModal" class="modal-overlay">
+        <div id="groupGradeModal" class="modal-overlay">
             <div class="modal-content">
-                <h3 id="genericConfirmTitle" class="text-xl font-bold mb-4">Confirmar Acción</h3>
-                <p id="genericConfirmText" class="mb-4 whitespace-normal">¿Estás seguro?</p>
+                <h3 class="text-xl font-bold mb-4">Calificación Grupal para <span id="groupGradeComponent"></span></h3>
+                <p class="mb-4">Se aplicará la nota a <strong id="groupGradeStudentCount">0</strong> estudiante(s) seleccionado(s).</p>
+                <input type="number" id="groupGradeInput" class="search-box w-full" placeholder="Ingresar nota (1.0 - 5.0)" min="1" max="5" step="0.1">
                 <div class="flex justify-end gap-2 mt-4">
-                    <button id="closeGenericConfirmModal" class="action-button">Cancelar</button>
-                    <button id="confirmGenericBtn" class="action-button bg-red-600">Confirmar</button>
+                    <button id="closeGroupGradeModal" class="action-button">Cancelar</button>
+                    <button id="saveGroupGrade" class="action-button bg-blue-600">Aplicar Nota</button>
                 </div>
             </div>
         </div>
@@ -673,7 +688,11 @@
                     'voiceListenBtn', 'voiceCourseSelector', 'voiceModeSelector', 'addPeriodBtn', 'newPeriodName',
                     'voiceStudentList', 'voiceGradeList', 'voiceStatus', 'voiceTranscript', 'closeStudentReportModal',
                     'courseManagementTitle', 'studentManagementList', 'deleteConfirmModal', 'deletePasswordInput',
-                    'deleteErrorMsg', 'closeDeleteConfirmModal', 'confirmDeleteBtn'
+                    'deleteErrorMsg', 'closeDeleteConfirmModal', 'confirmDeleteBtn', 'passwordConfirmModal',
+                    'passwordConfirmTitle', 'passwordInput', 'passwordErrorMsg', 'closePasswordConfirmModal',
+                    'confirmPasswordBtn', 'editObsModal', 'editObsTextarea', 'closeEditObsModal', 'saveEditObs',
+                    'groupGradeModal', 'groupGradeComponent', 'groupGradeStudentCount', 'groupGradeInput',
+                    'closeGroupGradeModal', 'saveGroupGrade'
                 ];
                 ids.forEach(id => { ui[id] = document.getElementById(id); });
             };
@@ -747,13 +766,14 @@
             const determineNivel = (def) => { const s = parseFloat(def); if (s>=1&&s<=2.99)return"Bajo";if (s>=3&&s<=3.99)return"Básico";if (s>=4&&s<=4.59)return"Alto";if(s>=4.6&&s<=5)return"Superior";return""; };
             const calculateAttendanceSummary = (attendance) => {
                 const att = attendance || {};
-                let a=0,p=0,e=0; 
+                let a=0,p=0,e=0,t=0; 
                 for(const d in att) {
                     if(att[d]===true) p++;
                     else if(att[d]===false) a++;
                     else if(att[d]==='excused') e++;
+                    else if(att[d]==='late') t++;
                 } 
-                return {attended: p, absent: a, excused: e}; 
+                return {attended: p, absent: a, excused: e, late: t}; 
             };
             
             const debounce = (func, delay) => {
@@ -787,15 +807,16 @@
                     tableEl.style.minWidth = `${510 + (attendanceDates.length * 60) + ((gs.cognitive + gs.procedural + gs.attitudinal) * 70)}px`;
                     
                     let cognitiveHeaders = '';
-                    for(let i=1; i<=gs.cognitive; i++) cognitiveHeaders += `<th class="grade-column">C${i} <i class="fas fa-comment cursor-pointer text-xs ml-1 ${ (data.columnNotes?.[`C${i}`] || '').trim() !== '' ? 'text-amber-400' : 'text-gray-400'} hover:text-amber-500" onclick="window.showGradeNoteModal('C${i}')"></i></th>`;
+                    for(let i=1; i<=gs.cognitive; i++) cognitiveHeaders += `<th class="grade-column">C${i} <i class="fas fa-users cursor-pointer text-xs ml-1 text-gray-400 hover:text-green-400" onclick="window.showGroupGradeModal('cognitivoC${i}', 'Cognitivo C${i}')"></i> <i class="fas fa-comment cursor-pointer text-xs ml-1 ${ (data.columnNotes?.[`C${i}`] || '').trim() !== '' ? 'text-amber-400' : 'text-gray-400'} hover:text-amber-500" onclick="window.showGradeNoteModal('C${i}')"></i></th>`;
                     let proceduralHeaders = '';
-                    for(let i=1; i<=gs.procedural; i++) proceduralHeaders += `<th class="grade-column">P${i} <i class="fas fa-comment cursor-pointer text-xs ml-1 ${ (data.columnNotes?.[`P${i}`] || '').trim() !== '' ? 'text-amber-400' : 'text-gray-400'} hover:text-amber-500" onclick="window.showGradeNoteModal('P${i}')"></i></th>`;
+                    for(let i=1; i<=gs.procedural; i++) proceduralHeaders += `<th class="grade-column">P${i} <i class="fas fa-users cursor-pointer text-xs ml-1 text-gray-400 hover:text-green-400" onclick="window.showGroupGradeModal('procedimentalP${i}', 'Procedimental P${i}')"></i> <i class="fas fa-comment cursor-pointer text-xs ml-1 ${ (data.columnNotes?.[`P${i}`] || '').trim() !== '' ? 'text-amber-400' : 'text-gray-400'} hover:text-amber-500" onclick="window.showGradeNoteModal('P${i}')"></i></th>`;
                     let attitudinalHeaders = '';
-                    for(let i=1; i<=gs.attitudinal; i++) attitudinalHeaders += `<th class="grade-column">A${i} <i class="fas fa-comment cursor-pointer text-xs ml-1 ${ (data.columnNotes?.[`A${i}`] || '').trim() !== '' ? 'text-amber-400' : 'text-gray-400'} hover:text-amber-500" onclick="window.showGradeNoteModal('A${i}')"></i></th>`;
+                    for(let i=1; i<=gs.attitudinal; i++) attitudinalHeaders += `<th class="grade-column">A${i} <i class="fas fa-users cursor-pointer text-xs ml-1 text-gray-400 hover:text-green-400" onclick="window.showGroupGradeModal('actitudinalA${i}', 'Actitudinal A${i}')"></i> <i class="fas fa-comment cursor-pointer text-xs ml-1 ${ (data.columnNotes?.[`A${i}`] || '').trim() !== '' ? 'text-amber-400' : 'text-gray-400'} hover:text-amber-500" onclick="window.showGradeNoteModal('A${i}')"></i></th>`;
 
                     let tableHTML = `
                         <thead>
                             <tr>
+                                <th rowspan="2" class="sticky-left sticky-col-select"><input type="checkbox" id="selectAllCheckbox"></th>
                                 <th rowspan="2" class="sticky-left sticky-col-no">No</th>
                                 <th rowspan="2" class="sticky-left sticky-col-name">NOMBRE</th>
                                 <th rowspan="2" class="sticky-left sticky-col-actions">Acciones</th>
@@ -821,6 +842,7 @@
                                           <button class="attendance-bulk-btn bg-green-500" onclick="window.markAllAttendance('${dateString}', true)">✓</button>
                                           <button class="attendance-bulk-btn bg-red-500" onclick="window.markAllAttendance('${dateString}', false)">✗</button>
                                           <button class="attendance-bulk-btn bg-indigo-500" onclick="window.markAllAttendance('${dateString}', 'excused')">E</button>
+                                          <button class="attendance-bulk-btn bg-yellow-500" onclick="window.markAllAttendance('${dateString}', 'late')">T</button>
                                         </div>
                                     </th>`;
                                 }).join('')}
@@ -845,6 +867,7 @@
                         for(let i=1; i<=gs.attitudinal; i++) gradeCellsHTML += `<td class="grade-column grade-cell" data-student="${student}" data-field="actitudinalA${i}">${formatGrade(studentData.grades?.[`actitudinalA${i}`])}</td>`;
 
                         tableHTML += `<tr>
+                            <td class="sticky-left sticky-col-select"><input type="checkbox" class="student-checkbox" value="${student}"></td>
                             <td class="sticky-left sticky-col-no">${index + 1}</td>
                             <td class="sticky-left sticky-col-name">${student}</td>
                             <td class="sticky-left sticky-col-actions">
@@ -853,7 +876,10 @@
                                 <i class="fas fa-chart-line action-icon" title="Informe de Estudiante" onclick="window.showStudentReportModal('${student}')"></i>
                                 <i class="fas fa-edit action-icon action-grades-btn" title="Editar Notas" onclick="window.showGradesModal('${student}')"></i>
                             </td>
-                            <td class="sticky-left sticky-col-summary"><span>✓: ${summary.attended}</span><br><span>✗: ${summary.absent}</span><br><span>E: ${summary.excused}</span></td>`;
+                            <td class="sticky-left sticky-col-summary">
+                                <span>✓:${summary.attended}</span> <span>✗:${summary.absent}</span><br>
+                                <span>E:${summary.excused}</span> <span>T:${summary.late}</span>
+                            </td>`;
                         
                         attendanceDates.forEach(date => {
                             const dateString = date.toISOString().split('T')[0];
@@ -862,6 +888,7 @@
                             if (status === true) { a_class += ' attended'; a_content = '✓'; }
                             else if (status === false) { a_class += ' absent'; a_content = '✗'; }
                             else if (status === 'excused') { a_class += ' excused'; a_content = 'E'; }
+                            else if (status === 'late') { a_class += ' late'; a_content = 'T'; }
                             tableHTML += `<td class="attendance-cell"><div class="${a_class}" data-student="${student}" data-date="${dateString}">${a_content}</div></td>`;
                         });
                         
@@ -873,6 +900,17 @@
                     tableEl.innerHTML = tableHTML + `</tbody>`;
                     ui.attendanceTableContainer.innerHTML = '';
                     ui.attendanceTableContainer.appendChild(tableEl);
+
+                    // Add event listener for the new "Select All" checkbox
+                    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+                    if (selectAllCheckbox) {
+                        selectAllCheckbox.addEventListener('change', (e) => {
+                            document.querySelectorAll('.student-checkbox').forEach(checkbox => {
+                                checkbox.checked = e.target.checked;
+                            });
+                        });
+                    }
+
                     calculateAndDisplayStats();
                 } catch(e) {
                     console.error(`An error occurred while rendering the table for course "${activeCourse}":`, e);
@@ -985,7 +1023,7 @@
                 if (!studentData.attendance) studentData.attendance = {};
                 const currentStatus = studentData.attendance[date];
 
-                const statusCycle = [true, false, 'excused', undefined]; // Attended, Absent, Excused, Not Marked
+                const statusCycle = [true, false, 'excused', 'late', undefined]; // Attended, Absent, Excused, Late, Not Marked
                 const currentIndex = statusCycle.indexOf(currentStatus);
                 const newStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
 
@@ -996,10 +1034,12 @@
                 if (newStatus === true) { box.classList.add('attended'); box.textContent = '✓'; }
                 else if (newStatus === false) { box.classList.add('absent'); box.textContent = '✗'; }
                 else if (newStatus === 'excused') { box.classList.add('excused'); box.textContent = 'E'; }
+                else if (newStatus === 'late') { box.classList.add('late'); box.textContent = 'T'; }
+
 
                 const summary = calculateAttendanceSummary(studentData.attendance);
                 const summaryCell = box.closest('tr').querySelector('.sticky-col-summary');
-                if (summaryCell) summaryCell.innerHTML = `<span>✓: ${summary.attended}</span><br><span>✗: ${summary.absent}</span><br><span>E: ${summary.excused}</span>`;
+                if (summaryCell) summaryCell.innerHTML = `<span>✓:${summary.attended}</span> <span>✗:${summary.absent}</span><br><span>E:${summary.excused}</span> <span>T:${summary.late}</span>`;
                 saveAllData(true);
                 calculateAndDisplayStats();
             };
@@ -1096,14 +1136,31 @@
             }
 
             // --- Confirmation Modal ---
-            function showConfirm(title, text, onConfirm) {
-                ui.genericConfirmTitle.textContent = title;
-                ui.genericConfirmText.innerHTML = text; // Use innerHTML to allow for formatted text
-                ui.confirmGenericBtn.onclick = () => {
-                    onConfirm();
-                    ui.genericConfirmModal.classList.remove('active');
+            function showPasswordConfirm(title, onConfirm) {
+                ui.passwordConfirmTitle.textContent = title;
+                ui.passwordInput.value = '';
+                ui.passwordErrorMsg.classList.add('hidden');
+                
+                const confirmHandler = () => {
+                    if (ui.passwordInput.value === '55232122') {
+                        onConfirm();
+                        ui.passwordConfirmModal.classList.remove('active');
+                    } else {
+                        ui.passwordErrorMsg.classList.remove('hidden');
+                    }
                 };
-                ui.genericConfirmModal.classList.add('active');
+
+                ui.confirmPasswordBtn.onclick = confirmHandler;
+
+                ui.passwordInput.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        confirmHandler();
+                    }
+                };
+
+                ui.passwordConfirmModal.classList.add('active');
+                setTimeout(() => ui.passwordInput.focus(), 100);
             }
             
             window.showObservationsModal = function(student) {
@@ -1139,7 +1196,10 @@
                         obsElement.innerHTML = `
                             <div class="flex justify-between items-start">
                                 <p class="whitespace-normal flex-grow">${obs.text.replace(/\n/g, '<br>')}</p>
-                                <i class="fas fa-trash-alt text-red-500 hover:text-red-700 cursor-pointer ml-4 flex-shrink-0" onclick="window.requestDeleteObservation('${student}', '${obs.timestamp}')"></i>
+                                <div class="flex-shrink-0 ml-4">
+                                    <i class="fas fa-edit text-blue-500 hover:text-blue-700 cursor-pointer mr-2" onclick="window.requestEditObservation('${student}', '${obs.timestamp}')"></i>
+                                    <i class="fas fa-trash-alt text-red-500 hover:text-red-700 cursor-pointer" onclick="window.requestDeleteObservation('${student}', '${obs.timestamp}')"></i>
+                                </div>
                             </div>
                             <p class="text-xs text-gray-500 text-right mt-1">${formattedDate}</p>
                         `;
@@ -1152,13 +1212,20 @@
             }
 
             window.requestDeleteObservation = function(student, timestamp) {
-                ui.deletePasswordInput.value = '';
-                ui.deleteErrorMsg.classList.add('hidden');
+                showPasswordConfirm('Confirmar Borrado', () => deleteObservation(student, timestamp));
+            }
 
-                ui.deleteConfirmModal.dataset.student = student;
-                ui.deleteConfirmModal.dataset.timestamp = timestamp;
-                ui.deleteConfirmModal.classList.add('active');
-                setTimeout(() => ui.deletePasswordInput.focus(), 100);
+            window.requestEditObservation = function(student, timestamp) {
+                showPasswordConfirm('Confirmar Edición', () => {
+                    const studentData = gradesData[activePeriod]?.[activeCourse]?.[student];
+                    const observation = studentData?.observations.find(o => o.timestamp === timestamp);
+                    if (observation) {
+                        ui.editObsTextarea.value = observation.text;
+                        ui.editObsModal.dataset.student = student;
+                        ui.editObsModal.dataset.timestamp = timestamp;
+                        ui.editObsModal.classList.add('active');
+                    }
+                });
             }
 
             function deleteObservation(student, timestamp) {
@@ -1169,7 +1236,6 @@
                     studentData.observations = studentData.observations.filter(obs => obs.timestamp !== timestamp);
                     saveAllData(true);
                     
-                    // Update icon in the table
                     const icon = document.querySelector(`i[data-student-obs="${student}"]`);
                     if (icon) {
                         if (studentData.observations.length > 0) {
@@ -1179,7 +1245,6 @@
                         }
                     }
 
-                    // Refresh the modal if it's open for the same student
                     if (ui.obsModal.classList.contains('active') && ui.obsModal.dataset.student === student) {
                         showObservationsModal(student); 
                     }
@@ -1251,6 +1316,7 @@
                                 <p><strong>Asistencias:</strong> ${attendance.attended}</p>
                                 <p><strong>Ausencias:</strong> ${attendance.absent}</p>
                                 <p><strong>Excusas:</strong> ${attendance.excused}</p>
+                                <p><strong>Tardanzas:</strong> ${attendance.late}</p>
                             </div>
                             <div>
                                 <h4 class="text-lg font-bold mb-2">Promedio por Componente</h4>
@@ -1418,8 +1484,21 @@
                 for(let i=1; i<=gs.procedural; i++) gradesHTML += `<p><strong>Procedimental P${i}:</strong> ${studentData.grades?.[`procedimentalP${i}`]||'N/A'}</p>`;
                 for(let i=1; i<=gs.attitudinal; i++) gradesHTML += `<p><strong>Actitudinal A${i}:</strong> ${studentData.grades?.[`actitudinalA${i}`]||'N/A'}</p>`;
 
-                ui.bulletinContent.innerHTML = `<div class="bulletin-page p-4 bg-white" style="color: black !important;"><h3 class="text-2xl font-bold text-center mb-4">Boletín Informativo - ${activePeriod}</h3><p><strong>Estudiante:</strong> <span id="bulletinStudentName">${student}</span></p><p><strong>Curso:</strong> ${activeCourse}</p><hr class="my-4"><h4 class="text-lg font-bold mt-4">Calificaciones</h4><div id="bulletinGrades" class="grid grid-cols-2 gap-2 mt-2">${gradesHTML}<p class="mt-2 font-bold"><strong>DEF: ${def} (${nivel})</strong></p></div><h4 class="text-lg font-bold mt-4">Asistencia</h4><div id="bulletinAttendance" class="mt-2"><p><strong>Asistencias:</strong> ${attendance.attended}</p><p><strong>Ausencias:</strong> ${attendance.absent}</p><p><strong>Excusas:</strong> ${attendance.excused}</p></div><h4 class="text-lg font-bold mt-4">Observaciones</h4><div id="bulletinObs" class="mt-2">${obsHTML}</div><div class="text-xs text-gray-500 text-center mt-6" style="color: #555 !important;">Generado el: ${timestamp}</div></div>`;
+                ui.bulletinContent.innerHTML = `<div class="bulletin-page p-4 bg-white" style="color: black !important;"><h3 class="text-2xl font-bold text-center mb-4">Boletín Informativo - ${activePeriod}</h3><p><strong>Estudiante:</strong> <span id="bulletinStudentName">${student}</span></p><p><strong>Curso:</strong> ${activeCourse}</p><hr class="my-4"><h4 class="text-lg font-bold mt-4">Calificaciones</h4><div id="bulletinGrades" class="grid grid-cols-2 gap-2 mt-2">${gradesHTML}<p class="mt-2 font-bold"><strong>DEF: ${def} (${nivel})</strong></p></div><h4 class="text-lg font-bold mt-4">Asistencia</h4><div id="bulletinAttendance" class="mt-2"><p><strong>Asistencias:</strong> ${attendance.attended}</p><p><strong>Ausencias:</strong> ${attendance.absent}</p><p><strong>Excusas:</strong> ${attendance.excused}</p><p><strong>Tardanzas:</strong> ${attendance.late}</p></div><h4 class="text-lg font-bold mt-4">Observaciones</h4><div id="bulletinObs" class="mt-2">${obsHTML}</div><div class="text-xs text-gray-500 text-center mt-6" style="color: #555 !important;">Generado el: ${timestamp}</div></div>`;
                 ui.bulletinModal.classList.add('active');
+            }
+
+            window.showGroupGradeModal = function(field, fieldName) {
+                const selectedStudents = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb => cb.value);
+                if (selectedStudents.length === 0) {
+                    showMessage('Por favor, selecciona al menos un estudiante.', 'error');
+                    return;
+                }
+                document.getElementById('groupGradeComponent').textContent = fieldName;
+                document.getElementById('groupGradeStudentCount').textContent = selectedStudents.length;
+                document.getElementById('groupGradeInput').value = '';
+                document.getElementById('groupGradeModal').dataset.field = field;
+                document.getElementById('groupGradeModal').classList.add('active');
             }
             
             function exportData(scope, selectedCourses = []) {
@@ -1456,7 +1535,7 @@
                         for(let i=1; i<=gs.procedural; i++) gradeValues.push(studentData.grades?.[`procedimentalP${i}`]||"");
                         for(let i=1; i<=gs.attitudinal; i++) gradeValues.push(studentData.grades?.[`actitudinalA${i}`]||"");
 
-                        let row = [index + 1, `"${student}"`, ...getAttendanceDates(course).map(d => { const s=studentData.attendance?.[d.toISOString().split('T')[0]]; return s===true?"P":s===false?"A":s==='excused'?'E':""; }), `"${obsText.replace(/"/g, '""')}"`, ...gradeValues, def, nivel];
+                        let row = [index + 1, `"${student}"`, ...getAttendanceDates(course).map(d => { const s=studentData.attendance?.[d.toISOString().split('T')[0]]; return s===true?"P":s===false?"A":s==='excused'?'E':s==='late'?'T':""; }), `"${obsText.replace(/"/g, '""')}"`, ...gradeValues, def, nivel];
                         csvContent += row.join(",") + "\r\n";
                     });
                     if (scope !== 'current') csvContent += "\r\n";
@@ -1755,55 +1834,69 @@
             }
 
             function handleVoiceResult(transcript) {
-                 const grade = parseVoiceGrade(transcript);
-                 if (grade !== null) {
-                     const currentStudentEl = ui.voiceStudentList.querySelector('.selected');
-                     const currentGradeEl = ui.voiceGradeList.querySelector('.selected');
-                    
-                     if (currentStudentEl && currentGradeEl) {
-                         const student = currentStudentEl.dataset.student;
-                         const field = currentGradeEl.dataset.field;
-                        
-                         if (updateGrade(student, field, grade, null)) {
-                            
-                             const selectElement = (elementToSelect, listContainer) => {
-                                 listContainer.querySelector('.selected')?.classList.remove('selected');
-                                 elementToSelect.classList.add('selected');
-                                 elementToSelect.scrollIntoView({ block: 'center', behavior: 'smooth' });
-                             };
+                const grade = parseVoiceGrade(transcript);
+                if (grade === null) {
+                    showMessage(`No se reconoció una nota válida en "${transcript}"`, "error");
+                    return;
+                }
 
-                             if (voiceGradingMode === 'student') {
-                                 let nextEl = currentGradeEl.nextElementSibling;
-                                 if (nextEl) {
-                                     selectElement(nextEl, ui.voiceGradeList);
-                                 } else {
-                                     nextEl = currentStudentEl.nextElementSibling;
-                                     if (nextEl) {
-                                         selectElement(nextEl, ui.voiceStudentList);
-                                         selectElement(ui.voiceGradeList.firstElementChild, ui.voiceGradeList);
-                                     } else {
-                                         stopRecognitionSession();
-                                     }
-                                 }
-                             } else { // mode is 'component'
-                                 let nextEl = currentStudentEl.nextElementSibling;
-                                 if (nextEl) {
-                                     selectElement(nextEl, ui.voiceStudentList);
-                                 } else {
-                                     nextEl = currentGradeEl.nextElementSibling;
-                                     if (nextEl) {
-                                         selectElement(nextEl, ui.voiceGradeList);
-                                         selectElement(ui.voiceStudentList.firstElementChild, ui.voiceStudentList);
-                                     } else {
-                                         stopRecognitionSession();
-                                     }
-                                 }
-                             }
-                         }
-                     }
-                 } else {
-                      showMessage(`No se reconoció una nota válida en "${transcript}"`, "error");
-                 }
+                const selectedStudentsInTable = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb => cb.value);
+
+                if (selectedStudentsInTable.length > 0) {
+                    const currentGradeEl = ui.voiceGradeList.querySelector('.selected');
+                    if(currentGradeEl) {
+                        const field = currentGradeEl.dataset.field;
+                        selectedStudentsInTable.forEach(studentName => {
+                            updateGrade(studentName, field, grade, null); // cellToUpdate is null as we'll re-render
+                        });
+                        showMessage(`Nota ${grade} aplicada a ${selectedStudentsInTable.length} estudiantes.`, "success");
+                        renderTable();
+                    }
+                } else {
+                    const currentStudentEl = ui.voiceStudentList.querySelector('.selected');
+                    const currentGradeEl = ui.voiceGradeList.querySelector('.selected');
+                    
+                    if (currentStudentEl && currentGradeEl) {
+                        const student = currentStudentEl.dataset.student;
+                        const field = currentGradeEl.dataset.field;
+                        
+                        if (updateGrade(student, field, grade, null)) {
+                            const selectElement = (elementToSelect, listContainer) => {
+                                listContainer.querySelector('.selected')?.classList.remove('selected');
+                                elementToSelect.classList.add('selected');
+                                elementToSelect.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                            };
+
+                            if (voiceGradingMode === 'student') {
+                                let nextEl = currentGradeEl.nextElementSibling;
+                                if (nextEl) {
+                                    selectElement(nextEl, ui.voiceGradeList);
+                                } else {
+                                    nextEl = currentStudentEl.nextElementSibling;
+                                    if (nextEl) {
+                                        selectElement(nextEl, ui.voiceStudentList);
+                                        selectElement(ui.voiceGradeList.firstElementChild, ui.voiceGradeList);
+                                    } else {
+                                        stopRecognitionSession();
+                                    }
+                                }
+                            } else { // mode is 'component'
+                                let nextEl = currentStudentEl.nextElementSibling;
+                                if (nextEl) {
+                                    selectElement(nextEl, ui.voiceStudentList);
+                                } else {
+                                    nextEl = currentGradeEl.nextElementSibling;
+                                    if (nextEl) {
+                                        selectElement(nextEl, ui.voiceGradeList);
+                                        selectElement(ui.voiceStudentList.firstElementChild, ui.voiceStudentList);
+                                    } else {
+                                        stopRecognitionSession();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
             
             function populateVoiceModal() {
@@ -2128,10 +2221,10 @@
                     });
                 });
                 addListener('closeObsModal', 'click', () => ui.obsModal.classList.remove('active'));
+                addListener('closeEditObsModal', 'click', () => ui.editObsModal.classList.remove('active'));
                 addListener('closeDateNoteModal', 'click', () => ui.dateNoteModal.classList.remove('active'));
                 addListener('closeGradeNoteModal', 'click', () => ui.gradeNoteModal.classList.remove('active'));
-                addListener('closeGenericConfirmModal', 'click', () => ui.genericConfirmModal.classList.remove('active'));
-                addListener('closeDeleteConfirmModal', 'click', () => ui.deleteConfirmModal.classList.remove('active'));
+                addListener('closePasswordConfirmModal', 'click', () => ui.passwordConfirmModal.classList.remove('active'));
                 addListener('closeSettingsModal', 'click', () => ui.settingsModal.classList.remove('active'));
                 addListener('closeCourseManagementModal', 'click', () => ui.courseManagementModal.classList.remove('active'));
                 addListener('closeStudentReportModal', 'click', () => ui.studentReportModal.classList.remove('active'));
@@ -2146,6 +2239,7 @@
                     ui.voiceGradeModal.classList.remove('active');
                     if(activeCourse === ui.voiceCourseSelector.value) renderTable();
                 });
+                addListener('closeGroupGradeModal', 'click', () => document.getElementById('groupGradeModal').classList.remove('active'));
 
 
                 // Modals: Action buttons
@@ -2166,23 +2260,80 @@
                     }
                 });
 
-                 addListener('confirmDeleteBtn', 'click', () => {
-                    const password = ui.deletePasswordInput.value;
-                    if (password === '55232122') {
-                        const { student, timestamp } = ui.deleteConfirmModal.dataset;
-                        deleteObservation(student, timestamp);
-                        ui.deleteConfirmModal.classList.remove('active');
-                    } else {
-                        ui.deleteErrorMsg.classList.remove('hidden');
+                 addListener('confirmPasswordBtn', 'click', () => ui.passwordInput.dispatchEvent(new KeyboardEvent('keydown', {'key': 'Enter'})));
+                 addListener('passwordInput', 'keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        // The actual confirm logic is now attached dynamically to the button's onclick
+                        ui.confirmPasswordBtn.click();
                     }
                 });
 
-                addListener('deletePasswordInput', 'keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        ui.confirmDeleteBtn.click();
+                 addListener('saveEditObs', 'click', () => {
+                    const { student, timestamp } = ui.editObsModal.dataset;
+                    const newText = ui.editObsTextarea.value.trim();
+                    const studentData = gradesData[activePeriod]?.[activeCourse]?.[student];
+                    if (studentData) {
+                        const observation = studentData.observations.find(o => o.timestamp === timestamp);
+                        if (observation) {
+                            observation.text = newText;
+                            saveAllData(true);
+                            showMessage("Observación actualizada.", "success");
+                            ui.editObsModal.classList.remove('active');
+                            showObservationsModal(student); // Refresh the main obs modal
+                        }
                     }
                 });
+
+                addListener('saveSettingsBtn', 'click', () => {
+                    appSettings.professor = document.getElementById('professorNameInput').value;
+                    appSettings.subject = document.getElementById('subjectNameInput').value;
+                    const cog = parseInt(document.getElementById('cognitivePercentage').value);
+                    const proc = parseInt(document.getElementById('proceduralPercentage').value);
+                    const att = parseInt(document.getElementById('attitudinalPercentage').value);
+
+                    if (cog + proc + att !== 100) {
+                        showMessage('La suma de los porcentajes debe ser 100.', 'error');
+                        return;
+                    }
+
+                    appSettings.percentages.cognitive = cog;
+                    appSettings.percentages.procedural = proc;
+                    appSettings.percentages.attitudinal = att;
+                    
+                    appSettings.gradeStructure.cognitive = parseInt(document.getElementById('cognitiveCount').value) || 3;
+                    appSettings.gradeStructure.procedural = parseInt(document.getElementById('proceduralCount').value) || 3;
+                    appSettings.gradeStructure.attitudinal = parseInt(document.getElementById('attitudinalCount').value) || 3;
+
+                    const newPeriods = [];
+                    const periodRows = document.querySelectorAll('#periodsList > div');
+                    periodRows.forEach(row => {
+                        const oldName = row.querySelector('.period-name-input').dataset.oldName;
+                        const newName = row.querySelector('.period-name-input').value.trim();
+                        const start = row.querySelector('.period-start-input').value;
+                        const end = row.querySelector('.period-end-input').value;
+
+                        if (newName && start && end) {
+                            newPeriods.push({ name: newName, start: start, end: end });
+                            if (oldName !== newName && gradesData[oldName]) {
+                                gradesData[newName] = gradesData[oldName];
+                                delete gradesData[oldName];
+                            }
+                        }
+                    });
+                    appSettings.periods = newPeriods;
+                    
+                    if (!appSettings.periods.find(p => p.name === activePeriod)) {
+                        activePeriod = appSettings.periods[0]?.name;
+                        appSettings.activePeriod = activePeriod;
+                    }
+
+                    saveSettings();
+                    setupPeriodSelector();
+                    ui.settingsModal.classList.remove('active');
+                    renderTable();
+                });
+
 
                 addListener('saveDateNote', 'click', () => {
                     const dateString = ui.dateNoteModal.dataset.date;
@@ -2272,6 +2423,19 @@
                         showCourseManagementModal();
                         renderTable();
                     }
+                });
+                addListener('saveGroupGrade', 'click', () => {
+                    const field = document.getElementById('groupGradeModal').dataset.field;
+                    const grade = document.getElementById('groupGradeInput').value;
+                    const selectedStudents = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb => cb.value);
+
+                    selectedStudents.forEach(studentName => {
+                        updateGrade(studentName, field, grade, null); // cellToUpdate is null
+                    });
+                    
+                    document.getElementById('groupGradeModal').classList.remove('active');
+                    renderTable(); // Re-render the entire table to show all changes
+                    showMessage(`Nota aplicada a ${selectedStudents.length} estudiantes.`, 'success');
                 });
             };
             
