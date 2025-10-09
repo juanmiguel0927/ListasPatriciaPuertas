@@ -184,6 +184,9 @@
         .modal-content { background-color: var(--card-bg-color); padding: 2rem; border-radius: 0.75rem; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; }
         .modal-content textarea { width: 100%; min-height: 150px; border: 1px solid var(--input-border-color); border-radius: 0.5rem; padding: 0.5rem; background-color: var(--bg-color); color: var(--text-color); }
         .bulletin-content { border: 1px solid var(--border-color); padding: 1.5rem; }
+        #passwordConfirmModal {
+            z-index: 110; /* Ensure it appears above other modals */
+        }
         
         /* Stats Panel */
         .stats-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 1rem; background-color: var(--bg-color); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; align-items: center;}
@@ -256,12 +259,12 @@
         }
 
         .bulletin-page {
-             background-color: white;
-             color: black;
+            background-color: white;
+            color: black;
         }
 
         .bulletin-page * {
-             color: black !important;
+            color: black !important;
         }
         
         /* Print styles */
@@ -292,9 +295,10 @@
 
         <!-- Controls -->
         <div class="controls-container">
-            <input type="text" id="searchBox" class="search-box" placeholder="Buscar estudiante...">
+            <input type="text" id="searchBox" class="search-box" placeholder="Buscar estudiante..." spellcheck="true">
             <div class="flex items-center justify-center sm:justify-end w-full sm:w-auto gap-4">
                 <div class="button-group">
+                    <button id="deleteGradesBtn" class="action-button bg-red-600 hover:bg-red-700"><i class="fas fa-eraser mr-2"></i>Borrar Notas</button>
                     <button id="rankingBtn" class="action-button"><i class="fas fa-trophy mr-2"></i>Ranking</button>
                     <button id="voiceInputBtn" class="action-button"><i class="fas fa-microphone-alt mr-2"></i>Notas por Voz</button>
                     <button id="bulletinBtn" class="action-button"><i class="fas fa-id-card mr-2"></i>Boletines</button>
@@ -333,7 +337,7 @@
                         <!-- Predefined observation buttons will be inserted here -->
                     </div>
                 </div>
-                <textarea id="obsTextarea" placeholder="Añadir nueva observación..."></textarea>
+                <textarea id="obsTextarea" placeholder="Añadir nueva observación..." spellcheck="true"></textarea>
                 <div class="flex justify-end gap-2 mt-4">
                     <button id="closeObsModal" class="action-button">Cerrar</button>
                     <button id="saveObs" class="action-button bg-blue-600">Añadir Observación</button>
@@ -344,7 +348,7 @@
         <div id="editObsModal" class="modal-overlay">
             <div class="modal-content">
                 <h3 class="text-xl font-bold mb-4">Editar Observación</h3>
-                <textarea id="editObsTextarea"></textarea>
+                <textarea id="editObsTextarea" spellcheck="true"></textarea>
                 <div class="flex justify-end gap-2 mt-4">
                     <button id="closeEditObsModal" class="action-button">Cancelar</button>
                     <button id="saveEditObs" class="action-button bg-blue-600">Guardar Cambios</button>
@@ -355,7 +359,7 @@
         <div id="dateNoteModal" class="modal-overlay">
             <div class="modal-content">
                 <h3 class="text-xl font-bold mb-4">Anotación para la fecha: <span id="dateNoteDate"></span></h3>
-                <textarea id="dateNoteTextarea" placeholder="Añadir un evento o nota para este día (ej. Examen, Salida pedagógica)..."></textarea>
+                <textarea id="dateNoteTextarea" placeholder="Añadir un evento o nota para este día (ej. Examen, Salida pedagógica)..." spellcheck="true"></textarea>
                 <div class="flex justify-end gap-2 mt-4">
                     <button id="closeDateNoteModal" class="action-button">Cerrar</button>
                     <button id="saveDateNote" class="action-button bg-blue-600">Guardar</button>
@@ -366,7 +370,7 @@
         <div id="gradeNoteModal" class="modal-overlay">
             <div class="modal-content">
                 <h3 class="text-xl font-bold mb-4">Comentario para <span id="gradeNoteTitle"></span></h3>
-                <textarea id="gradeNoteTextarea"></textarea>
+                <textarea id="gradeNoteTextarea" spellcheck="true"></textarea>
                 <div class="flex justify-end gap-2 mt-4">
                     <button id="closeGradeNoteModal" class="action-button">Cerrar</button>
                     <button id="saveGradeNote" class="action-button bg-blue-600">Guardar</button>
@@ -398,6 +402,31 @@
                 </div>
             </div>
         </div>
+
+        <div id="deleteGradesModal" class="modal-overlay">
+            <div class="modal-content">
+                <h3 class="text-xl font-bold mb-4">Borrar Calificaciones</h3>
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-semibold mb-2">1. Seleccionar Alcance</h4>
+                        <div class="flex items-center gap-4">
+                            <label><input type="radio" name="delete-scope" value="selected" checked> Estudiantes Seleccionados</label>
+                            <label><input type="radio" name="delete-scope" value="all"> Todo el Curso</label>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-2">2. Seleccionar Componentes a Borrar</h4>
+                        <div id="delete-grades-options" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                           <!-- Checkboxes will be dynamically inserted here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 mt-6">
+                    <button id="closeDeleteGradesModal" class="action-button">Cancelar</button>
+                    <button id="confirmDeleteGradesBtn" class="action-button bg-red-600">Borrar Notas</button>
+                </div>
+            </div>
+        </div>
         
         <div id="settingsModal" class="modal-overlay">
             <div class="modal-content">
@@ -406,8 +435,8 @@
                     <div>
                         <h4 class="font-semibold mb-2">Información del Docente</h4>
                         <div class="grid grid-cols-1 gap-4">
-                            <div><label for="professorNameInput">Nombre del Docente:</label><input type="text" id="professorNameInput" class="search-box w-full"></div>
-                            <div><label for="subjectNameInput">Nombre de la Asignatura:</label><input type="text" id="subjectNameInput" class="search-box w-full"></div>
+                            <div><label for="professorNameInput">Nombre del Docente:</label><input type="text" id="professorNameInput" class="search-box w-full" spellcheck="true"></div>
+                            <div><label for="subjectNameInput">Nombre de la Asignatura:</label><input type="text" id="subjectNameInput" class="search-box w-full" spellcheck="true"></div>
                         </div>
                     </div>
                      <div>
@@ -430,7 +459,7 @@
                         <h4 class="font-semibold mb-2">Gestión de Periodos</h4>
                         <div id="periodsList" class="space-y-2"></div>
                         <div class="flex gap-2 mt-2">
-                           <input type="text" id="newPeriodName" class="search-box flex-grow" placeholder="Nombre del nuevo periodo">
+                           <input type="text" id="newPeriodName" class="search-box flex-grow" placeholder="Nombre del nuevo periodo" spellcheck="true">
                            <button id="addPeriodBtn" class="action-button bg-green-600">+</button>
                         </div>
                     </div>
@@ -449,7 +478,7 @@
                     <h4 class="font-semibold mb-2">Lista de Estudiantes</h4>
                     <div id="studentManagementList" class="space-y-2 max-h-60 overflow-y-auto border p-2 rounded" style="border-color: var(--input-border-color);"></div>
                     <div class="flex gap-2 mt-2">
-                       <input type="text" id="newStudentName" class="search-box flex-grow" placeholder="Nombre del nuevo estudiante">
+                       <input type="text" id="newStudentName" class="search-box flex-grow" placeholder="Nombre del nuevo estudiante" spellcheck="true">
                        <button id="addStudentBtn" class="action-button bg-green-600">+</button>
                     </div>
                 </div>
@@ -530,7 +559,7 @@
                 <h3 class="text-xl font-bold mb-4">Notas para <span id="gradesStudentName"></span></h3>
                 <div id="gradesGrid" class="grid grid-cols-3 gap-x-4 gap-y-2"></div>
                 <div class="flex justify-end gap-2 mt-4">
-                    <button id="closeGradesModal" class="action-button">Cerrar</button>
+                    <button id="closeGradesModal" class="action-button">Cancelar</button>
                     <button id="saveGrades" class="action-button bg-blue-600">Guardar</button>
                 </div>
             </div>
@@ -630,7 +659,7 @@
     <div id="customTooltip" class="hidden absolute p-2 text-sm rounded-md shadow-lg max-w-xs whitespace-normal"></div>
 
     <script>
-        // --- Global Scope ---
+        // --- Global Scope Variables ---
         const ui = {};
         let recognition;
         let isRecognitionSessionActive = false;
@@ -654,7 +683,7 @@
             '10C':["ACOSTA DE LA CRUZ ISACC","ACUÑA RADA SARESTH","BENEDETTI GARCIA GLEINER","BORGE FLOREZ MARIA","CANTILLO NORIEGA KEIVEN","CONSUEGRA GOYENECHE HANYDANIELS","CONSUEGRA JARAMILLO MARIA","CONSUEGRA POLO EDU","CORRO IBAÑEZ DAVID","DE LA HOZ ARTETA ANGELINE","GOMEZ MARTINEZ NADIA","GOMEZ OROZCO ANGIE","GUTIERREZ OJEDA ANTONE","LAFAURie SILVERA JUAN","LEAL QUINTANILLA JESUS","MARIANO OROZCO NICOLL","MELENDEZ CAMBERO WILIANNIS","MENDOZA ESCALANTE DILAN","NAVAS BOLIVAR JAMER","OROZCO ARAUJO MARIA","ORTEGA GARCIA JULIANA","OSPINO DE LA CRUZ JOSE","OVIEDO MOLINA THAILY","PADILLA CONRADO JAIRO","PALLARES DE LA RANS JUAN","PALMA PEREZ DANNA","PEREZ DE LA CRUZ LIS","RADA TAMAYO JASIR","RANGEL MARTINEZ LIS","RODRIGUEZ BLANCO ZAMIRA","SALGADO VERDEZA MARIA","SARMIENTO ACUÑA DULCE","SARMIENTO PALMA MANUEL","SIERRA DE LA CRUZ LAUREEN","SILVERA SANTIAGO JUAN","SUAREZ SIERRA MARIA"],
             '11A':["ALBA BOLIVAR GABRIELA","ARDILA ORDUZ KAREN","BLANCO SILVERA YUGEIDIS","BOLIVAR SANTIAGO EDWIN","CERA SILVERA BRIANDA","CUETO REDONDO YULIFER","DE LA HOZ LOPEZ ROSA","DE MOYA PALLAREZ ADRIAN","FLOREZ SOLANO JUAN","FRANCO FRANCO VALERY","GONZALEZ DE LA CRUZ YICEL","HERNANDEZ JULIO ISABELA","HERNANDEZ MARRIAGA KARLA","HIGUITA ZAPATA VALENTINA","HOUSSET VALENCIA CRISTOBAL","HOUSSET VALENCIA TALIANA","IBAÑEZ NIETO MAYLAN","JIMENEZ ROA STALYN","LOPEZ MERCADO YULIMAR","MORALES OTERO ANA","ORTEGA BOLIVAR MARIETH","OSPINO NIETO WANDA","PALMA PACHECO JONATHAN","RADA POLO STIVE","REYES VILLALOBOS SHEILYN","ROLONG SIERRA ΑΝΑ","ROMERO RODRIGUEZ LUISA","SANTIAGO CUETO KERLYN","SANTIAGO DE LA ROSA RITA","SERJE GARCIA MISSELL","VASQUEZ CHARRIS YELIS","VELASQUEZ ZAMBRANO DANIEL"],
             '11B':["ALBOR SILVERA ALEJANDRA","AMAYA QUINTERO DUVAN","BAZA ESCOBAR YORELIS","CERVANTES LARA DEREEK","CONSUEGRA DE LA CRUZ SERGIO","CORRO GONZALEZ ANDRES","CORRO HERRERA JULIAN","CUENTAS SIERRA LAUREN","ESCOBAR ALGARIN FELICIDAD","GONZALEZ GIL NATALIA","GONZALEZ HURTADO LAURA","GUZMAN NUÑEZ LAUREN","MARQUEZ MIRANDA JOHAN","MAURY SALGADO ALISSON","MEJIA GONZALEZ ISABELLA","MIRANDA DE MOYA EVANGELLY","MONTERROSA RODRIGUEZ ANDRES","OROZCO VASQUEZ ROSAURA","ORTEGA SIERRA YULIANA","PADILLA REDONDO YESSICA","PEREZ DE LA CRUZ JESUS","PEREZ FRANCO YORIANA","QUINTERO COBA EDIER","REDONDO TORRES YESICA","RODRIGUEZ CARPINTERO CAMILA","ROJO CARDONA MISHELL","SANTIAGO NATERA JOHN","SIERRA FIGUEROA LUCILA","VALLEJO CASTILLO ISABELLA","VARGAS MOLINA SEBASTIAN"],
-            '11C':["ALTAMAR CABALLERO PAOLA","ARIZA PEREZ DILAN","ARROYO CORREDOR ANDRES","BARRETO GUTIERREZ SLAYNEΤΗ","BONILLA GUTIERREZ SHARON","CASTIBLANCO IBAÑEZ IAN","DE LA CRUZ ARRIETA ANGEL","DE LA CRUZ CAMARGO SERGIO","DE LA CRUZ SARMIENTO MARIA","DE LA HOZ MUÑOZ LUISA","DE LA HOZ SIERRA JOHAN","DE LOS REYES TAMAYO YOSETH","DELGADO HERNANDEZ SOFIA","ESCALANTE QUIROZ JESUS","ESCOBAR SALCEDO JUSEPH","ESCORCIA JIMENEZ ANDRES","GALLARDO PANCHA GABRIELA","GOEZ SERRANO EMMANUEL","HERNANDEZ CERVANTES PABLO","HERNANDEZ MUÑOZ DANA","HERRERA MENDOZA ESTEBAN","MARQUEZ MIRANDA JAZIR","ORELLANO BOLIVAR KEIDDER","PACHECO SIERRA ADRIANA","PARRA REDONDO JUAN","REDONDO MENDOZA MARIANGEL","RIVERO COBA GLEIDYS","SALAZAR LLANOS YAMITH","SANCHEZ CELIS DIEGO","SANTAMARIA BORJA ANDREA","SIERRA GARCIA OSCAR","VASQUEZ ARZUZA ALAM","VERGARA BARRIOS KLEIVER"],
+            '11C':["ALTAMAR CABALLERO PAOLA","ARIZA PEREZ DILAN","ARROYO CORREDOR ANDRES","BARRETO GUTIERREZ SLAYNEΤΗ","BONILLA GUTIERREZ SHARON","CASTIBLANCO IBAÑEZ IAN","DE LA CRUZ ARRIETA ANGEL","DE LA CRUZ CAMARGO SERGIO","DE LA CRUZ SARMIENTO MARIA","DE LA HOZ MUÑOZ LUISA","DE LA HOZ SIERRA JOHAN","DE LOS REYES TAMAYO YOSETH","DELGADO HERNANDEZ SOFIA","ESCALANTE QUIROZ JESUS","ESCOBAR SALCEDO JUSEPH","ESCORCIA JIMENEZ ANDRES","GALLARDO PANCHA GABRIELA","GOEZ SERRANO EMMANUEL","HERNANDEZ CERVANTES PABLO","HERNANDEZ MUÑOZ DANA","HERRERA MENDOZA ESTeban","MARQUEZ MIRANDA JAZIR","ORELLANO BOLIVAR KEIDDER","PACHECO SIERRA ADRIANA","PARRA REDONDO JUAN","REDONDO MENDOZA MARIANGEL","RIVERO COBA GLEIDYS","SALAZAR LLANOS YAMITH","SANCHEZ CELIS DIEGO","SANTAMARIA BORJA ANDREA","SIERRA GARCIA OSCAR","VASQUEZ ARZUZA ALAM","VERGARA BARRIOS KLEIVER"],
             '11D':["ARIZA DE LA CRUZ SEBASTIAN","ARIZA SILVERA JORGE MARIO","BLANCO ESCALANTE SAIDER","BOLIVAR VIVANCO NICOL","BORGE GOENAGA SHADIA","CABALLERO BARRIOS BREIDER","CHICO MARTINEZ DAIRON","CONSUEGRA SILVERA SARAY","ESCALANTE GONZALEZ DANIELA","GALLARDO BRADFORD NAYALITH","GARZON GALINDO LENIN","GONZALEZ DE LA RANS SHARLET","GUTIERREZ MENDOZA JOSE","GUTIERREZ VASQUEZ PAULA","MELENDRES VILLALBA KEIMER","MEZA GARCIA CARLOS","MORA SILVERA DEYNER","ORTEGA GONZALEZ LEWIN","PADILLA PARRA MARY","PALMA DE LA HOZ LUIS","PEDRAZA OLIVEROS MATHIAS","PEDROZA GALLARDO SCARLETT","PEREZ VEGA NICOL","RODRIGUEZ SALAS YORYANIZ","SANTIAGO SOLANO AXEL","VARGAS ALBIS YERSON","VARGAS MUÑOZ SHERIT","VELILLA ACOSTA CAMILO"]
         };
         let searchTimeout;
@@ -667,7 +696,7 @@
                     'attendanceTableContainer', 'courseTitle', 'courseInfo', 'tabNavigation', 
                     'searchBox', 'darkModeToggle', 'exportCsvBtn', 'importStudentsBtn', 
                     'importFile', 'statsPanel', 'obsModal', 'dateNoteModal', 'gradeNoteModal', 
-                    'genericConfirmModal', 'settingsModal', 'courseManagementModal', 
+                    'settingsModal', 'courseManagementModal', 
                     'studentReportModal', 'bulletinModal', 'exportModal', 'gradesModal', 
                     'gradesStudentName', 'gradesGrid', 'bulletinBtn', 'bulletinSelectionModal', 
                     'periodSelector', 'settingsBtn', 'todayBtn', 'voiceInputBtn', 'voiceGradeModal', 
@@ -675,8 +704,7 @@
                     'exportJsonBtn', 'importJsonBtn', 'importJsonFile', 'closeDataManagementModal',
                     'obsStudentName', 'obsHistory', 'predefinedObs', 'obsTextarea', 'saveObs',
                     'dateNoteDate', 'dateNoteTextarea', 'saveDateNote', 'gradeNoteTitle',
-                    'gradeNoteTextarea', 'saveGradeNote', 'genericConfirmTitle', 'genericConfirmText',
-                    'confirmGenericBtn', 'closeGenericConfirmModal', 'studentReportContent',
+                    'gradeNoteTextarea', 'saveGradeNote', 'studentReportContent',
                     'printStudentReportBtn', 'bulletinContent', 'downloadPngBtn', 'downloadPdfBtn',
                     'closeObsModal', 'closeDateNoteModal', 'closeGradeNoteModal', 'closeSettingsModal',
                     'saveSettingsBtn', 'closeCourseManagementModal', 'addStudentBtn', 'newStudentName',
@@ -687,12 +715,13 @@
                     'generateSelectedStudentsBtn', 'closeRankingModal', 'closeVoiceGradeModal',
                     'voiceListenBtn', 'voiceCourseSelector', 'voiceModeSelector', 'addPeriodBtn', 'newPeriodName',
                     'voiceStudentList', 'voiceGradeList', 'voiceStatus', 'voiceTranscript', 'closeStudentReportModal',
-                    'courseManagementTitle', 'studentManagementList', 'deleteConfirmModal', 'deletePasswordInput',
-                    'deleteErrorMsg', 'closeDeleteConfirmModal', 'confirmDeleteBtn', 'passwordConfirmModal',
+                    'courseManagementTitle', 'studentManagementList', 
+                    'passwordConfirmModal',
                     'passwordConfirmTitle', 'passwordInput', 'passwordErrorMsg', 'closePasswordConfirmModal',
                     'confirmPasswordBtn', 'editObsModal', 'editObsTextarea', 'closeEditObsModal', 'saveEditObs',
                     'groupGradeModal', 'groupGradeComponent', 'groupGradeStudentCount', 'groupGradeInput',
-                    'closeGroupGradeModal', 'saveGroupGrade'
+                    'closeGroupGradeModal', 'saveGroupGrade', 'deleteGradesBtn', 'deleteGradesModal',
+                    'closeDeleteGradesModal', 'confirmDeleteGradesBtn'
                 ];
                 ids.forEach(id => { ui[id] = document.getElementById(id); });
             };
@@ -807,11 +836,20 @@
                     tableEl.style.minWidth = `${510 + (attendanceDates.length * 60) + ((gs.cognitive + gs.procedural + gs.attitudinal) * 70)}px`;
                     
                     let cognitiveHeaders = '';
-                    for(let i=1; i<=gs.cognitive; i++) cognitiveHeaders += `<th class="grade-column">C${i} <i class="fas fa-users cursor-pointer text-xs ml-1 text-gray-400 hover:text-green-400" onclick="window.showGroupGradeModal('cognitivoC${i}', 'Cognitivo C${i}')"></i> <i class="fas fa-comment cursor-pointer text-xs ml-1 ${ (data.columnNotes?.[`C${i}`] || '').trim() !== '' ? 'text-amber-400' : 'text-gray-400'} hover:text-amber-500" onclick="window.showGradeNoteModal('C${i}')"></i></th>`;
+                    for(let i=1; i<=gs.cognitive; i++) {
+                        const hasNote = (data.columnNotes?.[`C${i}`] || data.columnNotes?.[`P${i}`] || data.columnNotes?.[`A${i}`] || '').trim() !== '';
+                        cognitiveHeaders += `<th class="grade-column">C${i} <i class="fas fa-users cursor-pointer text-xs ml-1 text-gray-400 hover:text-green-400" onclick="window.showGroupGradeModal('cognitivoC${i}', 'Cognitivo C${i}')"></i> <i class="fas fa-comment cursor-pointer text-xs ml-1 ${ hasNote ? 'text-amber-400' : 'text-gray-400'} hover:text-amber-500" onclick="window.showGradeNoteModal('C${i}')"></i></th>`;
+                    }
                     let proceduralHeaders = '';
-                    for(let i=1; i<=gs.procedural; i++) proceduralHeaders += `<th class="grade-column">P${i} <i class="fas fa-users cursor-pointer text-xs ml-1 text-gray-400 hover:text-green-400" onclick="window.showGroupGradeModal('procedimentalP${i}', 'Procedimental P${i}')"></i> <i class="fas fa-comment cursor-pointer text-xs ml-1 ${ (data.columnNotes?.[`P${i}`] || '').trim() !== '' ? 'text-amber-400' : 'text-gray-400'} hover:text-amber-500" onclick="window.showGradeNoteModal('P${i}')"></i></th>`;
+                    for(let i=1; i<=gs.procedural; i++) {
+                        const hasNote = (data.columnNotes?.[`C${i}`] || data.columnNotes?.[`P${i}`] || data.columnNotes?.[`A${i}`] || '').trim() !== '';
+                        proceduralHeaders += `<th class="grade-column">P${i} <i class="fas fa-users cursor-pointer text-xs ml-1 text-gray-400 hover:text-green-400" onclick="window.showGroupGradeModal('procedimentalP${i}', 'Procedimental P${i}')"></i> <i class="fas fa-comment cursor-pointer text-xs ml-1 ${ hasNote ? 'text-amber-400' : 'text-gray-400'} hover:text-amber-500" onclick="window.showGradeNoteModal('P${i}')"></i></th>`;
+                    }
                     let attitudinalHeaders = '';
-                    for(let i=1; i<=gs.attitudinal; i++) attitudinalHeaders += `<th class="grade-column">A${i} <i class="fas fa-users cursor-pointer text-xs ml-1 text-gray-400 hover:text-green-400" onclick="window.showGroupGradeModal('actitudinalA${i}', 'Actitudinal A${i}')"></i> <i class="fas fa-comment cursor-pointer text-xs ml-1 ${ (data.columnNotes?.[`A${i}`] || '').trim() !== '' ? 'text-amber-400' : 'text-gray-400'} hover:text-amber-500" onclick="window.showGradeNoteModal('A${i}')"></i></th>`;
+                    for(let i=1; i<=gs.attitudinal; i++) {
+                        const hasNote = (data.columnNotes?.[`C${i}`] || data.columnNotes?.[`P${i}`] || data.columnNotes?.[`A${i}`] || '').trim() !== '';
+                        attitudinalHeaders += `<th class="grade-column">A${i} <i class="fas fa-users cursor-pointer text-xs ml-1 text-gray-400 hover:text-green-400" onclick="window.showGroupGradeModal('actitudinalA${i}', 'Actitudinal A${i}')"></i> <i class="fas fa-comment cursor-pointer text-xs ml-1 ${ hasNote ? 'text-amber-400' : 'text-gray-400'} hover:text-amber-500" onclick="window.showGradeNoteModal('A${i}')"></i></th>`;
+                    }
 
                     let tableHTML = `
                         <thead>
@@ -839,10 +877,10 @@
                                             <i class="${noteIconClass} cursor-pointer hover:text-yellow-500 text-xs ml-1" onclick="window.showDateNoteModal('${dateString}')"></i>
                                         </div>
                                         <div class="flex flex-col items-center">
-                                          <button class="attendance-bulk-btn bg-green-500" onclick="window.markAllAttendance('${dateString}', true)">✓</button>
-                                          <button class="attendance-bulk-btn bg-red-500" onclick="window.markAllAttendance('${dateString}', false)">✗</button>
-                                          <button class="attendance-bulk-btn bg-indigo-500" onclick="window.markAllAttendance('${dateString}', 'excused')">E</button>
-                                          <button class="attendance-bulk-btn bg-yellow-500" onclick="window.markAllAttendance('${dateString}', 'late')">T</button>
+                                            <button class="attendance-bulk-btn bg-green-500" onclick="window.markAllAttendance('${dateString}', true)">✓</button>
+                                            <button class="attendance-bulk-btn bg-red-500" onclick="window.markAllAttendance('${dateString}', false)">✗</button>
+                                            <button class="attendance-bulk-btn bg-indigo-500" onclick="window.markAllAttendance('${dateString}', 'excused')">E</button>
+                                            <button class="attendance-bulk-btn bg-yellow-500" onclick="window.markAllAttendance('${dateString}', 'late')">T</button>
                                         </div>
                                     </th>`;
                                 }).join('')}
@@ -1441,9 +1479,8 @@
 
             window.deleteStudent = function(student) {
                 const course = activeCourse;
-                showConfirm(
+                showPasswordConfirm(
                     'Eliminar Estudiante',
-                    `¿Estás seguro de que quieres eliminar a <strong>${student}</strong> del curso ${course}? Se perderán todas sus notas y asistencias para este periodo.`,
                     () => {
                         if (allStudentsData[course]) {
                             allStudentsData[course] = allStudentsData[course].filter(s => s !== student);
@@ -2145,6 +2182,39 @@
                 if(tab) tab.classList.add('active');
                 renderTable();
             };
+            
+            const handleDeleteGrades = () => {
+                const scope = document.querySelector('input[name="delete-scope"]:checked').value;
+                const studentsToDeleteFrom = scope === 'all'
+                    ? allStudentsData[activeCourse]
+                    : Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb => cb.value);
+
+                const componentsToDelete = Array.from(document.querySelectorAll('#delete-grades-options .delete-comp-check:checked')).map(chk => chk.value);
+
+                if (studentsToDeleteFrom.length === 0) {
+                    showMessage('Por favor, selecciona al menos un estudiante.', 'error');
+                    return;
+                }
+
+                if (componentsToDelete.length === 0) {
+                    showMessage('Por favor, selecciona al menos un componente para borrar.', 'error');
+                    return;
+                }
+
+                showPasswordConfirm('Confirmar Borrado de Notas', () => {
+                    studentsToDeleteFrom.forEach(studentName => {
+                        const studentData = gradesData[activePeriod]?.[activeCourse]?.[studentName];
+                        if (studentData && studentData.grades) {
+                            componentsToDelete.forEach(compKey => {
+                                delete studentData.grades[compKey];
+                            });
+                        }
+                    });
+                    saveAllData();
+                    ui.deleteGradesModal.classList.remove('active');
+                    showMessage('Notas borradas con éxito.', 'success');
+                });
+            };
 
             const setupEventListeners = () => {
                 const addListener = (elementKey, event, handler) => {
@@ -2240,11 +2310,12 @@
                     if(activeCourse === ui.voiceCourseSelector.value) renderTable();
                 });
                 addListener('closeGroupGradeModal', 'click', () => document.getElementById('groupGradeModal').classList.remove('active'));
+                addListener('closeDeleteGradesModal', 'click', () => ui.deleteGradesModal.classList.remove('active'));
 
 
                 // Modals: Action buttons
                 addListener('saveObs', 'click', () => {
-                    const student = ui.obsModal.dataset.student;
+                    const student = ui.obsStudentName.textContent;
                     const text = ui.obsTextarea.value.trim();
                     if (text && student) {
                         ensureStudentData(activePeriod, activeCourse, student);
@@ -2347,13 +2418,30 @@
                 });
                 
                 addListener('saveGradeNote', 'click', () => {
-                    const noteGroup = ui.gradeNoteModal.dataset.noteGroup;
+                    const noteGroup = ui.gradeNoteModal.dataset.noteGroup; // e.g., 'C1', 'P2'
                     const text = ui.gradeNoteTextarea.value.trim();
                     if (noteGroup) {
                         ensureCourseData(activePeriod, activeCourse);
-                        gradesData[activePeriod][activeCourse].columnNotes[noteGroup] = text;
-                        saveAllData();
+                        
+                        const componentType = noteGroup.charAt(0).toUpperCase(); // C, P, or A
+                        const componentNumber = noteGroup.substring(1);
+                        
+                        const notes = gradesData[activePeriod][activeCourse].columnNotes;
+
+                        // Check if it's a valid component number
+                        if (['C', 'P', 'A'].includes(componentType) && !isNaN(parseInt(componentNumber))) {
+                             // Replicate across C, P, A for the same number
+                             notes[`C${componentNumber}`] = text;
+                             notes[`P${componentNumber}`] = text;
+                             notes[`A${componentNumber}`] = text;
+                        } else {
+                            // Fallback for any other note group that doesn't fit the pattern
+                            notes[noteGroup] = text;
+                        }
+
+                        saveAllData(); // This will re-render the table with updated icons
                         ui.gradeNoteModal.classList.remove('active');
+                        showMessage("Comentario guardado y replicado.", "success");
                     }
                 });
                 
@@ -2437,6 +2525,43 @@
                     renderTable(); // Re-render the entire table to show all changes
                     showMessage(`Nota aplicada a ${selectedStudents.length} estudiantes.`, 'success');
                 });
+                
+                addListener('deleteGradesBtn', 'click', () => {
+                    const optionsContainer = document.getElementById('delete-grades-options');
+                    optionsContainer.innerHTML = ''; // Clear previous options
+
+                    const gs = appSettings.gradeStructure;
+                    const components = [];
+                    for(let i=1; i<=gs.cognitive; i++) components.push({ key: `cognitivoC${i}`, label: `C${i}`});
+                    for(let i=1; i<=gs.procedural; i++) components.push({ key: `procedimentalP${i}`, label: `P${i}`});
+                    for(let i=1; i<=gs.attitudinal; i++) components.push({ key: `actitudinalA${i}`, label: `A${i}`});
+
+                    // Add "Select All" checkbox
+                    optionsContainer.innerHTML += `
+                        <label class="flex items-center font-bold col-span-full sm:col-span-1">
+                            <input type="checkbox" id="delete-comp-all" class="mr-2">Todos
+                        </label>
+                    `;
+
+                    components.forEach(comp => {
+                        optionsContainer.innerHTML += `
+                            <label class="flex items-center">
+                                <input type="checkbox" class="delete-comp-check mr-2" value="${comp.key}">${comp.label}
+                            </label>
+                        `;
+                    });
+                    
+                    // Add event listener for the new 'select all'
+                    document.getElementById('delete-comp-all').addEventListener('change', (e) => {
+                        optionsContainer.querySelectorAll('.delete-comp-check').forEach(chk => {
+                            chk.checked = e.target.checked;
+                        });
+                    });
+
+                    ui.deleteGradesModal.classList.add('active');
+                });
+
+                addListener('confirmDeleteGradesBtn', 'click', handleDeleteGrades);
             };
             
             const initializeApp = () => {
@@ -2469,7 +2594,7 @@
                     switchCourse(initialCourse);
                 }
             };
-
+            
             // --- Init ---
             initializeApp();
         });
