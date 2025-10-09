@@ -719,14 +719,14 @@
                     'passwordConfirmModal',
                     'passwordConfirmTitle', 'passwordInput', 'passwordErrorMsg', 'closePasswordConfirmModal',
                     'confirmPasswordBtn', 'editObsModal', 'editObsTextarea', 'closeEditObsModal', 'saveEditObs',
-                    'groupGradeModal', 'groupGradeComponent', 'groupGradeStudentCount', 'groupGradeInput',
-                    'closeGroupGradeModal', 'saveGroupGrade', 'deleteGradesBtn', 'deleteGradesModal',
-                    'closeDeleteGradesModal', 'confirmDeleteGradesBtn'
-                ];
-                ids.forEach(id => { ui[id] = document.getElementById(id); });
-            };
-            
-            const formatStudentName = (str) => !str ? '' : str.trim().toUpperCase();
+            'groupGradeModal', 'groupGradeComponent', 'groupGradeStudentCount', 'groupGradeInput',
+            'closeGroupGradeModal', 'saveGroupGrade', 'deleteGradesBtn', 'deleteGradesModal',
+            'closeDeleteGradesModal', 'confirmDeleteGradesBtn'
+        ];
+        ids.forEach(id => { ui[id] = document.getElementById(id); });
+    };
+    
+    const formatStudentName = (str) => !str ? '' : str.trim().toUpperCase();
             
             // --- Utility & Calculation Functions ---
             const getDayForCourse = (course) => { 
@@ -2327,14 +2327,37 @@
                         const icon = document.querySelector(`i[data-student-obs="${student}"]`);
                         if (icon) icon.classList.add('has-obs');
 
-                        showObservationsModal(student); // Refresh modal
-                    }
-                });
+                    showObservationsModal(student); // Refresh modal
+                }
+            });
 
-                 addListener('confirmPasswordBtn', 'click', () => ui.passwordInput.dispatchEvent(new KeyboardEvent('keydown', {'key': 'Enter'})));
-                 addListener('passwordInput', 'keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
+            addListener('saveGrades', 'click', () => {
+                const student = ui.gradesModal.dataset.student;
+                if (student) {
+                    const gradeInputs = ui.gradesGrid.querySelectorAll('input[data-field]');
+                    let allGradesValid = true;
+                    
+                    gradeInputs.forEach(input => {
+                        const field = input.dataset.field;
+                        const value = input.value;
+                        // updateGrade validates, saves, and returns false on failure
+                        if (!updateGrade(student, field, value, null)) { 
+                            allGradesValid = false;
+                        }
+                    });
+
+                    if (allGradesValid) {
+                        ui.gradesModal.classList.remove('active');
+                        renderTable(); // Re-render to show all changes
+                        showMessage('Notas guardadas con éxito.', 'success');
+                    }
+                }
+            });
+
+            addListener('confirmPasswordBtn', 'click', () => ui.passwordInput.dispatchEvent(new KeyboardEvent('keydown', {'key': 'Enter'})));
+            addListener('passwordInput', 'keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
                         // The actual confirm logic is now attached dynamically to the button's onclick
                         ui.confirmPasswordBtn.click();
                     }
@@ -2601,4 +2624,6 @@
     </script>
 </body>
 </html>
+
+
 
