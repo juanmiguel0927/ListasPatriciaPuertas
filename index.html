@@ -423,7 +423,7 @@
                 </div>
                 <div class="flex justify-end gap-2 mt-6">
                     <button id="closeDeleteGradesModal" class="action-button">Cancelar</button>
-                    <button id="confirmDeleteGradesBtn" class="action-button bg-red-600">Confirmar</button>
+                    <button id="confirmDeleteGradesBtn" class="action-button bg-red-600">Borrar Notas</button>
                 </div>
             </div>
         </div>
@@ -658,26 +658,7 @@
 
     <div id="customTooltip" class="hidden absolute p-2 text-sm rounded-md shadow-lg max-w-xs whitespace-normal"></div>
 
-    <!-- LIBRERÍAS DE FIREBASE: Se cargan las versiones compat para asegurar que la variable global 'firebase' exista. -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-
     <script>
-        // --- CONFIGURACIÓN DE FIREBASE (TUS CREDENCIALES) 🚀 ---
-        const firebaseConfig = {
-          apiKey: "AIzaSyCTCETfb52gGUBycl7LJGhFERKU2fn2a3s",
-          authDomain: "listapatriciapuertas.firebaseapp.com",
-          projectId: "listapatriciapuertas",
-          storageBucket: "listapatriciapuertas.firebasestorage.app",
-          messagingSenderId: "843615769532",
-          appId: "1:843615769532:web:942441925010abb65e11b9",
-          measurementId: "G-C09DF86RMK"
-        };
-        // --------------------------------------------------------
-        
-        let db; // Instancia de Firestore
-        let unsubscribeGlobal; // Para el escuchador de onSnapshot
-
         // --- Global Scope Variables ---
         const ui = {};
         let recognition;
@@ -688,8 +669,7 @@
         let activeCourse;
         let activePeriod;
         let appSettings;
-        // **IMPORTANTE: La lista de estudiantes codificada se mantiene aquí como un valor inicial de emergencia**
-        let gradesData = {}; 
+        let gradesData = {};
         let allStudentsData = {
             '7D':["AHUMADA SIERRA THAEL","AMARIS SIERRA JULEISY","BENITEZ BOSSIO MARIA","BOLIVAR GOMEZ MARIA","CABALLERO SILVERA JOHELIS","CARMONA SILVERA LEYNER","CARPINTERO SILVERA THALIA","CONSUEGRA ALVAREZ JHOINER","ESCORCIA RIVALDO CAMILO","GERONIMO BARRAZA HELLEN","GOEZ OTERO DANIEL","GONZALEZ BARRAZA DANNA","GUANIPA GUTIERREZ ARANZA","GUTIERREZ OJEDA EMMANUEL","HERNANDEZ DIAZ JESUS","LLANOS SEGURA YAILETH","MARIN PALMA SANTIAGO","MARMOL HERNANDEZ SEBASTIAN","NAVAS CEDEÑO ANGEL","NIETO ROLONG MARY","ORTEGA BENITEZ IVIAN","ORTEGA MANGA ANGELLYS","PATINO BORRERO HARRISON","PEREZ ALVAREZ MARIA","PEREZ NATERA VALENTINA","PIMIENTA OTERO LAURENS","POLO REDONDO MARIA","PRADA SARMIENTO BRAYAN","SANTIAGO DACONTE ANDRES","SIERRA CASTILLO MAURICIO","SIERRA GOMEZ LIZETH","SMITH SANTIAGO VALERIA","SUAREZ GALLARDO MATEO","TORRES FERNANDEZ SANTIAGO","ZARATE REDONDO YAJAIRA"],
             '8A':["ARIZA CONSUEGRA STEISY","BARRAZA HERNANDEZ RONALD","BARRIOS MOLINA LITZY","BECERRA CRESPO MANOLO","BELLIDO CASIANO LEIDER","BERRUEZO ORTEGA SAMANTHA","BLANCO REYES ANGEL","BOLIVAR ESCOBAR VALENTINA","CIRO ROMERO ANGELA","DE LA CRUZ SIERRA ALAN","DITA ESCALANTE GILMAR","ESCALANTE OSPINO ANDERSON","ESCOBAR ALGARIN LILiana","GOMEZ VILLA ANA","GUTIERREZ PAEZ ANA","JIMÉNEZ QUINTANA FREDDY","JIMENEZ RUA NASLI","LLANOS REDONDO ADRIANA","LLANOS REYES ANDRES","MARQUEZ MARIN VALERIN","MARQUEZ VILORIA EMILY","MARTINEZ ORTEGA JESUS","MOLINA GUTIERREZ JULIE","ORDOÑEZ GARCIA LEONARDO","PACHECO AVILA MARIA","PEREZ ARAUJO ANDRÉS","REDONDO PATIÑO DELEVIS","RODRIGUEZ SANJUAN SALOME","SANTIAGO JULIO ASLY","SIERRA GOMEZ LUISA","SILVERA GOMEZ GABRIEL","SILVERA ORTEGA MAYLER","TEJERA ORTEGA LUIS","VANEGAS DE LA CRUZ DANIELA","VEGA ORTIZ EYEELIN","VELASQUEZ GARCIA MANUEL"],
@@ -739,155 +719,16 @@
                     'passwordConfirmModal',
                     'passwordConfirmTitle', 'passwordInput', 'passwordErrorMsg', 'closePasswordConfirmModal',
                     'confirmPasswordBtn', 'editObsModal', 'editObsTextarea', 'closeEditObsModal', 'saveEditObs',
-                    'groupGradeModal', 'groupGradeComponent', 'groupGradeStudentCount', 'groupGradeInput',
-                    'closeGroupGradeModal', 'saveGroupGrade', 'deleteGradesBtn', 'deleteGradesModal',
-                    'closeDeleteGradesModal', 'confirmDeleteGradesBtn'
-                ];
-                ids.forEach(id => { ui[id] = document.getElementById(id); });
-            };
+            'groupGradeModal', 'groupGradeComponent', 'groupGradeStudentCount', 'groupGradeInput',
+            'closeGroupGradeModal', 'saveGroupGrade', 'deleteGradesBtn', 'deleteGradesModal',
+            'closeDeleteGradesModal', 'confirmDeleteGradesBtn'
+        ];
+        ids.forEach(id => { ui[id] = document.getElementById(id); });
+    };
     
-            const formatStudentName = (str) => !str ? '' : str.trim().toUpperCase();
+    const formatStudentName = (str) => !str ? '' : str.trim().toUpperCase();
             
-            // --- FIREBASE / UTILITY HELPERS ---
-            
-            // Referencia al documento de Firestore (ej: cursos/Periodo 3_8A)
-            const getCourseDocRef = (period, course) => {
-                // Combina Periodo y Curso para crear un ID de documento único
-                const docId = `${period}_${course}`;
-                return db.collection('cursos').doc(docId);
-            }
-            
-            // Carga y Guardado de Datos (MODIFICADAS para usar Firestore)
-
-            // **Esta función ahora SOLO guarda la configuración local (tema, etc.)**
-            const saveSettings = () => {
-                localStorage.setItem('appSettings_v3', JSON.stringify(appSettings));
-                showMessage("Configuración guardada", "success");
-            };
-            
-            // **Esta función AHORA SÓLO GUARDA LOS DATOS GLOBALES EN FIRESTORE**
-            const saveGlobalData = () => {
-                // Guarda la lista de estudiantes y el horario en documentos fijos
-                db.collection('config').doc('students').set({ allStudentsData: allStudentsData })
-                    .catch(e => console.error("Error saving allStudentsData to Firestore:", e));
-                db.collection('config').doc('schedule').set({ dailySchedule: dailySchedule })
-                    .catch(e => console.error("Error saving dailySchedule to Firestore:", e));
-            };
-
-            // **Esta función AHORA GUARDA LOS DATOS DE UN CURSO ESPECÍFICO EN FIRESTORE**
-            const saveCourseData = (period, course) => {
-                const courseData = gradesData[period]?.[course] || {};
-                // Usa {merge: true} para solo actualizar los campos que cambiaron
-                getCourseDocRef(period, course).set(courseData, { merge: true })
-                    .catch(e => console.error(`Error saving course data for ${course} to Firestore:`, e));
-                
-                // Mantenemos el guardado local como fallback (caché)
-                localStorage.setItem('gradesData_v3', JSON.stringify(gradesData));
-            }
-            
-            // **REEMPLAZO DE saveAllData - Ahora llama a saveCourseData**
-            const saveAllData = (isPartial = false) => { 
-                saveCourseData(activePeriod, activeCourse);
-                // La actualización visual la gestiona el onSnapshot de Firestore
-            };
-            
-            // **Esta función configura el escuchador en tiempo real**
-            const setupCourseListener = (period, course) => {
-                if (unsubscribeGlobal) unsubscribeGlobal(); // Detiene el escuchador anterior
-
-                ensureCourseData(period, course);
-                
-                // Sincronización en tiempo real (onSnapshot)
-                unsubscribeGlobal = getCourseDocRef(period, course).onSnapshot(doc => {
-                    if (doc.exists) {
-                        const firestoreData = doc.data();
-                        
-                        // Fusiona los datos de Firestore con la estructura local 
-                        gradesData[period][course] = {
-                            ...gradesData[period][course],
-                            ...firestoreData
-                        };
-                        
-                        // ¡Renderiza la tabla con los datos actualizados de Firestore!
-                        renderTable(); 
-                        console.log(`Datos del curso ${course} sincronizados desde Firestore.`);
-                    }
-                }, error => {
-                    console.error("Error al escuchar los datos del curso:", error);
-                    showMessage("Error de conexión con la base de datos en línea. Revise las reglas de Firestore.", "error");
-                });
-            }
-
             // --- Utility & Calculation Functions ---
-            const loadLocalSettings = () => {
-                const savedSettings = localStorage.getItem('appSettings_v3');
-                const defaultSettings = {
-                    professor: "Puertas Lopez Patricia Isabel",
-                    subject: "Artística Plástica y Visual",
-                    percentages: { cognitive: 40, procedural: 30, attitudinal: 30 },
-                    periods: [{ name: "Periodo 3", start: "2025-09-22", end: "2025-11-28" }],
-                    activePeriod: "Periodo 3",
-                    gradeStructure: { cognitive: 3, procedural: 3, attitudinal: 3 },
-                    predefinedObs: ["Excelente participación", "No entregó la tarea", "Necesita mejorar la atención", "Comportamiento disruptivo"]
-                };
-
-                if (savedSettings) {
-                    appSettings = JSON.parse(savedSettings);
-                    if (appSettings.periods && appSettings.periods.every(p => typeof p === 'string')) {
-                        appSettings.periods = appSettings.periods.map(name => ({
-                            name: name,
-                            start: "2025-09-22", 
-                            end: "2025-11-28"   
-                        }));
-                    }
-                } else {
-                    appSettings = defaultSettings;
-                }
-
-                activePeriod = appSettings.activePeriod;
-            };
-            
-            // **AJUSTE DE CARGA:** Garantiza que los datos codificados se carguen incluso si Firebase falla.
-            const loadAllData = async () => {
-                 // Carga de caché local como fallback
-                const savedGrades = localStorage.getItem('gradesData_v3');
-                const savedStudents = localStorage.getItem('allStudentsData_v3');
-                const savedSchedule = localStorage.getItem('dailySchedule_v3');
-                
-                gradesData = savedGrades ? JSON.parse(savedGrades) : {};
-                
-                // Mantiene los datos iniciales codificados en caso de que todo falle
-                let initialStudentsData = JSON.parse(JSON.stringify(allStudentsData));
-                let initialSchedule = JSON.parse(JSON.stringify(dailySchedule));
-                
-                allStudentsData = savedStudents ? JSON.parse(savedStudents) : initialStudentsData;
-                dailySchedule = savedSchedule ? JSON.parse(savedSchedule) : initialSchedule;
-
-
-                // Intenta cargar la lista de estudiantes y horario desde Firestore
-                if (db) {
-                    try {
-                        const studentsDoc = await db.collection('config').doc('students').get();
-                        if (studentsDoc.exists) allStudentsData = studentsDoc.data().allStudentsData;
-                        
-                        const scheduleDoc = await db.collection('config').doc('schedule').get();
-                        if (scheduleDoc.exists) dailySchedule = scheduleDoc.data().dailySchedule;
-
-                        // Guarda en caché local
-                        localStorage.setItem('allStudentsData_v3', JSON.stringify(allStudentsData));
-                        localStorage.setItem('dailySchedule_v3', JSON.stringify(dailySchedule));
-                        
-                    } catch (e) {
-                        console.error("Error al cargar la configuración inicial de Firebase:", e);
-                        // Si falla, se usan los datos iniciales/locales.
-                        showMessage("Error de permisos o conexión. Usando datos iniciales/locales.", "error");
-                    }
-                } else {
-                    showMessage("Firebase no está inicializado. Usando datos locales.", "error");
-                }
-            };
-
-            
             const getDayForCourse = (course) => { 
                 for (const day in dailySchedule) { 
                     if (dailySchedule[day].includes(course)) return day; 
@@ -1189,12 +1030,9 @@
                 
                 studentData.grades[field] = value;
                 
-                // Guardamos el dato en Firestore
-                saveCourseData(activePeriod, course);
-                
-                // Las actualizaciones visuales en la tabla (def, nivel) se gestionarán al recibir el onSnapshot
                 if (cellToUpdate) {
                     cellToUpdate.textContent = value !== '' ? numVal.toFixed(1) : '';
+                    
                     const studentRow = cellToUpdate.closest('tr');
                     if(studentRow) {
                         const newDef = calculateDef(studentData.grades);
@@ -1209,6 +1047,7 @@
                     }
                 }
                 
+                saveAllData(true);
                 if (course === activeCourse) {
                     calculateAndDisplayStats();
                 }
@@ -1229,20 +1068,17 @@
                 if (newStatus === undefined) delete studentData.attendance[date];
                 else studentData.attendance[date] = newStatus;
 
-                // Guardamos el dato en Firestore
-                saveCourseData(activePeriod, activeCourse);
-
-                // Las actualizaciones visuales en la tabla se gestionarán al recibir el onSnapshot
                 box.className = 'attendance-box'; box.textContent = '';
                 if (newStatus === true) { box.classList.add('attended'); box.textContent = '✓'; }
                 else if (newStatus === false) { box.classList.add('absent'); box.textContent = '✗'; }
                 else if (newStatus === 'excused') { box.classList.add('excused'); box.textContent = 'E'; }
                 else if (newStatus === 'late') { box.classList.add('late'); box.textContent = 'T'; }
 
+
                 const summary = calculateAttendanceSummary(studentData.attendance);
                 const summaryCell = box.closest('tr').querySelector('.sticky-col-summary');
                 if (summaryCell) summaryCell.innerHTML = `<span>✓:${summary.attended}</span> <span>✗:${summary.absent}</span><br><span>E:${summary.excused}</span> <span>T:${summary.late}</span>`;
-                
+                saveAllData(true);
                 calculateAndDisplayStats();
             };
 
@@ -1262,6 +1098,75 @@
                 saveAllData();
             }
 
+            const saveAllData = (isPartial = false) => { 
+                try { 
+                    localStorage.setItem('gradesData_v3', JSON.stringify(gradesData)); 
+                    localStorage.setItem('allStudentsData_v3', JSON.stringify(allStudentsData)); 
+                    localStorage.setItem('dailySchedule_v3', JSON.stringify(dailySchedule)); 
+                    if(!isPartial) { 
+                        renderTable();
+                    } else { 
+                        // Silently save in the background for partial updates to avoid spamming messages.
+                    }
+                } catch (e) { console.error("Error saving data: ", e); } 
+            };
+            
+            const loadAllData = () => {
+                const savedGrades = localStorage.getItem('gradesData_v3');
+                const savedStudents = localStorage.getItem('allStudentsData_v3');
+                const savedSchedule = localStorage.getItem('dailySchedule_v3');
+                
+                gradesData = savedGrades ? JSON.parse(savedGrades) : {};
+                allStudentsData = savedStudents ? JSON.parse(savedStudents) : allStudentsData;
+                dailySchedule = savedSchedule ? JSON.parse(savedSchedule) : dailySchedule;
+
+                // Simple migration from old structure if necessary
+                if (localStorage.getItem('gradesData_v2')) {
+                    gradesData = JSON.parse(localStorage.getItem('gradesData_v2'));
+                    allStudentsData = JSON.parse(localStorage.getItem('allStudentsData_v2'));
+                    dailySchedule = JSON.parse(localStorage.getItem('dailySchedule_v2'));
+                    localStorage.removeItem('gradesData_v2');
+                    localStorage.removeItem('allStudentsData_v2');
+                    localStorage.removeItem('dailySchedule_v2');
+                    saveAllData(true);
+                    showMessage("Datos migrados a la nueva versión.", "success");
+                }
+            };
+            
+            const saveSettings = () => {
+                localStorage.setItem('appSettings_v3', JSON.stringify(appSettings));
+                showMessage("Configuración guardada", "success");
+            };
+
+            const loadSettings = () => {
+                const savedSettings = localStorage.getItem('appSettings_v3');
+                const defaultSettings = {
+                    professor: "Puertas Lopez Patricia Isabel",
+                    subject: "Artística Plástica y Visual",
+                    percentages: { cognitive: 40, procedural: 30, attitudinal: 30 },
+                    periods: [{ name: "Periodo 3", start: "2025-09-22", end: "2025-11-28" }],
+                    activePeriod: "Periodo 3",
+                    gradeStructure: { cognitive: 3, procedural: 3, attitudinal: 3 },
+                    predefinedObs: ["Excelente participación", "No entregó la tarea", "Necesita mejorar la atención", "Comportamiento disruptivo"]
+                };
+
+                if (savedSettings) {
+                    appSettings = JSON.parse(savedSettings);
+                    // Ensure periods is an array of objects for backward compatibility
+                    if (appSettings.periods && appSettings.periods.every(p => typeof p === 'string')) {
+                        appSettings.periods = appSettings.periods.map(name => ({
+                            name: name,
+                            start: "2025-09-22", // Default start date
+                            end: "2025-11-28"   // Default end date
+                        }));
+                    }
+                } else {
+                    appSettings = defaultSettings;
+                }
+
+                activePeriod = appSettings.activePeriod;
+            };
+            
             function applyTheme(isDark) {
                 if (isDark) document.documentElement.classList.add('dark');
                 else document.documentElement.classList.remove('dark');
@@ -1583,7 +1488,6 @@
                         if (gradesData[activePeriod] && gradesData[activePeriod][course]) {
                             delete gradesData[activePeriod][course][student];
                         }
-                        saveGlobalData(); // GUARDA LA LISTA DE ESTUDIANTES GLOBALMENTE
                         saveAllData(true);
                         showMessage('Estudiante eliminado.', 'success');
                         showCourseManagementModal();
@@ -1603,7 +1507,7 @@
                 let obsHTML = 'Sin observaciones.';
                 const observations = studentData.observations || [];
                 if (observations.length > 0) {
-                    observations.sort((a, b) => new Date(a.timestamp) - new Date(a.timestamp));
+                    observations.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
                     obsHTML = observations.map(obs => {
                         const obsDate = new Date(obs.timestamp);
                         const formattedDate = obsDate.toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
@@ -1736,7 +1640,7 @@
                 if (!file) return;
 
                 const reader = new FileReader();
-                reader.onload = async (e) => {
+                reader.onload = (e) => {
                     try {
                         const importedData = JSON.parse(e.target.result);
 
@@ -1753,10 +1657,8 @@
                         
                         // Persist and reload UI
                         saveSettings();
-                        saveAllData(true); // save grades locally
-                        saveGlobalData(); // Force save to Firestore
+                        saveAllData(true); // save without re-rendering yet
                         
-                        // Si se importan datos, la próxima recarga debería usar los datos de Firestore.
                         showMessage('Datos importados con éxito. Recargando...', 'success');
                         
                         // Reload the entire UI based on new data
@@ -2278,9 +2180,7 @@
                 document.querySelectorAll('.tab-button.active').forEach(b => b.classList.remove('active'));
                 const tab = document.getElementById(`tab-${activeCourse}`);
                 if(tab) tab.classList.add('active');
-                
-                // **CLAVE DE SINCRONIZACIÓN:** Activa el escuchador de Firestore
-                setupCourseListener(activePeriod, activeCourse);
+                renderTable();
             };
             
             const handleDeleteGrades = () => {
@@ -2360,9 +2260,7 @@
                     activePeriod = e.target.value;
                     appSettings.activePeriod = activePeriod;
                     saveSettings();
-                    // Al cambiar de periodo, se debe llamar al listener del curso activo
-                    if(activeCourse) setupCourseListener(activePeriod, activeCourse);
-                    else renderTable();
+                    renderTable();
                 });
 
                 // Table interactions
@@ -2442,7 +2340,7 @@
                     gradeInputs.forEach(input => {
                         const field = input.dataset.field;
                         const value = input.value;
-                        // updateGrade valida, guarda en Firestore y retorna false si falla
+                        // updateGrade validates, saves, and returns false on failure
                         if (!updateGrade(student, field, value, null)) { 
                             allGradesValid = false;
                         }
@@ -2450,8 +2348,8 @@
 
                     if (allGradesValid) {
                         ui.gradesModal.classList.remove('active');
-                        // No es necesario re-renderizar, Firestore onSnapshot lo hará
-                        showMessage('Notas guardadas con éxito. Sincronizando...', 'success');
+                        renderTable(); // Re-render to show all changes
+                        showMessage('Notas guardadas con éxito.', 'success');
                     }
                 }
             });
@@ -2625,17 +2523,13 @@
                         if (!allStudentsData[course]) {
                             allStudentsData[course] = [];
                         }
-                        const formattedName = formatStudentName(newStudentName);
-                        if (allStudentsData[course].includes(formattedName)) {
+                        if (allStudentsData[course].includes(formatStudentName(newStudentName))) {
                             showMessage('El estudiante ya existe en este curso.', 'error');
                             return;
                         }
-                        allStudentsData[course].push(formattedName);
+                        allStudentsData[course].push(formatStudentName(newStudentName));
                         allStudentsData[course].sort((a,b) => a.localeCompare(b));
-                        
-                        saveGlobalData(); // GUARDA LA LISTA DE ESTUDIANTES GLOBALMENTE
                         saveAllData(true);
-                        
                         ui.newStudentName.value = '';
                         showCourseManagementModal();
                         renderTable();
@@ -2651,8 +2545,8 @@
                     });
                     
                     document.getElementById('groupGradeModal').classList.remove('active');
-                    // No es necesario re-renderizar, Firestore onSnapshot lo hará
-                    showMessage(`Nota aplicada a ${selectedStudents.length} estudiantes. Sincronizando...`, 'success');
+                    renderTable(); // Re-render the entire table to show all changes
+                    showMessage(`Nota aplicada a ${selectedStudents.length} estudiantes.`, 'success');
                 });
                 
                 addListener('deleteGradesBtn', 'click', () => {
@@ -2693,27 +2587,13 @@
                 addListener('confirmDeleteGradesBtn', 'click', handleDeleteGrades);
             };
             
-            const initializeApp = async () => {
+            const initializeApp = () => {
                 getUIElements();
-                
-                // 1. Inicializar Firebase
-                try {
-                    // **CORRECCIÓN 1: Se usa window.firebase porque estamos cargando el SDK global (compat)**
-                    const app = window.firebase.initializeApp(firebaseConfig);
-                    // **CORRECCIÓN 2: Se inicializa la instancia de Firestore**
-                    db = app.firestore();
-                } catch(e) {
-                    console.error("Error al inicializar Firebase. Revisa tus credenciales.", e);
-                    showMessage("ERROR: La aplicación no pudo conectarse a Firebase.", "error");
-                }
-                
                 applyTheme(localStorage.getItem('darkMode') === 'true');
-                loadLocalSettings();
+                loadSettings();
+                loadAllData();
                 
-                // **AJUSTE CRÍTICO:** Primero cargamos los datos iniciales y la caché local
-                await loadAllData(); 
-                
-                // Normalizar nombres y ordenar (usando los datos cargados o iniciales)
+                // Normalize all student names on load
                 for (const course in allStudentsData) {
                     if (Array.isArray(allStudentsData[course])) {
                         allStudentsData[course] = allStudentsData[course]
@@ -2727,17 +2607,14 @@
                 setupEventListeners(); // Attaches all event listeners
                 setupSpeechRecognition();
 
-                // Seleccionar curso inicial
+                // Select initial course based on today's date
                 const dayMap = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
                 const todayIndex = new Date().getDay();
-                const todayName = dayMap[todayIndex === 0 || todayIndex === 6 ? 1 : todayIndex]; 
+                const todayName = dayMap[todayIndex === 0 || todayIndex === 6 ? 1 : todayIndex]; // Default to Monday if weekend
                 const initialCourse = dailySchedule[todayName]?.[0] || Object.values(dailySchedule).flat()[0] || Object.keys(allStudentsData)[0];
                 
                 if (initialCourse) {
-                    // Y luego activamos el switchCourse que activa el listener de Firebase
                     switchCourse(initialCourse);
-                } else {
-                    renderTable();
                 }
             };
             
@@ -2747,3 +2624,6 @@
     </script>
 </body>
 </html>
+
+
+
