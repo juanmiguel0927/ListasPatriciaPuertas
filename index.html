@@ -1909,7 +1909,6 @@
                         const imgData = canvas.toDataURL('image/png');
                         const imgProps = pdf.getImageProperties(imgData);
                         const pdfWidth = pdf.internal.pageSize.getWidth();
-                        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
                         pdf.addImage(imgData, 'PNG', 10, 10, pdfWidth - 20, (imgProps.height * (pdfWidth-20)) / imgProps.width);
                         document.body.removeChild(tempDiv);
                         firstPage = false;
@@ -2456,7 +2455,7 @@
                             // Apply changes: Replace old data with new data
                             allStudentsData = newStudentsData;
                             gradesData = {}; // Clear all grades for the new year
-                            dailySchedule = {'Lunes':[],'Martes':[],'Miércoles':[],'Jueves':[],'Viernes':[]}; // Clear schedule as course names changed
+                            // dailySchedule line removed here to preserve schedule!
                             
                             saveAllData(true);
                             showMessage(`Promoción completada. ${graduatedCount} estudiantes de grado 11 eliminados.`, 'success');
@@ -3032,4 +3031,4 @@
         });
     </script>
 </body>
-                            </html>
+                    </html>
