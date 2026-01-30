@@ -155,7 +155,18 @@
 
         /* --- UI Elements --- */
         .controls-container { display: flex; flex-direction: column; align-items: stretch; sm:flex-row; sm:justify-between; sm:items-center; gap: 1rem; margin-bottom: 1.5rem; }
-        .search-box { padding: 0.5rem; border: 1px solid var(--input-border-color); border-radius: 0.5rem; background-color: var(--card-bg-color); width: 100%; sm:w-auto; }
+        .search-box { padding: 0.5rem; border: 1px solid var(--input-border-color); border-radius: 0.5rem; background-color: var(--card-bg-color); color: var(--text-color); width: 100%; sm:w-auto; }
+        /* Fix for light mode readability in inputs */
+        .search-box, input[type="text"], input[type="number"], select, textarea {
+            color: var(--text-color);
+            background-color: var(--card-bg-color);
+        }
+        /* Specific fix for placeholders in light mode */
+        ::placeholder {
+            color: #6b7280;
+            opacity: 1;
+        }
+
         .action-button { background-color: #4b5563; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600; transition: background-color 0.2s; text-align: center; }
         .action-button:hover { background-color: #374151; }
         html.dark .action-button { background-color: #1f2937; }
@@ -181,7 +192,7 @@
         /* Modal Styles */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .modal-content { background-color: var(--card-bg-color); padding: 2rem; border-radius: 0.75rem; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; }
+        .modal-content { background-color: var(--card-bg-color); padding: 2rem; border-radius: 0.75rem; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; color: var(--text-color); }
         .modal-content textarea { width: 100%; min-height: 150px; border: 1px solid var(--input-border-color); border-radius: 0.5rem; padding: 0.5rem; background-color: var(--bg-color); color: var(--text-color); }
         .bulletin-content { border: 1px solid var(--border-color); padding: 1.5rem; }
         #passwordConfirmModal {
@@ -284,11 +295,14 @@
         <div class="flex justify-center items-center mb-4 gap-4">
             <div>
                 <label for="periodSelector" class="mr-2 font-semibold">Periodo:</label>
-                <select id="periodSelector" class="search-box"></select>
+                <select id="periodSelector" class="search-box text-gray-900 dark:text-gray-100"></select>
             </div>
             <button id="todayBtn" class="action-button" title="Ir al día de hoy"><i class="fas fa-calendar-day"></i> Hoy</button>
         </div>
-
+        
+        <div class="flex justify-center mb-2">
+            <button id="editScheduleBtn" class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-semibold"><i class="fas fa-edit"></i> Editar Horario (Días)</button>
+        </div>
         <div id="tabNavigation" class="daily-schedule-container"></div>
         <h2 id="courseTitle" class="text-2xl font-bold text-center mb-2"></h2>
         <div id="courseInfo" class="text-center text-gray-500 dark:text-gray-400 mb-4"></div>
@@ -410,17 +424,17 @@
                 <div class="space-y-6">
                     <!-- Scope Selection -->
                     <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <h4 class="font-semibold mb-2">1. ¿A quiénes aplicar?</h4>
+                        <h4 class="font-semibold mb-2 text-gray-900 dark:text-gray-100">1. ¿A quiénes aplicar?</h4>
                         <div class="flex flex-col gap-2">
-                            <label class="flex items-center"><input type="radio" name="adv-delete-scope" value="selected" checked class="mr-2"> Estudiantes Seleccionados (Checkbox)</label>
-                            <label class="flex items-center"><input type="radio" name="adv-delete-scope" value="current_course" class="mr-2"> Todo el Curso Actual (<span id="advDeleteCourseName"></span>)</label>
-                            <label class="flex items-center"><input type="radio" name="adv-delete-scope" value="all_courses" class="mr-2"> TODOS los cursos (Reinicio total)</label>
+                            <label class="flex items-center text-gray-900 dark:text-gray-100"><input type="radio" name="adv-delete-scope" value="selected" checked class="mr-2"> Estudiantes Seleccionados (Checkbox)</label>
+                            <label class="flex items-center text-gray-900 dark:text-gray-100"><input type="radio" name="adv-delete-scope" value="current_course" class="mr-2"> Todo el Curso Actual (<span id="advDeleteCourseName"></span>)</label>
+                            <label class="flex items-center text-gray-900 dark:text-gray-100"><input type="radio" name="adv-delete-scope" value="all_courses" class="mr-2"> TODOS los cursos (Reinicio total)</label>
                         </div>
                     </div>
 
                     <!-- Content Type Selection -->
                     <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <h4 class="font-semibold mb-2">2. ¿Qué eliminar?</h4>
+                        <h4 class="font-semibold mb-2 text-gray-900 dark:text-gray-100">2. ¿Qué eliminar?</h4>
                         <div class="flex flex-col gap-2">
                             <label class="flex items-center font-bold text-red-500">
                                 <input type="checkbox" id="adv-del-grades" class="mr-2 h-5 w-5"> Calificaciones (Notas)
@@ -431,7 +445,7 @@
                             <label class="flex items-center font-bold text-blue-500">
                                 <input type="checkbox" id="adv-del-obs" class="mr-2 h-5 w-5"> Observaciones
                             </label>
-                             <label class="flex items-center text-gray-500">
+                             <label class="flex items-center text-gray-500 dark:text-gray-400">
                                 <input type="checkbox" id="adv-del-metadata" class="mr-2 h-5 w-5"> Notas de Encabezado (Fecha/Columna)
                             </label>
                         </div>
@@ -449,31 +463,70 @@
 
         <div id="promoteModal" class="modal-overlay">
             <div class="modal-content">
-                <h3 class="text-xl font-bold mb-4 text-purple-700">Promoción de Estudiantes</h3>
-                <p class="text-sm mb-4">Transfiere estudiantes de un curso a otro para el nuevo año escolar.</p>
+                <h3 class="text-xl font-bold mb-4 text-purple-700 dark:text-purple-400">Promoción de Estudiantes</h3>
+                <p class="text-sm mb-4">Transfiere estudiantes o clona la estructura para un nuevo periodo.</p>
                 
                 <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
+                    <!-- Scope Selection -->
+                    <div class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600">
+                        <h4 class="font-bold text-sm mb-2 text-gray-900 dark:text-gray-100">1. Alcance:</h4>
+                        <div class="flex gap-4">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="promote-scope" value="single" checked class="mr-2"> 
+                                <span class="font-medium text-gray-900 dark:text-gray-100">Solo este Curso (<span id="promoteCurrentCourseLabel" class="text-gray-900 dark:text-gray-100"></span>)</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="promote-scope" value="all" class="mr-2"> 
+                                <span class="font-medium text-gray-900 dark:text-gray-100">Todos los Cursos (Masivo)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Single Course Options -->
+                    <div id="promoteSingleOptions" class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="font-semibold text-xs block mb-1">Origen:</label>
-                            <input type="text" id="promoteSourceCourse" class="search-box w-full bg-gray-100" readonly>
+                            <label class="font-semibold text-xs block mb-1 text-gray-900 dark:text-gray-100">Origen:</label>
+                            <input type="text" id="promoteSourceCourse" class="search-box w-full bg-gray-200 text-gray-900 font-bold border-gray-400" readonly>
                         </div>
                         <div>
-                            <label class="font-semibold text-xs block mb-1">Destino:</label>
-                             <select id="promoteTargetSelect" class="search-box w-full mb-1"></select>
-                             <input type="text" id="promoteTargetInput" class="search-box w-full hidden" placeholder="Nuevo Nombre (ej. 10A)">
+                            <label class="font-semibold text-xs block mb-1 text-gray-900 dark:text-gray-100">Destino:</label>
+                             <select id="promoteTargetSelect" class="search-box w-full mb-1 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border-gray-400"></select>
+                             <input type="text" id="promoteTargetInput" class="search-box w-full hidden text-gray-900 border-gray-400" placeholder="Nuevo Nombre (ej. 10A)">
                              <div class="text-xs text-right mt-1">
-                                 <a href="#" id="togglePromoteTarget" class="text-blue-500 hover:underline">Crear nuevo curso</a>
+                                 <a href="#" id="togglePromoteTarget" class="text-blue-600 dark:text-blue-400 font-semibold hover:underline">Crear nuevo curso</a>
                              </div>
                         </div>
                     </div>
 
-                    <div class="border rounded p-2 max-h-48 overflow-y-auto bg-gray-50 dark:bg-gray-800">
+                    <!-- Batch Options (Hidden by default) -->
+                    <div id="promoteBatchOptions" class="hidden p-3 bg-blue-50 dark:bg-gray-800 border border-blue-200 rounded">
+                        <div class="mb-4">
+                            <label class="font-semibold text-sm block mb-1 text-gray-900 dark:text-gray-100">2. Tipo de Acción:</label>
+                            <div class="flex flex-col gap-2 pl-2">
+                                 <label class="inline-flex items-center cursor-pointer">
+                                    <input type="radio" name="promote-batch-type" value="increment" checked class="form-radio text-purple-600">
+                                    <span class="ml-2 font-medium text-gray-900 dark:text-gray-100">Avanzar Grado (ej. 7A &rarr; 8A, 11° salen del sistema)</span>
+                                 </label>
+                                 <label class="inline-flex items-center cursor-pointer">
+                                    <input type="radio" name="promote-batch-type" value="clone" class="form-radio text-purple-600">
+                                    <span class="ml-2 font-medium text-gray-900 dark:text-gray-100">Clonar Mismo Grado (ej. 7A &rarr; 7A-202X)</span>
+                                 </label>
+                            </div>
+                        </div>
+
+                        <div id="promoteSuffixContainer" class="hidden">
+                            <label class="font-semibold text-sm block mb-1 text-gray-900 dark:text-gray-100">Sufijo (Opcional):</label>
+                            <input type="text" id="promoteBatchSuffix" class="search-box w-full text-gray-900 border-gray-400" placeholder="Ej: -2026">
+                        </div>
+                    </div>
+
+                    <!-- Student List (Only for Single) -->
+                    <div id="promoteStudentListContainer" class="border rounded p-2 max-h-48 overflow-y-auto bg-gray-50 dark:bg-gray-800">
                         <div class="flex justify-between items-center mb-2 px-2">
-                             <span class="font-bold text-sm">Estudiantes a mover:</span>
+                             <span class="font-bold text-sm text-gray-900 dark:text-gray-100">Estudiantes a mover:</span>
                              <div class="text-xs space-x-2">
-                                 <span class="cursor-pointer text-blue-500" id="promoteSelectAll">Todos</span>
-                                 <span class="cursor-pointer text-blue-500" id="promoteDeselectAll">Ninguno</span>
+                                 <span class="cursor-pointer text-blue-600 font-semibold" id="promoteSelectAll">Todos</span>
+                                 <span class="cursor-pointer text-blue-600 font-semibold" id="promoteDeselectAll">Ninguno</span>
                              </div>
                         </div>
                         <div id="promoteStudentList" class="space-y-1">
@@ -484,7 +537,7 @@
 
                 <div class="flex justify-end gap-2 mt-6">
                     <button id="closePromoteModal" class="action-button">Cancelar</button>
-                    <button id="confirmPromoteBtn" class="action-button bg-purple-600">Promover / Copiar</button>
+                    <button id="confirmPromoteBtn" class="action-button bg-purple-600 text-white font-bold">Promover / Copiar</button>
                 </div>
             </div>
         </div>
@@ -545,6 +598,20 @@
                 </div>
                  <div class="flex justify-end gap-2 mt-6">
                     <button id="closeCourseManagementModal" class="action-button">Cerrar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="scheduleModal" class="modal-overlay">
+            <div class="modal-content max-w-4xl">
+                <h3 class="text-xl font-bold mb-4">📅 Editar Horario Semanal</h3>
+                <p class="text-sm text-gray-500 mb-4">Selecciona qué grupos tienen clase en cada día de la semana.</p>
+                <div id="scheduleGrid" class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                    <!-- Days generated here -->
+                </div>
+                <div class="flex justify-end gap-2 mt-6">
+                    <button id="closeScheduleModal" class="action-button">Cancelar</button>
+                    <button id="saveScheduleBtn" class="action-button bg-blue-600">Guardar Horario</button>
                 </div>
             </div>
         </div>
@@ -785,7 +852,10 @@
             'closeAdvancedDeleteModal', 'confirmAdvancedDeleteBtn', 'promoteStudentsBtn',
             'promoteModal', 'closePromoteModal', 'confirmPromoteBtn', 'promoteSourceCourse',
             'promoteTargetSelect', 'promoteTargetInput', 'togglePromoteTarget', 'promoteStudentList',
-            'promoteSelectAll', 'promoteDeselectAll', 'advDeleteCourseName'
+            'promoteSelectAll', 'promoteDeselectAll', 'advDeleteCourseName', 'promoteCurrentCourseLabel',
+            'promoteSingleOptions', 'promoteBatchOptions', 'promoteBatchSuffix', 'promoteStudentListContainer',
+            'editScheduleBtn', 'scheduleModal', 'closeScheduleModal', 'saveScheduleBtn', 'scheduleGrid',
+            'promoteSuffixContainer'
         ];
         ids.forEach(id => { ui[id] = document.getElementById(id); });
     };
@@ -1839,6 +1909,7 @@
                         const imgData = canvas.toDataURL('image/png');
                         const imgProps = pdf.getImageProperties(imgData);
                         const pdfWidth = pdf.internal.pageSize.getWidth();
+                        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
                         pdf.addImage(imgData, 'PNG', 10, 10, pdfWidth - 20, (imgProps.height * (pdfWidth-20)) / imgProps.width);
                         document.body.removeChild(tempDiv);
                         firstPage = false;
@@ -2246,8 +2317,13 @@
             // --- Promote Students Functionality ---
             const populatePromoteModal = () => {
                 ui.promoteSourceCourse.value = activeCourse;
+                ui.promoteCurrentCourseLabel.textContent = activeCourse;
                 
-                // Populate target selector
+                // Reset to Single Mode default
+                document.querySelector('input[name="promote-scope"][value="single"]').checked = true;
+                togglePromoteScope('single');
+
+                // Populate target selector for Single Mode
                 ui.promoteTargetSelect.innerHTML = '<option value="" disabled selected>Seleccionar curso existente...</option>';
                 Object.keys(allStudentsData).sort().forEach(course => {
                     if (course !== activeCourse) {
@@ -2258,7 +2334,7 @@
                     }
                 });
 
-                // Populate student list
+                // Populate student list for Single Mode
                 ui.promoteStudentList.innerHTML = '';
                 const students = allStudentsData[activeCourse] || [];
                 students.forEach(student => {
@@ -2266,7 +2342,7 @@
                     div.className = 'flex items-center';
                     div.innerHTML = `
                         <input type="checkbox" class="promote-student-check mr-2 h-4 w-4" value="${student}" checked>
-                        <span>${student}</span>
+                        <span class="text-gray-900 dark:text-gray-100">${student}</span>
                     `;
                     ui.promoteStudentList.appendChild(div);
                 });
@@ -2276,55 +2352,211 @@
                 ui.promoteModal.classList.add('active');
             };
 
+            const togglePromoteScope = (scope) => {
+                if (scope === 'single') {
+                    ui.promoteSingleOptions.classList.remove('hidden');
+                    ui.promoteBatchOptions.classList.add('hidden');
+                    ui.promoteStudentListContainer.classList.remove('hidden');
+                } else {
+                    ui.promoteSingleOptions.classList.add('hidden');
+                    ui.promoteBatchOptions.classList.remove('hidden');
+                    ui.promoteStudentListContainer.classList.add('hidden');
+                }
+            };
+
             const executePromotion = () => {
-                const isNewCourse = !ui.promoteTargetInput.classList.contains('hidden');
-                let targetCourse = isNewCourse ? ui.promoteTargetInput.value.trim().toUpperCase() : ui.promoteTargetSelect.value;
+                const scope = document.querySelector('input[name="promote-scope"]:checked').value;
 
-                if (!targetCourse) {
-                    showMessage('Debe seleccionar o escribir un curso de destino.', 'error');
-                    return;
-                }
+                if (scope === 'single') {
+                    // Logic for Single Course Promotion
+                    const isNewCourse = !ui.promoteTargetInput.classList.contains('hidden');
+                    let targetCourse = isNewCourse ? ui.promoteTargetInput.value.trim().toUpperCase() : ui.promoteTargetSelect.value;
 
-                if (targetCourse === activeCourse) {
-                    showMessage('El curso de destino no puede ser el mismo que el origen.', 'error');
-                    return;
-                }
-
-                const selectedStudents = Array.from(document.querySelectorAll('.promote-student-check:checked')).map(cb => cb.value);
-
-                if (selectedStudents.length === 0) {
-                    showMessage('Seleccione al menos un estudiante para promover.', 'error');
-                    return;
-                }
-
-                showPasswordConfirm(`Confirmar Promoción a ${targetCourse}`, () => {
-                    if (!allStudentsData[targetCourse]) {
-                        allStudentsData[targetCourse] = [];
-                        // Update daily schedule if needed, or let user manage it later
+                    if (!targetCourse) {
+                        showMessage('Debe seleccionar o escribir un curso de destino.', 'error');
+                        return;
                     }
 
-                    // Add students to target, avoiding duplicates
-                    let addedCount = 0;
-                    selectedStudents.forEach(student => {
-                        if (!allStudentsData[targetCourse].includes(student)) {
-                            allStudentsData[targetCourse].push(student);
-                            addedCount++;
+                    if (targetCourse === activeCourse) {
+                        showMessage('El curso de destino no puede ser el mismo que el origen.', 'error');
+                        return;
+                    }
+
+                    const selectedStudents = Array.from(document.querySelectorAll('.promote-student-check:checked')).map(cb => cb.value);
+
+                    if (selectedStudents.length === 0) {
+                        showMessage('Seleccione al menos un estudiante para promover.', 'error');
+                        return;
+                    }
+
+                    showPasswordConfirm(`Confirmar Promoción a ${targetCourse}`, () => {
+                        if (!allStudentsData[targetCourse]) {
+                            allStudentsData[targetCourse] = [];
+                        }
+
+                        let addedCount = 0;
+                        selectedStudents.forEach(student => {
+                            if (!allStudentsData[targetCourse].includes(student)) {
+                                allStudentsData[targetCourse].push(student);
+                                addedCount++;
+                            }
+                        });
+
+                        if (addedCount > 0) {
+                            allStudentsData[targetCourse].sort((a, b) => a.localeCompare(b));
+                            saveAllData(true);
+                            showMessage(`${addedCount} estudiantes añadidos a ${targetCourse}.`, 'success');
+                            ui.promoteModal.classList.remove('active');
+                            // Refresh schedule modal if open or next time it opens
+                            setupPeriodSelector(); // not strictly needed but good practice
+                        } else {
+                            showMessage('Los estudiantes seleccionados ya existen en el curso destino.', 'warning');
                         }
                     });
 
-                    if (addedCount > 0) {
-                        allStudentsData[targetCourse].sort((a, b) => a.localeCompare(b));
-                        saveAllData(true);
-                        showMessage(`${addedCount} estudiantes añadidos a ${targetCourse}.`, 'success');
-                        ui.promoteModal.classList.remove('active');
-                        // Optionally switch to new course?
-                        // switchCourse(targetCourse); 
-                    } else {
-                        showMessage('Los estudiantes seleccionados ya existen en el curso destino.', 'warning');
-                    }
-                });
+                } else {
+                    // Logic for Batch Promotion (All Courses)
+                    const batchType = document.querySelector('input[name="promote-batch-type"]:checked').value;
+                    const suffix = ui.promoteBatchSuffix.value.trim();
+                    
+                    showPasswordConfirm(`Confirmar Acción Masiva`, () => {
+                        if (batchType === 'increment') {
+                            // "Smart" Promotion: 8A -> 9A, 11 -> Delete
+                            const newStudentsData = {};
+                            let promotedCount = 0;
+                            let graduatedCount = 0;
+                            
+                            Object.keys(allStudentsData).forEach(course => {
+                                const match = course.match(/^(\d+)(.*)$/);
+                                if (match) {
+                                    const currentGrade = parseInt(match[1]);
+                                    const suffixPart = match[2];
+                                    
+                                    if (currentGrade >= 11) {
+                                        // Graduate/Delete from system (Grades 11 or higher)
+                                        graduatedCount += allStudentsData[course].length;
+                                    } else {
+                                        const nextGrade = currentGrade + 1;
+                                        const nextCourse = `${nextGrade}${suffixPart}`;
+                                        
+                                        // Ensure array exists
+                                        if (!newStudentsData[nextCourse]) newStudentsData[nextCourse] = [];
+                                        
+                                        // Merge if somehow duplicate courses exist (e.g. merging two old 8th grades into one 9th?)
+                                        // For standard case, it just copies.
+                                        newStudentsData[nextCourse] = [...newStudentsData[nextCourse], ...allStudentsData[course]];
+                                        promotedCount++;
+                                    }
+                                } else {
+                                    // Non-numeric courses (e.g. 'Jardin'), keep as is for safety
+                                    newStudentsData[course] = [...allStudentsData[course]];
+                                }
+                            });
+                            
+                            // Apply changes: Replace old data with new data
+                            allStudentsData = newStudentsData;
+                            gradesData = {}; // Clear all grades for the new year
+                            dailySchedule = {'Lunes':[],'Martes':[],'Miércoles':[],'Jueves':[],'Viernes':[]}; // Clear schedule as course names changed
+                            
+                            saveAllData(true);
+                            showMessage(`Promoción completada. ${graduatedCount} estudiantes de grado 11 eliminados.`, 'success');
+                            ui.promoteModal.classList.remove('active');
+                            setTimeout(() => window.location.reload(), 1500);
+
+                        } else {
+                            // "Clone" Logic (Suffix based)
+                            let coursesProcessed = 0;
+                            const currentCourses = Object.keys(allStudentsData);
+                            
+                            currentCourses.forEach(courseName => {
+                                const newCourseName = suffix ? `${courseName}${suffix}` : courseName;
+                                
+                                if (!allStudentsData[newCourseName]) {
+                                    allStudentsData[newCourseName] = [];
+                                }
+
+                                allStudentsData[courseName].forEach(student => {
+                                    if (!allStudentsData[newCourseName].includes(student)) {
+                                        allStudentsData[newCourseName].push(student);
+                                    }
+                                });
+                                coursesProcessed++;
+                            });
+
+                            saveAllData(true);
+                            showMessage(`Clonación completada. ${coursesProcessed} cursos procesados.`, 'success');
+                            ui.promoteModal.classList.remove('active');
+                            setTimeout(() => window.location.reload(), 1000);
+                        }
+                    });
+                }
             };
 
+
+            // --- Schedule Management ---
+            const openScheduleModal = () => {
+                ui.scheduleGrid.innerHTML = '';
+                const allCourses = Object.keys(allStudentsData).sort();
+                
+                // Days definition
+                const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+                
+                days.forEach(day => {
+                    const dayCol = document.createElement('div');
+                    dayCol.className = 'bg-gray-100 dark:bg-gray-700 p-3 rounded-lg';
+                    
+                    const dayTitle = document.createElement('h4');
+                    dayTitle.className = 'font-bold text-center mb-2 border-b pb-1 border-gray-300 dark:border-gray-500';
+                    dayTitle.textContent = day;
+                    dayCol.appendChild(dayTitle);
+
+                    const coursesList = document.createElement('div');
+                    coursesList.className = 'flex flex-col gap-1 max-h-60 overflow-y-auto';
+                    
+                    const currentScheduleForDay = dailySchedule[day] || [];
+
+                    allCourses.forEach(course => {
+                        const label = document.createElement('label');
+                        label.className = 'flex items-center text-sm cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 p-1 rounded';
+                        const isChecked = currentScheduleForDay.includes(course);
+                        label.innerHTML = `
+                            <input type="checkbox" class="schedule-check mr-2 h-4 w-4" 
+                                   data-day="${day}" value="${course}" ${isChecked ? 'checked' : ''}>
+                            <span class="${isChecked ? 'font-bold text-blue-600 dark:text-blue-400' : ''}">${course}</span>
+                        `;
+                        coursesList.appendChild(label);
+                    });
+                    
+                    dayCol.appendChild(coursesList);
+                    ui.scheduleGrid.appendChild(dayCol);
+                });
+                
+                ui.scheduleModal.classList.add('active');
+            };
+
+            const saveSchedule = () => {
+                const newSchedule = {'Lunes':[],'Martes':[],'Miércoles':[],'Jueves':[],'Viernes':[]};
+                
+                const checkboxes = document.querySelectorAll('.schedule-check:checked');
+                checkboxes.forEach(cb => {
+                    const day = cb.dataset.day;
+                    const course = cb.value;
+                    if (newSchedule[day]) {
+                        newSchedule[day].push(course);
+                    }
+                });
+                
+                // Sort courses in each day for consistency
+                for(const day in newSchedule) {
+                    newSchedule[day].sort();
+                }
+
+                dailySchedule = newSchedule;
+                saveAllData(true); // Saves schedule to localStorage
+                generateTabs(); // Re-render the tabs
+                ui.scheduleModal.classList.remove('active');
+                showMessage('Horario actualizado con éxito.', 'success');
+            };
 
             // --- App Initialization & Main Event Listeners ---
             function setupPeriodSelector() {
@@ -2752,6 +2984,16 @@
                 addListener('promoteDeselectAll', 'click', () => {
                      document.querySelectorAll('.promote-student-check').forEach(cb => cb.checked = false);
                 });
+                
+                // Toggle Scope Listener (New)
+                document.querySelectorAll('input[name="promote-scope"]').forEach(radio => {
+                    radio.addEventListener('change', (e) => togglePromoteScope(e.target.value));
+                });
+                
+                // Schedule Listeners (New)
+                addListener('editScheduleBtn', 'click', openScheduleModal);
+                addListener('closeScheduleModal', 'click', () => ui.scheduleModal.classList.remove('active'));
+                addListener('saveScheduleBtn', 'click', saveSchedule);
             };
             
             const initializeApp = () => {
@@ -2790,4 +3032,4 @@
         });
     </script>
 </body>
-    </html>
+                            </html>
