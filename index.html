@@ -298,7 +298,8 @@
             <input type="text" id="searchBox" class="search-box" placeholder="Buscar estudiante..." spellcheck="true">
             <div class="flex items-center justify-center sm:justify-end w-full sm:w-auto gap-4">
                 <div class="button-group">
-                    <button id="deleteGradesBtn" class="action-button bg-red-600 hover:bg-red-700"><i class="fas fa-eraser mr-2"></i>Borrar Notas</button>
+                    <button id="advancedCleanBtn" class="action-button bg-red-600 hover:bg-red-700"><i class="fas fa-trash-alt mr-2"></i>Borrar Datos</button>
+                    <button id="promoteStudentsBtn" class="action-button bg-purple-600 hover:bg-purple-700"><i class="fas fa-user-graduate mr-2"></i>Promover Grupo</button>
                     <button id="rankingBtn" class="action-button"><i class="fas fa-trophy mr-2"></i>Ranking</button>
                     <button id="voiceInputBtn" class="action-button"><i class="fas fa-microphone-alt mr-2"></i>Notas por Voz</button>
                     <button id="bulletinBtn" class="action-button"><i class="fas fa-id-card mr-2"></i>Boletines</button>
@@ -403,27 +404,87 @@
             </div>
         </div>
 
-        <div id="deleteGradesModal" class="modal-overlay">
+        <div id="advancedDeleteModal" class="modal-overlay">
             <div class="modal-content">
-                <h3 class="text-xl font-bold mb-4">Borrar Calificaciones</h3>
-                <div class="space-y-4">
-                    <div>
-                        <h4 class="font-semibold mb-2">1. Seleccionar Alcance</h4>
-                        <div class="flex items-center gap-4">
-                            <label><input type="radio" name="delete-scope" value="selected" checked> Estudiantes Seleccionados</label>
-                            <label><input type="radio" name="delete-scope" value="all"> Todo el Curso</label>
+                <h3 class="text-xl font-bold mb-4 text-red-600">Limpieza Avanzada de Datos</h3>
+                <div class="space-y-6">
+                    <!-- Scope Selection -->
+                    <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <h4 class="font-semibold mb-2">1. ¿A quiénes aplicar?</h4>
+                        <div class="flex flex-col gap-2">
+                            <label class="flex items-center"><input type="radio" name="adv-delete-scope" value="selected" checked class="mr-2"> Estudiantes Seleccionados (Checkbox)</label>
+                            <label class="flex items-center"><input type="radio" name="adv-delete-scope" value="current_course" class="mr-2"> Todo el Curso Actual (<span id="advDeleteCourseName"></span>)</label>
+                            <label class="flex items-center"><input type="radio" name="adv-delete-scope" value="all_courses" class="mr-2"> TODOS los cursos (Reinicio total)</label>
                         </div>
                     </div>
-                    <div>
-                        <h4 class="font-semibold mb-2">2. Seleccionar Componentes a Borrar</h4>
-                        <div id="delete-grades-options" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                           <!-- Checkboxes will be dynamically inserted here -->
+
+                    <!-- Content Type Selection -->
+                    <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <h4 class="font-semibold mb-2">2. ¿Qué eliminar?</h4>
+                        <div class="flex flex-col gap-2">
+                            <label class="flex items-center font-bold text-red-500">
+                                <input type="checkbox" id="adv-del-grades" class="mr-2 h-5 w-5"> Calificaciones (Notas)
+                            </label>
+                            <label class="flex items-center font-bold text-amber-500">
+                                <input type="checkbox" id="adv-del-attendance" class="mr-2 h-5 w-5"> Asistencia
+                            </label>
+                            <label class="flex items-center font-bold text-blue-500">
+                                <input type="checkbox" id="adv-del-obs" class="mr-2 h-5 w-5"> Observaciones
+                            </label>
+                             <label class="flex items-center text-gray-500">
+                                <input type="checkbox" id="adv-del-metadata" class="mr-2 h-5 w-5"> Notas de Encabezado (Fecha/Columna)
+                            </label>
                         </div>
                     </div>
                 </div>
+                <div class="mt-4 p-2 text-xs bg-yellow-100 text-yellow-800 rounded">
+                    <i class="fas fa-exclamation-triangle"></i> Esta acción no se puede deshacer. Se recomienda exportar una copia de seguridad antes.
+                </div>
                 <div class="flex justify-end gap-2 mt-6">
-                    <button id="closeDeleteGradesModal" class="action-button">Cancelar</button>
-                    <button id="confirmDeleteGradesBtn" class="action-button bg-red-600">Borrar Notas</button>
+                    <button id="closeAdvancedDeleteModal" class="action-button">Cancelar</button>
+                    <button id="confirmAdvancedDeleteBtn" class="action-button bg-red-600">Ejecutar Limpieza</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="promoteModal" class="modal-overlay">
+            <div class="modal-content">
+                <h3 class="text-xl font-bold mb-4 text-purple-700">Promoción de Estudiantes</h3>
+                <p class="text-sm mb-4">Transfiere estudiantes de un curso a otro para el nuevo año escolar.</p>
+                
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="font-semibold text-xs block mb-1">Origen:</label>
+                            <input type="text" id="promoteSourceCourse" class="search-box w-full bg-gray-100" readonly>
+                        </div>
+                        <div>
+                            <label class="font-semibold text-xs block mb-1">Destino:</label>
+                             <select id="promoteTargetSelect" class="search-box w-full mb-1"></select>
+                             <input type="text" id="promoteTargetInput" class="search-box w-full hidden" placeholder="Nuevo Nombre (ej. 10A)">
+                             <div class="text-xs text-right mt-1">
+                                 <a href="#" id="togglePromoteTarget" class="text-blue-500 hover:underline">Crear nuevo curso</a>
+                             </div>
+                        </div>
+                    </div>
+
+                    <div class="border rounded p-2 max-h-48 overflow-y-auto bg-gray-50 dark:bg-gray-800">
+                        <div class="flex justify-between items-center mb-2 px-2">
+                             <span class="font-bold text-sm">Estudiantes a mover:</span>
+                             <div class="text-xs space-x-2">
+                                 <span class="cursor-pointer text-blue-500" id="promoteSelectAll">Todos</span>
+                                 <span class="cursor-pointer text-blue-500" id="promoteDeselectAll">Ninguno</span>
+                             </div>
+                        </div>
+                        <div id="promoteStudentList" class="space-y-1">
+                            <!-- Checkboxes generated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 mt-6">
+                    <button id="closePromoteModal" class="action-button">Cancelar</button>
+                    <button id="confirmPromoteBtn" class="action-button bg-purple-600">Promover / Copiar</button>
                 </div>
             </div>
         </div>
@@ -720,8 +781,11 @@
                     'passwordConfirmTitle', 'passwordInput', 'passwordErrorMsg', 'closePasswordConfirmModal',
                     'confirmPasswordBtn', 'editObsModal', 'editObsTextarea', 'closeEditObsModal', 'saveEditObs',
             'groupGradeModal', 'groupGradeComponent', 'groupGradeStudentCount', 'groupGradeInput',
-            'closeGroupGradeModal', 'saveGroupGrade', 'deleteGradesBtn', 'deleteGradesModal',
-            'closeDeleteGradesModal', 'confirmDeleteGradesBtn'
+            'closeGroupGradeModal', 'saveGroupGrade', 'advancedCleanBtn', 'advancedDeleteModal',
+            'closeAdvancedDeleteModal', 'confirmAdvancedDeleteBtn', 'promoteStudentsBtn',
+            'promoteModal', 'closePromoteModal', 'confirmPromoteBtn', 'promoteSourceCourse',
+            'promoteTargetSelect', 'promoteTargetInput', 'togglePromoteTarget', 'promoteStudentList',
+            'promoteSelectAll', 'promoteDeselectAll', 'advDeleteCourseName'
         ];
         ids.forEach(id => { ui[id] = document.getElementById(id); });
     };
@@ -2119,6 +2183,149 @@
             }
 
 
+            // --- Advanced Delete Functionality ---
+            const handleAdvancedDelete = () => {
+                const scope = document.querySelector('input[name="adv-delete-scope"]:checked').value;
+                const delGrades = document.getElementById('adv-del-grades').checked;
+                const delAttendance = document.getElementById('adv-del-attendance').checked;
+                const delObs = document.getElementById('adv-del-obs').checked;
+                const delMetadata = document.getElementById('adv-del-metadata').checked;
+
+                if (!delGrades && !delAttendance && !delObs && !delMetadata) {
+                    showMessage('Selecciona al menos un tipo de dato para borrar.', 'error');
+                    return;
+                }
+
+                showPasswordConfirm('Confirmar Limpieza Avanzada', () => {
+                    let targetCourses = [];
+                    if (scope === 'all_courses') {
+                        targetCourses = Object.keys(allStudentsData);
+                    } else {
+                        targetCourses = [activeCourse];
+                    }
+
+                    targetCourses.forEach(course => {
+                        const courseData = gradesData[activePeriod]?.[course];
+                        if (!courseData) return;
+
+                        // Handle Metadata (Course level)
+                        if (delMetadata) {
+                            if (courseData.dateNotes) courseData.dateNotes = {};
+                            if (courseData.columnNotes) courseData.columnNotes = {};
+                        }
+
+                        // Determine students to process
+                        let studentsToProcess = [];
+                        if (scope === 'selected' && course === activeCourse) {
+                            studentsToProcess = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb => cb.value);
+                            if (studentsToProcess.length === 0) {
+                                showMessage('No hay estudiantes seleccionados.', 'error');
+                                return;
+                            }
+                        } else {
+                            studentsToProcess = allStudentsData[course] || [];
+                        }
+
+                        studentsToProcess.forEach(student => {
+                            const studentData = courseData[student];
+                            if (!studentData) return;
+
+                            if (delGrades) studentData.grades = {};
+                            if (delAttendance) studentData.attendance = {};
+                            if (delObs) studentData.observations = [];
+                        });
+                    });
+
+                    saveAllData(true);
+                    ui.advancedDeleteModal.classList.remove('active');
+                    renderTable();
+                    showMessage('Limpieza de datos completada.', 'success');
+                });
+            };
+
+            // --- Promote Students Functionality ---
+            const populatePromoteModal = () => {
+                ui.promoteSourceCourse.value = activeCourse;
+                
+                // Populate target selector
+                ui.promoteTargetSelect.innerHTML = '<option value="" disabled selected>Seleccionar curso existente...</option>';
+                Object.keys(allStudentsData).sort().forEach(course => {
+                    if (course !== activeCourse) {
+                        const option = document.createElement('option');
+                        option.value = course;
+                        option.textContent = course;
+                        ui.promoteTargetSelect.appendChild(option);
+                    }
+                });
+
+                // Populate student list
+                ui.promoteStudentList.innerHTML = '';
+                const students = allStudentsData[activeCourse] || [];
+                students.forEach(student => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center';
+                    div.innerHTML = `
+                        <input type="checkbox" class="promote-student-check mr-2 h-4 w-4" value="${student}" checked>
+                        <span>${student}</span>
+                    `;
+                    ui.promoteStudentList.appendChild(div);
+                });
+
+                ui.promoteTargetInput.classList.add('hidden');
+                ui.promoteTargetSelect.classList.remove('hidden');
+                ui.promoteModal.classList.add('active');
+            };
+
+            const executePromotion = () => {
+                const isNewCourse = !ui.promoteTargetInput.classList.contains('hidden');
+                let targetCourse = isNewCourse ? ui.promoteTargetInput.value.trim().toUpperCase() : ui.promoteTargetSelect.value;
+
+                if (!targetCourse) {
+                    showMessage('Debe seleccionar o escribir un curso de destino.', 'error');
+                    return;
+                }
+
+                if (targetCourse === activeCourse) {
+                    showMessage('El curso de destino no puede ser el mismo que el origen.', 'error');
+                    return;
+                }
+
+                const selectedStudents = Array.from(document.querySelectorAll('.promote-student-check:checked')).map(cb => cb.value);
+
+                if (selectedStudents.length === 0) {
+                    showMessage('Seleccione al menos un estudiante para promover.', 'error');
+                    return;
+                }
+
+                showPasswordConfirm(`Confirmar Promoción a ${targetCourse}`, () => {
+                    if (!allStudentsData[targetCourse]) {
+                        allStudentsData[targetCourse] = [];
+                        // Update daily schedule if needed, or let user manage it later
+                    }
+
+                    // Add students to target, avoiding duplicates
+                    let addedCount = 0;
+                    selectedStudents.forEach(student => {
+                        if (!allStudentsData[targetCourse].includes(student)) {
+                            allStudentsData[targetCourse].push(student);
+                            addedCount++;
+                        }
+                    });
+
+                    if (addedCount > 0) {
+                        allStudentsData[targetCourse].sort((a, b) => a.localeCompare(b));
+                        saveAllData(true);
+                        showMessage(`${addedCount} estudiantes añadidos a ${targetCourse}.`, 'success');
+                        ui.promoteModal.classList.remove('active');
+                        // Optionally switch to new course?
+                        // switchCourse(targetCourse); 
+                    } else {
+                        showMessage('Los estudiantes seleccionados ya existen en el curso destino.', 'warning');
+                    }
+                });
+            };
+
+
             // --- App Initialization & Main Event Listeners ---
             function setupPeriodSelector() {
                 ui.periodSelector.innerHTML = '';
@@ -2183,38 +2390,6 @@
                 renderTable();
             };
             
-            const handleDeleteGrades = () => {
-                const scope = document.querySelector('input[name="delete-scope"]:checked').value;
-                const studentsToDeleteFrom = scope === 'all'
-                    ? allStudentsData[activeCourse]
-                    : Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb => cb.value);
-
-                const componentsToDelete = Array.from(document.querySelectorAll('#delete-grades-options .delete-comp-check:checked')).map(chk => chk.value);
-
-                if (studentsToDeleteFrom.length === 0) {
-                    showMessage('Por favor, selecciona al menos un estudiante.', 'error');
-                    return;
-                }
-
-                if (componentsToDelete.length === 0) {
-                    showMessage('Por favor, selecciona al menos un componente para borrar.', 'error');
-                    return;
-                }
-
-                showPasswordConfirm('Confirmar Borrado de Notas', () => {
-                    studentsToDeleteFrom.forEach(studentName => {
-                        const studentData = gradesData[activePeriod]?.[activeCourse]?.[studentName];
-                        if (studentData && studentData.grades) {
-                            componentsToDelete.forEach(compKey => {
-                                delete studentData.grades[compKey];
-                            });
-                        }
-                    });
-                    saveAllData();
-                    ui.deleteGradesModal.classList.remove('active');
-                    showMessage('Notas borradas con éxito.', 'success');
-                });
-            };
 
             const setupEventListeners = () => {
                 const addListener = (elementKey, event, handler) => {
@@ -2310,7 +2485,8 @@
                     if(activeCourse === ui.voiceCourseSelector.value) renderTable();
                 });
                 addListener('closeGroupGradeModal', 'click', () => document.getElementById('groupGradeModal').classList.remove('active'));
-                addListener('closeDeleteGradesModal', 'click', () => ui.deleteGradesModal.classList.remove('active'));
+                addListener('closeAdvancedDeleteModal', 'click', () => ui.advancedDeleteModal.classList.remove('active'));
+                addListener('closePromoteModal', 'click', () => ui.promoteModal.classList.remove('active'));
 
 
                 // Modals: Action buttons
@@ -2549,42 +2725,33 @@
                     showMessage(`Nota aplicada a ${selectedStudents.length} estudiantes.`, 'success');
                 });
                 
-                addListener('deleteGradesBtn', 'click', () => {
-                    const optionsContainer = document.getElementById('delete-grades-options');
-                    optionsContainer.innerHTML = ''; // Clear previous options
-
-                    const gs = appSettings.gradeStructure;
-                    const components = [];
-                    for(let i=1; i<=gs.cognitive; i++) components.push({ key: `cognitivoC${i}`, label: `C${i}`});
-                    for(let i=1; i<=gs.procedural; i++) components.push({ key: `procedimentalP${i}`, label: `P${i}`});
-                    for(let i=1; i<=gs.attitudinal; i++) components.push({ key: `actitudinalA${i}`, label: `A${i}`});
-
-                    // Add "Select All" checkbox
-                    optionsContainer.innerHTML += `
-                        <label class="flex items-center font-bold col-span-full sm:col-span-1">
-                            <input type="checkbox" id="delete-comp-all" class="mr-2">Todos
-                        </label>
-                    `;
-
-                    components.forEach(comp => {
-                        optionsContainer.innerHTML += `
-                            <label class="flex items-center">
-                                <input type="checkbox" class="delete-comp-check mr-2" value="${comp.key}">${comp.label}
-                            </label>
-                        `;
-                    });
-                    
-                    // Add event listener for the new 'select all'
-                    document.getElementById('delete-comp-all').addEventListener('change', (e) => {
-                        optionsContainer.querySelectorAll('.delete-comp-check').forEach(chk => {
-                            chk.checked = e.target.checked;
-                        });
-                    });
-
-                    ui.deleteGradesModal.classList.add('active');
+                // Advanced Delete Listeners
+                addListener('advancedCleanBtn', 'click', () => {
+                    ui.advDeleteCourseName.textContent = activeCourse || 'Ninguno';
+                    ui.advancedDeleteModal.classList.add('active');
                 });
+                addListener('confirmAdvancedDeleteBtn', 'click', handleAdvancedDelete);
 
-                addListener('confirmDeleteGradesBtn', 'click', handleDeleteGrades);
+                // Promote Students Listeners
+                addListener('promoteStudentsBtn', 'click', populatePromoteModal);
+                addListener('confirmPromoteBtn', 'click', executePromotion);
+                addListener('togglePromoteTarget', 'click', (e) => {
+                    e.preventDefault();
+                    ui.promoteTargetInput.classList.toggle('hidden');
+                    ui.promoteTargetSelect.classList.toggle('hidden');
+                    if (ui.promoteTargetSelect.classList.contains('hidden')) {
+                         ui.promoteTargetInput.focus();
+                         e.target.textContent = 'Seleccionar curso existente';
+                    } else {
+                         e.target.textContent = 'Crear nuevo curso';
+                    }
+                });
+                addListener('promoteSelectAll', 'click', () => {
+                     document.querySelectorAll('.promote-student-check').forEach(cb => cb.checked = true);
+                });
+                addListener('promoteDeselectAll', 'click', () => {
+                     document.querySelectorAll('.promote-student-check').forEach(cb => cb.checked = false);
+                });
             };
             
             const initializeApp = () => {
@@ -2623,7 +2790,4 @@
         });
     </script>
 </body>
-</html>
-
-
-
+    </html>
