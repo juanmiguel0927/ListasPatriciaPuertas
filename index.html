@@ -194,7 +194,7 @@
         </div>
         <div id="tabNavigation" class="daily-schedule-container"></div>
         <h2 id="courseTitle" class="text-2xl font-bold text-center mb-2"></h2>
-        <div id="courseInfo" class="text-center text-gray-500 dark:text-gray-100 mb-4"></div>
+        <div id="courseInfo" class="text-center font-extrabold mb-4" style="color: #000000 !important;"></div>
 
         <!-- Controls -->
         <div class="controls-container">
@@ -217,7 +217,7 @@
                     <input type="file" id="importJsonFile" class="hidden" accept=".json,application/json">
                 </div>
                 <div class="flex items-center gap-2">
-                    <i id="settingsBtn" class="fas fa-cog text-2xl cursor-pointer text-gray-500 hover:text-blue-500 dark:text-white transition-colors"></i>
+                    <i id="settingsBtn" class="fas fa-cog text-2xl cursor-pointer hover:text-blue-600 transition-colors" style="color: #000000 !important;"></i>
                     <label class="toggle-switch">
                         <input type="checkbox" id="darkModeToggle">
                         <span class="slider"></span>
@@ -1075,9 +1075,22 @@
             const loadAllData = () => {
                 const savedGrades = localStorage.getItem('gradesData_2026');
                 const savedTrash = localStorage.getItem('trashData_2026');
+                const savedStudents = localStorage.getItem('allStudentsData_2026'); // ¡Esta línea faltaba!
+                const savedSchedule = localStorage.getItem('dailySchedule_2026');   // ¡Esta línea faltaba!
                 
                 gradesData = savedGrades ? JSON.parse(savedGrades) : {};
                 trashData = savedTrash ? JSON.parse(savedTrash) : [];
+                
+                // Si hay estudiantes guardados en el navegador, los cargamos.
+                // Si no, usará la lista `allStudentsData` por defecto declarada arriba.
+                if (savedStudents) {
+                    allStudentsData = JSON.parse(savedStudents);
+                }
+
+                // Lo mismo para el horario
+                if (savedSchedule) {
+                    dailySchedule = JSON.parse(savedSchedule);
+                }
             };
             
             const saveSettings = () => {
@@ -1236,8 +1249,8 @@
                                 <p class="text-xs text-gray-500 dark:text-gray-300">Curso: ${item.course} | Borrado: ${new Date(item.deletedAt).toLocaleDateString()}</p>
                             </div>
                             <div class="flex gap-2">
-                                <button class="text-green-600 hover:text-green-800" onclick="window.restoreFromTrash(${index})"><i class="fas fa-undo"></i></button>
-                                <button class="text-red-600 hover:text-red-800" onclick="window.deletePermanently(${index})"><i class="fas fa-times"></i></button>
+                                <button class="text-green-600 hover:text-green-800" onclick="window.restoreFromTrash(${index})" title="Restaurar Estudiante"><i class="fas fa-undo"></i></button>
+                                <button class="text-red-600 hover:text-red-800" onclick="window.deletePermanently(${index})" title="Borrar Definitivamente"><i class="fas fa-times"></i></button>
                             </div>
                         `;
                         trashContent.appendChild(el);
@@ -1265,8 +1278,8 @@
                 trashData.splice(index, 1);
                 saveAllData(true);
                 showTrashBin(); // refresh modal
-                renderTable(); // refresh table if needed
-                showMessage("Estudiante restaurado.", "success");
+                if(activeCourse === item.course) renderTable(); // refresh table if needed
+                showMessage("Estudiante restaurado exitosamente.", "success");
             };
 
             window.deletePermanently = function(index) {
@@ -1611,13 +1624,30 @@
                     'Eliminar Estudiante',
                     () => {
                         if (allStudentsData[course]) {
+                            // Enviar los datos del estudiante a la papelera antes de borrar
+                            const gradesSnapshot = {};
+                            for (const p in gradesData) {
+                                if (gradesData[p][course] && gradesData[p][course][student]) {
+                                    gradesSnapshot[p] = gradesData[p][course][student];
+                                }
+                            }
+                            
+                            trashData.push({
+                                name: student,
+                                course: course,
+                                deletedAt: new Date().toISOString(),
+                                gradesSnapshot: gradesSnapshot
+                            });
+
                             allStudentsData[course] = allStudentsData[course].filter(s => s !== student);
                         }
+                        
                         if (gradesData[activePeriod] && gradesData[activePeriod][course]) {
                             delete gradesData[activePeriod][course][student];
                         }
+                        
                         saveAllData(true);
-                        showMessage('Estudiante eliminado.', 'success');
+                        showMessage('Estudiante enviado a la papelera.', 'success');
                         showCourseManagementModal();
                         renderTable();
                     }
@@ -2872,6 +2902,7 @@
                 addListener('importJsonBtn', 'click', () => ui.importJsonFile.click());
                 addListener('importJsonFile', 'change', importAllDataFromJson);
                 addListener('printStudentReportBtn', 'click', () => window.print() );
+                
                 addListener('addStudentBtn', 'click', () => {
                     const newStudentName = ui.newStudentName.value.trim();
                     if (newStudentName) {
@@ -2885,23 +2916,27 @@
                         }
                         allStudentsData[course].push(formatStudentName(newStudentName));
                         allStudentsData[course].sort((a,b) => a.localeCompare(b));
-                        saveAllData(true);
+                        
+                        saveAllData(true); // Guarda inmediatamente en localStorage
+                        
                         ui.newStudentName.value = '';
                         showCourseManagementModal();
                         renderTable();
+                        showMessage('Estudiante agregado con éxito.', 'success');
                     }
                 });
+                
                 addListener('saveGroupGrade', 'click', () => {
                     const field = document.getElementById('groupGradeModal').dataset.field;
                     const grade = document.getElementById('groupGradeInput').value;
                     const selectedStudents = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb => cb.value);
 
                     selectedStudents.forEach(studentName => {
-                        updateGrade(studentName, field, grade, null); // cellToUpdate is null
+                        updateGrade(studentName, field, grade, null); 
                     });
                     
                     document.getElementById('groupGradeModal').classList.remove('active');
-                    renderTable(); // Re-render the entire table to show all changes
+                    renderTable(); 
                     showMessage(`Nota aplicada a ${selectedStudents.length} estudiantes.`, 'success');
                 });
                 
@@ -2917,7 +2952,7 @@
                 addListener('importFile', 'change', importStudentsFromFile);
 
                 
-                // Schedule Listeners (New)
+                // Schedule Listeners
                 addListener('editScheduleBtn', 'click', openScheduleModal);
                 addListener('closeScheduleModal', 'click', () => ui.scheduleModal.classList.remove('active'));
                 addListener('saveScheduleBtn', 'click', saveSchedule);
@@ -2926,10 +2961,13 @@
             const initializeApp = () => {
                 getUIElements();
                 applyTheme(localStorage.getItem('darkMode') === 'true');
+                
+                // Cargar configuraciones (periodos, porcentajes, etc.)
                 loadSettings();
+                
+                // Cargar datos (estudiantes y notas) desde localStorage
                 loadAllData();
                 
-                // Normalize all student names on load
                 for (const course in allStudentsData) {
                     if (Array.isArray(allStudentsData[course])) {
                         allStudentsData[course] = allStudentsData[course]
@@ -2940,13 +2978,12 @@
 
                 setupPeriodSelector();
                 generateTabs();
-                setupEventListeners(); // Attaches all event listeners
+                setupEventListeners(); 
                 setupSpeechRecognition();
 
-                // Select initial course based on today's date
                 const dayMap = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
                 const todayIndex = new Date().getDay();
-                const todayName = dayMap[todayIndex === 0 || todayIndex === 6 ? 1 : todayIndex]; // Default to Monday if weekend
+                const todayName = dayMap[todayIndex === 0 || todayIndex === 6 ? 1 : todayIndex]; 
                 const initialCourse = dailySchedule[todayName]?.[0] || Object.values(dailySchedule).flat()[0] || Object.keys(allStudentsData)[0];
                 
                 if (initialCourse) {
@@ -2959,4 +2996,4 @@
         });
     </script>
 </body>
-</html>
+                    </html>
