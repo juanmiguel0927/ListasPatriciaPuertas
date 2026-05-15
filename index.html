@@ -801,6 +801,7 @@
                 dailySchedule = JSON.parse(savedSchedule);
             }
             
+            // Asegurarnos que todos los cursos siempre estén en el horario
             const assignedCourses = new Set(Object.values(dailySchedule).flat());
             Object.keys(allStudentsData).forEach(course => {
                 if (!assignedCourses.has(course)) {
@@ -944,7 +945,7 @@
                 deleteBtn.className = 'text-red-500 hover:text-red-700 text-xl ml-2 bg-transparent border-none cursor-pointer';
                 deleteBtn.innerHTML = '&times;';
                 if (appSettings.periods.length <= 1) deleteBtn.classList.add('hidden');
-                deleteBtn.onclick = () => deletePeriod(period.name);
+                deleteBtn.onclick = () => window.deletePeriod(period.name);
                 div.appendChild(deleteBtn);
                 periodsList.appendChild(div);
             });
@@ -967,7 +968,7 @@
                         button.id = 'tab-' + group;
                         button.className = 'tab-button';
                         button.textContent = group;
-                        button.onclick = () => switchCourse(group);
+                        button.onclick = () => window.switchCourse(group);
                         wrapper.appendChild(button);
                     });
                     ui.tabNavigation.appendChild(dayBlock);
@@ -975,14 +976,14 @@
             }
         }
 
-        function switchCourse(course) {
+        window.switchCourse = function(course) {
             activeCourse = course;
             ensureCourseData(activePeriod, activeCourse);
             document.querySelectorAll('.tab-button.active').forEach(b => b.classList.remove('active'));
             const tab = document.getElementById('tab-' + activeCourse);
             if(tab) tab.classList.add('active');
             renderTable();
-        }
+        };
 
         // --- 5. RENDERIZADO DE TABLA Y ESTADÍSTICAS ---
         function calculateAndDisplayStats() {
@@ -1040,7 +1041,7 @@
                 const config = allStudentsData[activeCourse];
                 if (!config) {
                     ui.attendanceTableContainer.innerHTML = '<div class="p-4 text-center">No hay estudiantes en este curso. Puede añadirlos en la configuración del curso.</div>';
-                    ui.courseTitle.innerHTML = 'Grupo: ' + activeCourse + ' <i class="fas fa-edit text-lg text-gray-400 hover:text-blue-500 cursor-pointer ml-2" onclick="showCourseManagementModal()"></i>';
+                    ui.courseTitle.innerHTML = 'Grupo: ' + activeCourse + ' <i class="fas fa-edit text-lg text-gray-400 hover:text-blue-500 cursor-pointer ml-2" onclick="window.showCourseManagementModal()"></i>';
                     ui.courseInfo.innerHTML = '<p>Docente: ' + appSettings.professor + '</p><p>Asignatura: ' + appSettings.subject + '</p>';
                     calculateAndDisplayStats();
                     return;
@@ -1053,7 +1054,7 @@
                 const filteredStudents = config.filter(s => s && typeof s === 'string' && s.toLowerCase().includes(searchTerm));
                 const gs = appSettings.gradeStructure;
 
-                ui.courseTitle.innerHTML = 'Grupo: ' + activeCourse + ' <i class="fas fa-edit text-lg text-gray-400 hover:text-blue-500 cursor-pointer ml-2" title="Gestionar Estudiantes" onclick="showCourseManagementModal()"></i><button onclick="showGeneralObsModal()" class="ml-4 text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded shadow-sm border border-blue-200 dark:border-blue-700 font-normal"><i class="fas fa-bullhorn mr-1"></i> Diario / General</button>';
+                ui.courseTitle.innerHTML = 'Grupo: ' + activeCourse + ' <i class="fas fa-edit text-lg text-gray-400 hover:text-blue-500 cursor-pointer ml-2" title="Gestionar Estudiantes" onclick="window.showCourseManagementModal()"></i><button onclick="window.showGeneralObsModal()" class="ml-4 text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded shadow-sm border border-blue-200 dark:border-blue-700 font-normal"><i class="fas fa-bullhorn mr-1"></i> Diario / General</button>';
                 ui.courseInfo.innerHTML = '<p>Docente: ' + appSettings.professor + '</p><p>Asignatura: ' + appSettings.subject + '</p>';
 
                 const tableEl = document.createElement('table');
@@ -1064,7 +1065,7 @@
                     const noteC = data.columnNotes && data.columnNotes['C' + i] ? data.columnNotes['C' + i] : '';
                     const hasNote = noteC.trim() !== '';
                     const colorClass = hasNote ? 'text-amber-400' : 'text-gray-400';
-                    cognitiveHeaders += '<th class="grade-column">C' + i + ' <i class="fas fa-users cursor-pointer text-xs ml-1 text-gray-400 hover:text-green-400" onclick="showGroupGradeModal(\'cognitivoC' + i + '\', \'Cognitivo C' + i + '\')"></i> <i class="fas fa-comment cursor-pointer text-xs ml-1 ' + colorClass + ' hover:text-amber-500" onclick="showGradeNoteModal(\'C' + i + '\')"></i></th>';
+                    cognitiveHeaders += '<th class="grade-column">C' + i + ' <i class="fas fa-users cursor-pointer text-xs ml-1 text-gray-400 hover:text-green-400" onclick="window.showGroupGradeModal(\'cognitivoC' + i + '\', \'Cognitivo C' + i + '\')"></i> <i class="fas fa-comment cursor-pointer text-xs ml-1 ' + colorClass + ' hover:text-amber-500" onclick="window.showGradeNoteModal(\'C' + i + '\')"></i></th>';
                 }
                 
                 let proceduralHeaders = '';
@@ -1072,7 +1073,7 @@
                     const noteP = data.columnNotes && data.columnNotes['P' + i] ? data.columnNotes['P' + i] : '';
                     const hasNote = noteP.trim() !== '';
                     const colorClass = hasNote ? 'text-amber-400' : 'text-gray-400';
-                    proceduralHeaders += '<th class="grade-column">P' + i + ' <i class="fas fa-users cursor-pointer text-xs ml-1 text-gray-400 hover:text-green-400" onclick="showGroupGradeModal(\'procedimentalP' + i + '\', \'Procedimental P' + i + '\')"></i> <i class="fas fa-comment cursor-pointer text-xs ml-1 ' + colorClass + ' hover:text-amber-500" onclick="showGradeNoteModal(\'P' + i + '\')"></i></th>';
+                    proceduralHeaders += '<th class="grade-column">P' + i + ' <i class="fas fa-users cursor-pointer text-xs ml-1 text-gray-400 hover:text-green-400" onclick="window.showGroupGradeModal(\'procedimentalP' + i + '\', \'Procedimental P' + i + '\')"></i> <i class="fas fa-comment cursor-pointer text-xs ml-1 ' + colorClass + ' hover:text-amber-500" onclick="window.showGradeNoteModal(\'P' + i + '\')"></i></th>';
                 }
                 
                 let attitudinalHeaders = '';
@@ -1080,7 +1081,7 @@
                     const noteA = data.columnNotes && data.columnNotes['A' + i] ? data.columnNotes['A' + i] : '';
                     const hasNote = noteA.trim() !== '';
                     const colorClass = hasNote ? 'text-amber-400' : 'text-gray-400';
-                    attitudinalHeaders += '<th class="grade-column">A' + i + ' <i class="fas fa-users cursor-pointer text-xs ml-1 text-gray-400 hover:text-green-400" onclick="showGroupGradeModal(\'actitudinalA' + i + '\', \'Actitudinal A' + i + '\')"></i> <i class="fas fa-comment cursor-pointer text-xs ml-1 ' + colorClass + ' hover:text-amber-500" onclick="showGradeNoteModal(\'A' + i + '\')"></i></th>';
+                    attitudinalHeaders += '<th class="grade-column">A' + i + ' <i class="fas fa-users cursor-pointer text-xs ml-1 text-gray-400 hover:text-green-400" onclick="window.showGroupGradeModal(\'actitudinalA' + i + '\', \'Actitudinal A' + i + '\')"></i> <i class="fas fa-comment cursor-pointer text-xs ml-1 ' + colorClass + ' hover:text-amber-500" onclick="window.showGradeNoteModal(\'A' + i + '\')"></i></th>';
                 }
 
                 let dateHeaders = '';
@@ -1089,12 +1090,12 @@
                     const note = (data.dateNotes && data.dateNotes[dateString]) ? data.dateNotes[dateString] : '';
                     const noteIconClass = note ? 'fas fa-comment-dots text-yellow-300' : 'fas fa-plus-circle text-gray-400';
                     dateHeaders += '<th class="date-header attendance-column">' +
-                        '<div>' + d.getDate() + '/' + (d.getMonth()+1) + ' <i class="' + noteIconClass + ' cursor-pointer hover:text-yellow-500 text-xs ml-1" onclick="showDateNoteModal(\'' + dateString + '\')"></i></div>' +
+                        '<div>' + d.getDate() + '/' + (d.getMonth()+1) + ' <i class="' + noteIconClass + ' cursor-pointer hover:text-yellow-500 text-xs ml-1" onclick="window.showDateNoteModal(\'' + dateString + '\')"></i></div>' +
                         '<div class="flex flex-col items-center">' +
-                            '<button class="attendance-bulk-btn bg-green-500" onclick="markAllAttendance(\'' + dateString + '\', true)">✓</button>' +
-                            '<button class="attendance-bulk-btn bg-red-500" onclick="markAllAttendance(\'' + dateString + '\', false)">✗</button>' +
-                            '<button class="attendance-bulk-btn bg-indigo-500" onclick="markAllAttendance(\'' + dateString + '\', \'excused\')">E</button>' +
-                            '<button class="attendance-bulk-btn bg-yellow-500" onclick="markAllAttendance(\'' + dateString + '\', \'late\')">T</button>' +
+                            '<button class="attendance-bulk-btn bg-green-500" onclick="window.markAllAttendance(\'' + dateString + '\', true)">✓</button>' +
+                            '<button class="attendance-bulk-btn bg-red-500" onclick="window.markAllAttendance(\'' + dateString + '\', false)">✗</button>' +
+                            '<button class="attendance-bulk-btn bg-indigo-500" onclick="window.markAllAttendance(\'' + dateString + '\', \'excused\')">E</button>' +
+                            '<button class="attendance-bulk-btn bg-yellow-500" onclick="window.markAllAttendance(\'' + dateString + '\', \'late\')">T</button>' +
                         '</div></th>';
                 });
 
@@ -1140,10 +1141,10 @@
                         '<td class="sticky-left sticky-col-no">' + (index + 1) + '</td>' +
                         '<td class="sticky-left sticky-col-name">' + student + '</td>' +
                         '<td class="sticky-left sticky-col-actions">' +
-                            '<i class="fas fa-comment action-icon ' + (hasObs ? 'has-obs' : '') + '" data-student-obs="' + student + '" title="Observaciones" onclick="showObservationsModal(\'' + safeStudent + '\')"></i>' +
-                            '<i class="fas fa-id-card action-icon" title="Boletín" onclick="showBulletinModal(\'' + safeStudent + '\')"></i>' +
-                            '<i class="fas fa-chart-line action-icon" title="Informe de Estudiante" onclick="showStudentReportModal(\'' + safeStudent + '\')"></i>' +
-                            '<i class="fas fa-edit action-icon action-grades-btn" title="Editar Notas" onclick="showGradesModal(\'' + safeStudent + '\')"></i>' +
+                            '<i class="fas fa-comment action-icon ' + (hasObs ? 'has-obs' : '') + '" data-student-obs="' + student + '" title="Observaciones" onclick="window.showObservationsModal(\'' + safeStudent + '\')"></i>' +
+                            '<i class="fas fa-id-card action-icon" title="Boletín" onclick="window.showBulletinModal(\'' + safeStudent + '\')"></i>' +
+                            '<i class="fas fa-chart-line action-icon" title="Informe de Estudiante" onclick="window.showStudentReportModal(\'' + safeStudent + '\')"></i>' +
+                            '<i class="fas fa-edit action-icon action-grades-btn" title="Editar Notas" onclick="window.showGradesModal(\'' + safeStudent + '\')"></i>' +
                         '</td>' +
                         '<td class="sticky-left sticky-col-summary">' +
                             '<span>✓:' + summary.attended + '</span> <span>✗:' + summary.absent + '</span><br>' +
@@ -1184,7 +1185,7 @@
         }
 
         // --- 6. FUNCIONES DE ACTUALIZACIÓN ---
-        function enableEdit(cell) {
+        window.enableEdit = function(cell) {
             if (cell.querySelector('input')) return;
             const { student, field } = cell.dataset;
             ensureStudentData(activePeriod, activeCourse, student);
@@ -1196,7 +1197,7 @@
 
             const saveAndExit = () => {
                 const currentInput = cell.querySelector('input');
-                if (currentInput) updateGrade(student, field, currentInput.value, cell);
+                if (currentInput) window.updateGrade(student, field, currentInput.value, cell);
             }
             
             input.addEventListener('blur', saveAndExit);
@@ -1213,11 +1214,11 @@
                 else if (e.key === 'ArrowRight' || e.key === 'Tab') nextCell = allGradeCells[currentIndex + 1];
                 else if (e.key === 'ArrowLeft') nextCell = allGradeCells[currentIndex - 1];
                 input.blur();
-                if (nextCell) setTimeout(() => enableEdit(nextCell), 0);
+                if (nextCell) setTimeout(() => window.enableEdit(nextCell), 0);
             });
-        }
+        };
 
-        function updateGrade(student, field, value, cellToUpdate) {
+        window.updateGrade = function(student, field, value, cellToUpdate) {
             const course = (ui.voiceGradeModal && ui.voiceGradeModal.classList.contains('active')) ? ui.voiceCourseSelector.value : activeCourse;
             ensureStudentData(activePeriod, course, student);
             const studentData = gradesData[activePeriod][course][student];
@@ -1225,7 +1226,7 @@
             let numVal = parseFloat(value);
             
             if (value !== '' && (isNaN(numVal) || numVal < 1 || numVal > 5)) {
-                showMessage('La nota debe estar entre 1 y 5.', 'error');
+                window.showMessage('La nota debe estar entre 1 y 5.', 'error');
                 if (cellToUpdate) cellToUpdate.textContent = studentData.grades[field] || '';
                 return false;
             }
@@ -1247,9 +1248,9 @@
             saveAllData(true);
             if (course === activeCourse) calculateAndDisplayStats();
             return true;
-        }
+        };
 
-        function updateAttendance(box) {
+        window.updateAttendance = function(box) {
             const { student, date } = box.dataset;
             ensureStudentData(activePeriod, activeCourse, student);
             const studentData = gradesData[activePeriod][activeCourse][student];
@@ -1274,9 +1275,9 @@
             if (summaryCell) summaryCell.innerHTML = '<span>✓:' + summary.attended + '</span> <span>✗:' + summary.absent + '</span><br><span>E:' + summary.excused + '</span> <span>T:' + summary.late + '</span>';
             saveAllData(true);
             calculateAndDisplayStats();
-        }
+        };
 
-        function markAllAttendance(dateString, status) {
+        window.markAllAttendance = function(dateString, status) {
             const config = allStudentsData[activeCourse];
             if (!config) return;
             const students = config;
@@ -1301,9 +1302,9 @@
                 }
             });
             saveAllData();
-        }
+        };
 
-        function showPasswordConfirm(title, onConfirm) {
+        window.showPasswordConfirm = function(title, onConfirm) {
             ui.passwordConfirmTitle.textContent = title;
             ui.passwordInput.value = '';
             ui.passwordErrorMsg.classList.add('hidden');
@@ -1319,10 +1320,10 @@
             ui.passwordInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); confirmHandler(); } };
             ui.passwordConfirmModal.classList.add('active');
             setTimeout(() => ui.passwordInput.focus(), 100);
-        }
+        };
 
         // --- 7. FUNCIONES DE MODALES PRINCIPALES ---
-        function showGeneralObsModal() {
+        window.showGeneralObsModal = function() {
             ui.genObsCourseName.textContent = "Todos los Cursos";
             ui.genObsTextarea.value = '';
             ui.genObsHistory.innerHTML = '';
@@ -1331,22 +1332,22 @@
                 ui.genObsHistory.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">No hay comentarios generales registrados.</p>';
             } else {
                 globalNotes.sort((a,b) => b.timestamp - a.timestamp).forEach(c => {
-                    ui.genObsHistory.innerHTML += '<div class="mb-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600"><p class="whitespace-pre-wrap text-sm">' + c.text + '</p><p class="text-xs text-right text-gray-500 dark:text-gray-400 mt-1"><span class="font-bold text-blue-500">' + c.room + '</span> | ' + c.date + ' ' + c.time + '<i class="fas fa-trash-alt text-red-500 hover:text-red-700 cursor-pointer ml-2" onclick="deleteGlobalNote(' + c.timestamp + ')"></i></p></div>';
+                    ui.genObsHistory.innerHTML += '<div class="mb-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600"><p class="whitespace-pre-wrap text-sm">' + c.text + '</p><p class="text-xs text-right text-gray-500 dark:text-gray-400 mt-1"><span class="font-bold text-blue-500">' + c.room + '</span> | ' + c.date + ' ' + c.time + '<i class="fas fa-trash-alt text-red-500 hover:text-red-700 cursor-pointer ml-2" onclick="window.deleteGlobalNote(' + c.timestamp + ')"></i></p></div>';
                 });
             }
             ui.generalObsModal.classList.add('active');
-        }
+        };
 
-        function deleteGlobalNote(timestamp) {
-            showPasswordConfirm('Borrar Comentario General', () => {
+        window.deleteGlobalNote = function(timestamp) {
+            window.showPasswordConfirm('Borrar Comentario General', () => {
                 globalNotes = globalNotes.filter(n => n.timestamp !== timestamp);
                 saveAllData(true);
-                showGeneralObsModal();
-                showMessage('Comentario eliminado.', 'success');
+                window.showGeneralObsModal();
+                window.showMessage('Comentario eliminado.', 'success');
             });
-        }
+        };
 
-        function showCourseManagementModal() {
+        window.showCourseManagementModal = function() {
             if (!activeCourse) return;
             ui.courseManagementTitle.textContent = activeCourse;
             ui.studentManagementList.innerHTML = '';
@@ -1356,16 +1357,16 @@
                 const safeStudent = student.replace(/'/g, "\\'");
                 const studentDiv = document.createElement('div');
                 studentDiv.className = 'flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-700 dark:text-white rounded border dark:border-gray-600 mb-1';
-                studentDiv.innerHTML = '<span>' + student + '</span><i class="fas fa-trash-alt text-red-500 hover:text-red-700 cursor-pointer" onclick="deleteStudent(\'' + safeStudent + '\')"></i>';
+                studentDiv.innerHTML = '<span>' + student + '</span><i class="fas fa-trash-alt text-red-500 hover:text-red-700 cursor-pointer" onclick="window.deleteStudent(\'' + safeStudent + '\')"></i>';
                 ui.studentManagementList.appendChild(studentDiv);
             });
             ui.courseManagementModal.classList.add('active');
-        }
+        };
 
-        function showGroupGradeModal(field, fieldName) {
+        window.showGroupGradeModal = function(field, fieldName) {
             const selectedStudents = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb => cb.value);
             if (selectedStudents.length === 0) {
-                showMessage('Por favor, selecciona al menos un estudiante.', 'error');
+                window.showMessage('Por favor, selecciona al menos un estudiante.', 'error');
                 return;
             }
             document.getElementById('groupGradeComponent').textContent = fieldName;
@@ -1373,9 +1374,9 @@
             document.getElementById('groupGradeInput').value = '';
             document.getElementById('groupGradeModal').dataset.field = field;
             document.getElementById('groupGradeModal').classList.add('active');
-        }
+        };
 
-        function showGradeNoteModal(noteGroup) {
+        window.showGradeNoteModal = function(noteGroup) {
             ensureCourseData(activePeriod, activeCourse);
             ui.gradeNoteTitle.textContent = 'Actividad ' + noteGroup;
             const pData = gradesData[activePeriod];
@@ -1383,9 +1384,9 @@
             ui.gradeNoteTextarea.value = cData.columnNotes && cData.columnNotes[noteGroup] ? cData.columnNotes[noteGroup] : '';
             ui.gradeNoteModal.classList.add('active');
             ui.gradeNoteModal.dataset.noteGroup = noteGroup;
-        }
+        };
 
-        function showDateNoteModal(dateString) {
+        window.showDateNoteModal = function(dateString) {
             ensureCourseData(activePeriod, activeCourse);
             ui.dateNoteDate.textContent = new Date(dateString + 'T00:00:00').toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
             const pData = gradesData[activePeriod];
@@ -1393,10 +1394,10 @@
             ui.dateNoteTextarea.value = cData.dateNotes && cData.dateNotes[dateString] ? cData.dateNotes[dateString] : '';
             ui.dateNoteModal.dataset.date = dateString;
             ui.dateNoteModal.classList.add('active');
-        }
+        };
 
-        function deleteStudent(student) {
-            showPasswordConfirm('Eliminar Estudiante', () => {
+        window.deleteStudent = function(student) {
+            window.showPasswordConfirm('Eliminar Estudiante', () => {
                 if (allStudentsData[activeCourse]) {
                     allStudentsData[activeCourse] = allStudentsData[activeCourse].filter(s => s !== student);
                 }
@@ -1404,13 +1405,13 @@
                     delete gradesData[activePeriod][activeCourse][student];
                 }
                 saveAllData(true);
-                showMessage('Estudiante eliminado.', 'success');
-                showCourseManagementModal();
+                window.showMessage('Estudiante eliminado.', 'success');
+                window.showCourseManagementModal();
                 renderTable();
             });
-        }
+        };
 
-        function showObservationsModal(student) {
+        window.showObservationsModal = function(student) {
             ensureStudentData(activePeriod, activeCourse, student);
             ui.obsStudentName.textContent = student;
             ui.obsTextarea.value = '';
@@ -1432,15 +1433,15 @@
                 const safeStudent = student.replace(/'/g, "\\'");
                 observations.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).forEach(obs => {
                     const formattedDate = new Date(obs.timestamp).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
-                    ui.obsHistory.innerHTML += '<div class="p-2 border-b" style="border-color: var(--border-color);"><div class="flex justify-between items-start"><p class="whitespace-normal flex-grow">' + obs.text.replace(/\n/g, '<br>') + '</p><div class="flex-shrink-0 ml-4"><i class="fas fa-edit text-blue-500 hover:text-blue-700 cursor-pointer mr-2" onclick="requestEditObservation(\'' + safeStudent + '\', \'' + obs.timestamp + '\')"></i><i class="fas fa-trash-alt text-red-500 hover:text-red-700 cursor-pointer" onclick="requestDeleteObservation(\'' + safeStudent + '\', \'' + obs.timestamp + '\')"></i></div></div><p class="text-xs text-gray-500 dark:text-gray-200 text-right mt-1">' + formattedDate + '</p></div>';
+                    ui.obsHistory.innerHTML += '<div class="p-2 border-b" style="border-color: var(--border-color);"><div class="flex justify-between items-start"><p class="whitespace-normal flex-grow">' + obs.text.replace(/\n/g, '<br>') + '</p><div class="flex-shrink-0 ml-4"><i class="fas fa-edit text-blue-500 hover:text-blue-700 cursor-pointer mr-2" onclick="window.requestEditObservation(\'' + safeStudent + '\', \'' + obs.timestamp + '\')"></i><i class="fas fa-trash-alt text-red-500 hover:text-red-700 cursor-pointer" onclick="window.requestDeleteObservation(\'' + safeStudent + '\', \'' + obs.timestamp + '\')"></i></div></div><p class="text-xs text-gray-500 dark:text-gray-200 text-right mt-1">' + formattedDate + '</p></div>';
                 });
             }
             ui.obsModal.classList.add('active');
             ui.obsModal.dataset.student = student;
-        }
+        };
 
-        function requestDeleteObservation(student, timestamp) {
-            showPasswordConfirm('Confirmar Borrado', () => {
+        window.requestDeleteObservation = function(student, timestamp) {
+            window.showPasswordConfirm('Confirmar Borrado', () => {
                 ensureStudentData(activePeriod, activeCourse, student);
                 const studentData = gradesData[activePeriod][activeCourse][student];
                 if (studentData && studentData.observations) {
@@ -1448,14 +1449,14 @@
                     saveAllData(true);
                     const icon = document.querySelector('i[data-student-obs="' + student + '"]');
                     if (icon) icon.classList.toggle('has-obs', studentData.observations.length > 0);
-                    if (ui.obsModal.classList.contains('active') && ui.obsModal.dataset.student === student) showObservationsModal(student); 
-                    showMessage("Observación borrada con éxito.", "success");
+                    if (ui.obsModal.classList.contains('active') && ui.obsModal.dataset.student === student) window.showObservationsModal(student); 
+                    window.showMessage("Observación borrada con éxito.", "success");
                 }
             });
-        }
+        };
 
-        function requestEditObservation(student, timestamp) {
-            showPasswordConfirm('Confirmar Edición', () => {
+        window.requestEditObservation = function(student, timestamp) {
+            window.showPasswordConfirm('Confirmar Edición', () => {
                 const pData = gradesData[activePeriod];
                 const cData = pData && pData[activeCourse] ? pData[activeCourse] : null;
                 const studentData = cData && cData[student] ? cData[student] : null;
@@ -1468,9 +1469,9 @@
                     ui.editObsModal.classList.add('active');
                 }
             });
-        }
+        };
 
-        async function showBulletinModal(student) {
+        window.showBulletinModal = async function(student) {
             ensureStudentData(activePeriod, activeCourse, student);
             const studentData = gradesData[activePeriod][activeCourse][student];
             const def = calculateDef(studentData.grades);
@@ -1504,9 +1505,9 @@
 
             ui.bulletinContent.innerHTML = '<div class="bulletin-page p-4 bg-white" style="width:210mm;color:black!important"><h3 class="text-2xl font-bold text-center mb-4">Boletín Informativo - ' + activePeriod + '</h3><p><strong>Estudiante:</strong> ' + student + '</p><p><strong>Curso:</strong> ' + activeCourse + '</p><hr class="my-4"><h4 class="text-lg font-bold mt-4">Calificaciones</h4><div id="bulletinGrades" class="grid grid-cols-2 gap-2 mt-2">' + gradesHTML + '<p class="mt-2 font-bold"><strong>DEF: ' + def + ' (' + nivel + ')</strong></p></div><h4 class="text-lg font-bold mt-4">Asistencia</h4><div class="mt-2"><p><strong>Asistencias:</strong> ' + attendance.attended + '</p><p><strong>Ausencias:</strong> ' + attendance.absent + '</p><p><strong>Excusas:</strong> ' + attendance.excused + '</p><p><strong>Tardanzas:</strong> ' + attendance.late + '</p></div><h4 class="text-lg font-bold mt-4">Observaciones</h4><p class="mt-2">' + obsListHTML + '</p><div class="text-xs text-gray-500 text-center mt-6" style="color:#555!important">Generado el: ' + timestamp + '</div></div>';
             ui.bulletinModal.classList.add('active');
-        }
+        };
 
-        function showStudentReportModal(student) {
+        window.showStudentReportModal = function(student) {
             ensureStudentData(activePeriod, activeCourse, student);
             const pData = gradesData[activePeriod];
             const cData = pData && pData[activeCourse] ? pData[activeCourse] : {};
@@ -1605,9 +1606,9 @@
                     options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 5 } }, plugins: { legend: { display: true, position: 'top' } } }
                 });
             }, 100);
-        }
+        };
 
-        function showGradesModal(student) {
+        window.showGradesModal = function(student) {
             ensureStudentData(activePeriod, activeCourse, student);
             const studentData = gradesData[activePeriod][activeCourse][student];
             ui.gradesStudentName.textContent = student;
@@ -1624,9 +1625,9 @@
             });
             ui.gradesModal.dataset.student = student;
             ui.gradesModal.classList.add('active');
-        }
+        };
 
-        function showStudentCountModal() {
+        window.showStudentCountModal = function() {
             let totalStudents = 0;
             let contentHTML = '<div class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-96 overflow-y-auto">';
             const courses = Object.keys(allStudentsData).sort();
@@ -1650,9 +1651,9 @@
             `;
             ui.studentCountContent.innerHTML = contentHTML;
             ui.studentCountModal.classList.add('active');
-        }
+        };
 
-        function showDetailedStats() {
+        window.showDetailedStats = function() {
             const students = allStudentsData[activeCourse] || [];
             const atRisk = []; const criticalAbsence = [];
             
@@ -1662,7 +1663,7 @@
                  const studentData = cData && cData[student] ? cData[student] : {};
 
                  const def = parseFloat(calculateDef(studentData.grades));
-                 const att = calculateAttendanceSummary(currentData.attendance);
+                 const att = calculateAttendanceSummary(studentData.attendance);
                  if (!isNaN(def) && def < 3.0) atRisk.push({ name: student, def: def.toFixed(2) });
                  if (att.absent > 3) criticalAbsence.push({ name: student, count: att.absent });
             });
@@ -1691,9 +1692,9 @@
                 options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 5 }}}
             });
             ui.detailedStatsModal.classList.add('active');
-        }
+        };
 
-        function handleAdvancedDelete() {
+        window.handleAdvancedDelete = function() {
             const scope = document.querySelector('input[name="adv-delete-scope"]:checked').value;
             const delGrades = document.getElementById('adv-del-grades').checked;
             const delAttendance = document.getElementById('adv-del-attendance').checked;
@@ -1701,11 +1702,11 @@
             const delMetadata = document.getElementById('adv-del-metadata').checked;
 
             if (!delGrades && !delAttendance && !delObs && !delMetadata) {
-                showMessage('Selecciona al menos un tipo de dato para borrar.', 'error');
+                window.showMessage('Selecciona al menos un tipo de dato para borrar.', 'error');
                 return;
             }
 
-            showPasswordConfirm('Confirmar Limpieza Avanzada (Irreversible)', () => {
+            window.showPasswordConfirm('Confirmar Limpieza Avanzada (Irreversible)', () => {
                 let targetCourses = scope === 'all_courses' ? Object.keys(allStudentsData) : [activeCourse];
 
                 targetCourses.forEach(course => {
@@ -1736,11 +1737,11 @@
                 saveAllData(true);
                 ui.advancedDeleteModal.classList.remove('active');
                 renderTable();
-                showMessage('Limpieza de datos completada.', 'success');
+                window.showMessage('Limpieza de datos completada.', 'success');
             });
-        }
+        };
 
-        function calculateRankings() {
+        window.calculateRankings = function() {
             const coursePerformances = [];
             for (const courseName in allStudentsData) {
                 if (appSettings.hiddenCourses && appSettings.hiddenCourses.includes(courseName)) continue; 
@@ -1763,10 +1764,10 @@
                 coursePerformances.push({ courseName, average: isNaN(courseAverage) ? 0 : courseAverage, students: studentRanks });
             }
             return coursePerformances.sort((a, b) => b.average - a.average);
-        }
+        };
 
-        function showRankingModal() {
-            const rankingData = calculateRankings();
+        window.showRankingModal = function() {
+            const rankingData = window.calculateRankings();
             const rankingContent = document.getElementById('rankingContent');
             document.getElementById('rankingPeriodName').textContent = activePeriod;
             rankingContent.innerHTML = '';
@@ -1832,10 +1833,10 @@
                     </div>
                 `;
             });
-        }
+        };
 
-        async function generateAndExportPdf(courses, studentList = null) {
-            showMessage('Generando PDF, por favor espera...', 'success');
+        window.generateAndExportPdf = async function(courses, studentList = null) {
+            window.showMessage('Generando PDF, por favor espera...', 'success');
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
             
@@ -1896,10 +1897,10 @@
             let fileName = studentList ? `boletines_${activeCourse}_seleccionados.pdf` : courses.length === 1 ? `boletines_${courses[0]}.pdf` : `boletines_masivo.pdf`;
             pdf.save(fileName);
             ui.bulletinSelectionModal.classList.remove('active');
-        }
+        };
 
-        async function generateBatchZip() {
-            showMessage('Generando paquete ZIP. Esto puede tomar unos segundos...', 'success');
+        window.generateBatchZip = async function() {
+            window.showMessage('Generando paquete ZIP. Esto puede tomar unos segundos...', 'success');
             const zip = new JSZip();
             const { jsPDF } = window.jspdf;
             const students = allStudentsData[activeCourse] || [];
@@ -1956,11 +1957,11 @@
                 link.href = URL.createObjectURL(content);
                 link.download = `Boletines_${activeCourse}_${activePeriod}.zip`;
                 link.click();
-                showMessage('ZIP descargado.', 'success');
+                window.showMessage('ZIP descargado.', 'success');
             });
-        }
+        };
 
-        function exportData(scope, selectedCourses = []) {
+        window.exportData = function(scope, selectedCourses = []) {
             let csvContent = "data:text/csv;charset=utf-8,";
             const coursesToExport = scope === 'all' ? Object.keys(allStudentsData).sort().filter(c => {
                 return appSettings.hiddenCourses ? !appSettings.hiddenCourses.includes(c) : true;
@@ -2007,28 +2008,28 @@
             link.setAttribute("download", `calificaciones_${scope}_${activePeriod}.csv`);
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
             ui.exportModal.classList.remove('active');
-        }
+        };
         
-        function importStudentsFromFile(event) {
+        window.importStudentsFromFile = function(event) {
             const file = event.target.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
                 const lines = e.target.result.split(/\r?\n/).filter(l => l.trim() !== '');
-                if (lines.length === 0) return showMessage('Archivo vacío.', 'error');
+                if (lines.length === 0) return window.showMessage('Archivo vacío.', 'error');
                 if (!allStudentsData[activeCourse]) allStudentsData[activeCourse] = [];
                 let addedCount = 0;
                 lines.forEach(line => {
                     const name = formatStudentName(line);
                     if (!allStudentsData[activeCourse].includes(name)) { allStudentsData[activeCourse].push(name); addedCount++; }
                 });
-                if (addedCount > 0) { allStudentsData[activeCourse].sort((a,b)=>a.localeCompare(b)); saveAllData(true); renderTable(); showMessage(`${addedCount} estudiantes importados.`, 'success'); } 
-                else { showMessage('No hay nuevos estudiantes.', 'warning'); }
+                if (addedCount > 0) { allStudentsData[activeCourse].sort((a,b)=>a.localeCompare(b)); saveAllData(true); renderTable(); window.showMessage(`${addedCount} estudiantes importados.`, 'success'); } 
+                else { window.showMessage('No hay nuevos estudiantes.', 'warning'); }
                 event.target.value = '';
             };
             reader.readAsText(file);
-        }
+        };
 
-        function populateVoiceModal() {
+        window.populateVoiceModal = function() {
             const courseForModal = ui.voiceCourseSelector.value;
             const students = allStudentsData[courseForModal] || [];
             ui.voiceStudentList.innerHTML = '';
@@ -2062,30 +2063,30 @@
                 ui.voiceGradeList.appendChild(div);
             });
             if (ui.voiceGradeList.firstChild) ui.voiceGradeList.firstChild.classList.add('selected');
-        }
+        };
 
-        function parseVoiceGrade(text) {
+        window.parseVoiceGrade = function(text) {
             let gradeText = text.toLowerCase().trim().replace(/coma|punto/g, '.').replace(/uno/g, '1').replace(/dos/g, '2').replace(/tres/g, '3').replace(/cuatro/g, '4').replace(/cinco/g, '5').replace(/seis/g, '6').replace(/siete/g, '7').replace(/ocho/g, '8').replace(/nueve/g, '9').replace(/cero/g, '0').replace(/\s/g, ''); 
             let grade = parseFloat(gradeText);
             return (isNaN(grade) || grade < 1 || grade > 5) ? null : grade.toFixed(1);
-        }
+        };
 
-        function stopRecognitionSession() {
+        window.stopRecognitionSession = function() {
             isRecognitionSessionActive = false;
             if(recognition) recognition.stop();
-            showMessage("Sesión de dictado finalizada.", "success");
-        }
+            window.showMessage("Sesión de dictado finalizada.", "success");
+        };
 
-        function handleVoiceResult(transcript) {
+        window.handleVoiceResult = function(transcript) {
             const grade = parseVoiceGrade(transcript);
-            if (grade === null) { showMessage(`No se reconoció una nota válida en "${transcript}"`, "error"); return; }
+            if (grade === null) { window.showMessage(`No se reconoció una nota válida en "${transcript}"`, "error"); return; }
             const selectedStudentsInTable = Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb => cb.value);
 
             if (selectedStudentsInTable.length > 0) {
                 const currentGradeEl = ui.voiceGradeList.querySelector('.selected');
                 if(currentGradeEl) { 
                     selectedStudentsInTable.forEach(st => updateGrade(st, currentGradeEl.dataset.field, grade, null)); 
-                    showMessage(`Nota ${grade} aplicada a ${selectedStudentsInTable.length} estudiantes.`, "success"); 
+                    window.showMessage(`Nota ${grade} aplicada a ${selectedStudentsInTable.length} estudiantes.`, "success"); 
                     renderTable(); 
                 }
             } else {
@@ -2119,9 +2120,9 @@
                     }
                 }
             }
-        }
+        };
 
-        function setupSpeechRecognition() {
+        window.setupSpeechRecognition = function() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) { if (ui.voiceInputBtn) ui.voiceInputBtn.style.display = 'none'; return; }
             recognition = new SpeechRecognition();
@@ -2139,10 +2140,10 @@
                     handleVoiceResult(finalTranscript);
                 }
             };
-        }
+        };
 
         // --- 6. EVENT LISTENERS PRINCIPALES ---
-        function setupEventListeners() {
+        window.setupEventListeners = function() {
             const addListener = (elementKey, event, handler) => {
                 if (ui[elementKey]) ui[elementKey].addEventListener(event, handler);
             };
@@ -2178,8 +2179,8 @@
                     return appSettings.hiddenCourses ? !appSettings.hiddenCourses.includes(c) : true;
                 });
                 const courseForToday = visibleCoursesToday[0];
-                if (courseForToday) { switchCourse(courseForToday); showMessage(`Cambiando al primer curso de hoy: ${courseForToday}`, 'success'); } 
-                else showMessage('No hay cursos programados para hoy.', 'error');
+                if (courseForToday) { window.switchCourse(courseForToday); window.showMessage(`Cambiando al primer curso de hoy: ${courseForToday}`, 'success'); } 
+                else window.showMessage('No hay cursos programados para hoy.', 'error');
             });
 
             addListener('periodSelector', 'change', (e) => { activePeriod = e.target.value; appSettings.activePeriod = activePeriod; saveSettings(); renderTable(); });
@@ -2231,7 +2232,7 @@
                     ensureStudentData(activePeriod, activeCourse, student);
                     gradesData[activePeriod][activeCourse][student].observations.push({ text, timestamp: new Date().toISOString() });
                     saveAllData(true);
-                    showMessage("Observación guardada.", "success");
+                    window.showMessage("Observación guardada.", "success");
                     const icon = document.querySelector(`i[data-student-obs="${student}"]`);
                     if (icon) icon.classList.add('has-obs');
                     showObservationsModal(student); 
@@ -2251,7 +2252,7 @@
                         timestamp: now.getTime()
                     });
                     saveAllData(true);
-                    showMessage('Comentario general añadido.', 'success');
+                    window.showMessage('Comentario general añadido.', 'success');
                     showGeneralObsModal();
                 }
             });
@@ -2261,7 +2262,7 @@
                 if (student) {
                     let allGradesValid = true;
                     ui.gradesGrid.querySelectorAll('input[data-field]').forEach(input => { if (!updateGrade(student, input.dataset.field, input.value, null)) allGradesValid = false; });
-                    if (allGradesValid) { ui.gradesModal.classList.remove('active'); renderTable(); showMessage('Notas guardadas con éxito.', 'success'); }
+                    if (allGradesValid) { ui.gradesModal.classList.remove('active'); renderTable(); window.showMessage('Notas guardadas con éxito.', 'success'); }
                 }
             });
 
@@ -2283,7 +2284,7 @@
 
                 if (studentData) {
                     const observation = studentData.observations && studentData.observations.find(o => o.timestamp === timestamp);
-                    if (observation) { observation.text = newText; saveAllData(true); showMessage("Observación actualizada.", "success"); ui.editObsModal.classList.remove('active'); showObservationsModal(student); }
+                    if (observation) { observation.text = newText; saveAllData(true); window.showMessage("Observación actualizada.", "success"); ui.editObsModal.classList.remove('active'); showObservationsModal(student); }
                 }
             });
 
@@ -2293,7 +2294,7 @@
                 const cog = parseInt(document.getElementById('cognitivePercentage').value);
                 const proc = parseInt(document.getElementById('proceduralPercentage').value);
                 const att = parseInt(document.getElementById('attitudinalPercentage').value);
-                if (cog + proc + att !== 100) { showMessage('La suma de los porcentajes debe ser 100.', 'error'); return; }
+                if (cog + proc + att !== 100) { window.showMessage('La suma de los porcentajes debe ser 100.', 'error'); return; }
 
                 appSettings.percentages = { cognitive: cog, procedural: proc, attitudinal: att };
                 appSettings.gradeStructure = {
@@ -2351,7 +2352,7 @@
                     if (['C', 'P', 'A'].includes(componentType) && !isNaN(parseInt(componentNumber))) {
                         notes['C' + componentNumber] = text; notes['P' + componentNumber] = text; notes['A' + componentNumber] = text;
                     } else { notes[noteGroup] = text; }
-                    saveAllData(); ui.gradeNoteModal.classList.remove('active'); showMessage("Comentario guardado y replicado.", "success");
+                    saveAllData(); ui.gradeNoteModal.classList.remove('active'); window.showMessage("Comentario guardado y replicado.", "success");
                 }
             });
             
@@ -2416,7 +2417,7 @@
                 const url = URL.createObjectURL(blob); const link = document.createElement('a');
                 const d = new Date(); link.download = `copia_seguridad_${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.json`; link.href = url;
                 document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
-                ui.dataManagementModal.classList.remove('active'); showMessage('Copia de seguridad exportada.', 'success');
+                ui.dataManagementModal.classList.remove('active'); window.showMessage('Copia de seguridad exportada.', 'success');
             });
 
             addListener('importJsonBtn', 'click', () => ui.importJsonFile.click());
@@ -2474,10 +2475,10 @@
                         
                         saveSettings(); 
                         saveAllData(true); 
-                        showMessage('Datos importados. Recargando...', 'success'); 
+                        window.showMessage('Datos importados. Recargando...', 'success'); 
                         setTimeout(() => window.location.reload(), 500);
                     } catch (error) { 
-                        showMessage(`Error: ${error.message}`, 'error'); 
+                        window.showMessage(`Error: ${error.message}`, 'error'); 
                     }
                     ui.importJsonFile.value = ''; 
                     ui.dataManagementModal.classList.remove('active');
@@ -2492,7 +2493,7 @@
                 if (newStudentName) {
                     const course = activeCourse;
                     if (!allStudentsData[course]) allStudentsData[course] = [];
-                    if (allStudentsData[course].includes(formatStudentName(newStudentName))) { showMessage('El estudiante ya existe en este curso.', 'error'); return; }
+                    if (allStudentsData[course].includes(formatStudentName(newStudentName))) { window.showMessage('El estudiante ya existe en este curso.', 'error'); return; }
                     allStudentsData[course].push(formatStudentName(newStudentName));
                     allStudentsData[course].sort((a,b) => a.localeCompare(b));
                     saveAllData(true); ui.newStudentName.value = ''; showCourseManagementModal(); renderTable();
@@ -2504,7 +2505,7 @@
                 const grade = document.getElementById('groupGradeInput').value;
                 Array.from(document.querySelectorAll('.student-checkbox:checked')).map(cb => cb.value).forEach(st => updateGrade(st, field, grade, null));
                 document.getElementById('groupGradeModal').classList.remove('active');
-                renderTable(); showMessage(`Nota aplicada.`, 'success');
+                renderTable(); window.showMessage(`Nota aplicada.`, 'success');
             });
             
             addListener('advancedCleanBtn', 'click', () => { ui.advDeleteCourseName.textContent = activeCourse || 'Ninguno'; ui.advancedDeleteModal.classList.add('active'); });
@@ -2517,7 +2518,7 @@
                 const delMetadata = document.getElementById('adv-del-metadata').checked;
 
                 if (!delGrades && !delAttendance && !delObs && !delMetadata) {
-                    showMessage('Selecciona al menos un tipo de dato para borrar.', 'error');
+                    window.showMessage('Selecciona al menos un tipo de dato para borrar.', 'error');
                     return;
                 }
 
@@ -2552,7 +2553,7 @@
                     saveAllData(true);
                     ui.advancedDeleteModal.classList.remove('active');
                     renderTable();
-                    showMessage('Limpieza de datos completada.', 'success');
+                    window.showMessage('Limpieza de datos completada.', 'success');
                 });
             });
             
@@ -2563,15 +2564,15 @@
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const lines = e.target.result.split(/\r?\n/).filter(l => l.trim() !== '');
-                    if (lines.length === 0) return showMessage('Archivo vacío.', 'error');
+                    if (lines.length === 0) return window.showMessage('Archivo vacío.', 'error');
                     if (!allStudentsData[activeCourse]) allStudentsData[activeCourse] = [];
                     let addedCount = 0;
                     lines.forEach(line => {
                         const name = formatStudentName(line);
                         if (!allStudentsData[activeCourse].includes(name)) { allStudentsData[activeCourse].push(name); addedCount++; }
                     });
-                    if (addedCount > 0) { allStudentsData[activeCourse].sort((a,b)=>a.localeCompare(b)); saveAllData(true); renderTable(); showMessage(`${addedCount} estudiantes importados.`, 'success'); } 
-                    else { showMessage('No hay nuevos estudiantes.', 'warning'); }
+                    if (addedCount > 0) { allStudentsData[activeCourse].sort((a,b)=>a.localeCompare(b)); saveAllData(true); renderTable(); window.showMessage(`${addedCount} estudiantes importados.`, 'success'); } 
+                    else { window.showMessage('No hay nuevos estudiantes.', 'warning'); }
                     event.target.value = '';
                 };
                 reader.readAsText(file);
@@ -2614,7 +2615,7 @@
                 document.querySelectorAll('.schedule-check:checked').forEach(cb => newSchedule[cb.dataset.day].push(cb.value));
                 for(const day in newSchedule) newSchedule[day].sort();
                 dailySchedule = newSchedule;
-                saveAllData(true); generateTabs(); ui.scheduleModal.classList.remove('active'); showMessage('Horario actualizado con éxito.', 'success');
+                saveAllData(true); generateTabs(); ui.scheduleModal.classList.remove('active'); window.showMessage('Horario actualizado con éxito.', 'success');
             });
             
             addListener('generateAllCoursesBulletinBtn', 'click', () => {
@@ -2628,7 +2629,7 @@
             
             addListener('generateSelectedCoursesBtn', 'click', () => {
                 const selected = Array.from(document.querySelectorAll('#bulletinCourseSelectionCheckboxes input:checked')).map(cb => cb.value);
-                if(selected.length) generateAndExportPdf(selected); else showMessage('Seleccione al menos un curso', 'error');
+                if(selected.length) generateAndExportPdf(selected); else window.showMessage('Seleccione al menos un curso', 'error');
             });
 
             addListener('selectAllStudentsBtn', 'click', () => document.querySelectorAll('#studentSelectionCheckboxes input').forEach(cb => cb.checked = true));
@@ -2636,7 +2637,7 @@
             
             addListener('generateSelectedStudentsBtn', 'click', () => {
                 const selected = Array.from(document.querySelectorAll('#studentSelectionCheckboxes input:checked')).map(cb => cb.value);
-                if(selected.length) generateAndExportPdf(null, selected); else showMessage('Seleccione al menos un estudiante', 'error');
+                if(selected.length) generateAndExportPdf(null, selected); else window.showMessage('Seleccione al menos un estudiante', 'error');
             });
 
             addListener('exportCurrentBtn', 'click', () => exportData('current'));
@@ -2644,7 +2645,7 @@
             
             addListener('exportSelectedBtn', 'click', () => {
                 const selected = Array.from(document.querySelectorAll('#courseSelectionCheckboxes input:checked')).map(cb => cb.value);
-                if(selected.length) exportData('selected', selected); else showMessage('Seleccione un curso', 'error');
+                if(selected.length) exportData('selected', selected); else window.showMessage('Seleccione un curso', 'error');
             });
             
             addListener('downloadPngBtn', 'click', async () => {
@@ -2698,29 +2699,8 @@
             }
         }
         
-        // --- 7. EXPOSICIÓN GLOBAL DE FUNCIONES PARA EL HTML ---
-        window.switchCourse = switchCourse;
-        window.showCourseManagementModal = showCourseManagementModal;
-        window.showGeneralObsModal = showGeneralObsModal;
-        window.showGroupGradeModal = showGroupGradeModal;
-        window.showGradeNoteModal = showGradeNoteModal;
-        window.showDateNoteModal = showDateNoteModal;
-        window.markAllAttendance = markAllAttendance;
-        window.showObservationsModal = showObservationsModal;
-        window.showBulletinModal = showBulletinModal;
-        window.showStudentReportModal = showStudentReportModal;
-        window.showGradesModal = showGradesModal;
-        window.deleteStudent = deleteStudent;
-        window.requestEditObservation = requestEditObservation;
-        window.requestDeleteObservation = requestDeleteObservation;
-        window.deleteGlobalNote = deleteGlobalNote;
-        window.deletePeriod = deletePeriod;
-        window.enableEdit = enableEdit;
-        window.updateGrade = updateGrade;
-        window.updateAttendance = updateAttendance;
-
         // --- 8. INICIALIZACIÓN ---
-        window.addEventListener('DOMContentLoaded', initializeApp);
+        initializeApp();
     </script>
 </body>
 </html>
