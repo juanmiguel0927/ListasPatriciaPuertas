@@ -801,7 +801,7 @@
             const savedGlobalNotes = localStorage.getItem('globalNotes_2026');
             globalNotes = savedGlobalNotes ? JSON.parse(savedGlobalNotes) : [];
             
-            const savedSchedule = localStorage.getItem('schedulesByPeriod_2026_v5');
+            const savedSchedule = localStorage.getItem('schedulesByPeriod_2026_v6');
             if (savedSchedule) {
                 schedulesByPeriod = JSON.parse(savedSchedule);
             } else {
@@ -812,20 +812,20 @@
                 };
             }
 
-            const savedStudents = localStorage.getItem('allStudentsData_2026_clean');
+            const savedStudents = localStorage.getItem('allStudentsData_2026_clean_v6');
             if (savedStudents) {
                 allStudentsData = JSON.parse(savedStudents);
             } else {
                 allStudentsData = JSON.parse(JSON.stringify(allStudentsDataHardcoded));
-                localStorage.setItem('allStudentsData_2026_clean', JSON.stringify(allStudentsData));
+                localStorage.setItem('allStudentsData_2026_clean_v6', JSON.stringify(allStudentsData));
             }
         }
         
         function saveAllData(isPartial = false) { 
             try { 
                 localStorage.setItem('gradesData_2026', JSON.stringify(gradesData)); 
-                localStorage.setItem('allStudentsData_2026_clean', JSON.stringify(allStudentsData)); 
-                localStorage.setItem('schedulesByPeriod_2026_v5', JSON.stringify(schedulesByPeriod)); 
+                localStorage.setItem('allStudentsData_2026_clean_v6', JSON.stringify(allStudentsData)); 
+                localStorage.setItem('schedulesByPeriod_2026_v6', JSON.stringify(schedulesByPeriod)); 
                 localStorage.setItem('globalNotes_2026', JSON.stringify(globalNotes));
                 if(!isPartial) renderTable();
             } catch (e) { console.error("Error saving data: ", e); } 
@@ -985,10 +985,12 @@
 
         function switchCourse(course) {
             activeCourse = course;
-            ensureCourseData(activePeriod, activeCourse);
+            if(activeCourse) ensureCourseData(activePeriod, activeCourse);
             document.querySelectorAll('.tab-button.active').forEach(b => b.classList.remove('active'));
-            const tab = document.getElementById('tab-' + activeCourse);
-            if(tab) tab.classList.add('active');
+            if(activeCourse) {
+                const tab = document.getElementById('tab-' + activeCourse);
+                if(tab) tab.classList.add('active');
+            }
             renderTable();
         }
 
@@ -1043,7 +1045,14 @@
 
         function renderTable() {
             try {
-                if (!activeCourse) return;
+                if (!activeCourse) {
+                    ui.attendanceTableContainer.innerHTML = '<div class="p-4 text-center text-gray-500">No hay cursos asignados en el horario de este periodo. Puedes agregarlos desde el botón "Editar Horario (Días)".</div>';
+                    ui.courseTitle.innerHTML = '';
+                    ui.courseInfo.innerHTML = '';
+                    ui.statsPanel.innerHTML = '';
+                    return;
+                }
+                
                 const config = allStudentsData[activeCourse];
                 if (!config) {
                     ui.attendanceTableContainer.innerHTML = '<div class="p-4 text-center">No hay estudiantes en este curso. Puede añadirlos en la configuración del curso.</div>';
@@ -2765,29 +2774,8 @@
             }
         }
         
-        // --- 7. EXPOSICIÓN GLOBAL DE FUNCIONES PARA EL HTML ---
-        window.switchCourse = switchCourse;
-        window.showCourseManagementModal = showCourseManagementModal;
-        window.showGeneralObsModal = showGeneralObsModal;
-        window.showGroupGradeModal = showGroupGradeModal;
-        window.showGradeNoteModal = showGradeNoteModal;
-        window.showDateNoteModal = showDateNoteModal;
-        window.markAllAttendance = markAllAttendance;
-        window.showObservationsModal = showObservationsModal;
-        window.showBulletinModal = showBulletinModal;
-        window.showStudentReportModal = showStudentReportModal;
-        window.showGradesModal = showGradesModal;
-        window.deleteStudent = deleteStudent;
-        window.requestEditObservation = requestEditObservation;
-        window.requestDeleteObservation = requestDeleteObservation;
-        window.deleteGlobalNote = deleteGlobalNote;
-        window.deletePeriod = deletePeriod;
-        window.enableEdit = enableEdit;
-        window.updateGrade = updateGrade;
-        window.updateAttendance = updateAttendance;
-
         // --- 8. INICIALIZACIÓN ---
-        window.onload = initializeApp;
+        window.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
 </html>
