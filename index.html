@@ -1,4 +1,4 @@
-¡<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -644,7 +644,7 @@
         let detailedChart = null;
         let globalNotes = [];
         
-        let allStudentsData = {
+        const allStudentsDataHardcoded = {
             '7D':["AHUMADA SIERRA THAEL","AMARIS SIERRA JULEISY","BENITEZ BOSSIO MARIA","BOLIVAR GOMEZ MARIA","CABALLERO SILVERA JOHELIS","CARMONA SILVERA LEYNER","CARPINTERO SILVERA THALIA","CONSUEGRA ALVAREZ JHOINER","ESCORCIA RIVALDO CAMILO","GERONIMO BARRAZA HELLEN","GOEZ OTERO DANIEL","GONZALEZ BARRAZA DANNA","GUANIPA GUTIERREZ ARANZA","GUTIERREZ OJEDA EMMANUEL","HERNANDEZ DIAZ JESUS","LLANOS SEGURA YAILETH","MARIN PALMA SANTIAGO","MARMOL HERNANDEZ SEBASTIAN","NAVAS CEDEÑO ANGEL","NIETO ROLONG MARY","ORTEGA BENITEZ IVIAN","ORTEGA MANGA ANGELLYS","PATINO BORRERO HARRISON","PEREZ ALVAREZ MARIA","PEREZ NATERA VALENTINA","PIMIENTA OTERO LAURENS","POLO REDONDO MARIA","PRADA SARMIENTO BRAYAN","SANTIAGO DACONTE ANDRES","SIERRA CASTILLO MAURICIO","SIERRA GOMEZ LIZETH","SMITH SANTIAGO VALERIA","SUAREZ GALLARDO MATEO","TORRES FERNANDEZ SANTIAGO","ZARATE REDONDO YAJAIRA"],
             '8A':["ARIZA CONSUEGRA STEISY","BARRAZA HERNANDEZ RONALD","BARRIOS MOLINA LITZY","BECERRA CRESPO MANOLO","BELLIDO CASIANO LEIDER","BERRUEZO ORTEGA SAMANTHA","BLANCO REYES ANGEL","BOLIVAR ESCOBAR VALENTINA","CIRO ROMERO ANGELA","DE LA CRUZ SIERRA ALAN","DITA ESCALANTE GILMAR","ESCALANTE OSPINO ANDERSON","ESCOBAR ALGARIN LILIANA","GOMEZ VILLA ANA","GUTIERREZ PAEZ ANA","JIMÉNEZ QUINTANA FREDDY","JIMENEZ RUA NASLI","LLANOS REDONDO ADRIANA","LLANOS REYES ANDRES","MARQUEZ MARIN VALERIN","MARQUEZ VILORIA EMILY","MARTINEZ ORTEGA JESUS","MOLINA GUTIERREZ JULIE","ORDOÑEZ GARCIA LEONARDO","PACHECO AVILA MARIA","PEREZ ARAUJO ANDRÉS","REDONDO PATIÑO DELEVIS","RODRIGUEZ SANJUAN SALOME","SANTIAGO JULIO ASLY","SIERRA GOMEZ LUISA","SILVERA GOMEZ GABRIEL","SILVERA ORTEGA MAYLER","TEJERA ORTEGA LUIS","VANEGAS DE LA CRUZ DANIELA","VEGA ORTIZ EYEELIN","VELASQUEZ GARCIA MANUEL"],
             '8B':["AREVALO ARCON JOSE","BARRETO ROLONG MARIANA","BARRIOS PUENTES BLAYNER","BULA PEREZ MARIA","BUSTOS BARRIOS HONEY","CASTRO CASTRO DASHARY","CASTRO HARO JEAN","CONTRERAS SANJUAN IVANNA","CORREDOR BARBOSA SAMUEL","COTES ESCALANTE YESID","GARCIA VARELA SHADAY","GONZALEZ SILVERA LILIBETH","HEREDIA LOPEZ EYLIN","HERNANDEZ DE LA CRUZ MIGUEL","HERNANDEZ LLANOS GUADALUPE","HERNANDEZ LLANOS JESE","HERRERA POLO LINA","JAIME ROA ANYELO","LINARES ESTEVEZ MAYTE","LUQUE GONZALEZ YANKELIS","MONSALVO QUINTERO ADRIAN","MONTERROSA CABALLERO LAURA","NORIEGA REDONDO WENDY","POLO JIMENEZ NORELLA","RADA GUTIERREZ AISHA","REDONDO FRANCO LUIS","RINCON PEREZ ANGIELIN","SALAZAR ZAMBRANO RICHARD","SIERRA OROZCO ANGGY","SILVERA ESCOBAR DAYAR","SILVERA JIMENEZ NICOLL","SILVERA SANJUAN ADALYANA","SOSA BERRIO DEICY","SUAREZ DURAN JOSTIN","TOMASES RADA THIAGO","URANGO PACHECO DEILER","VILLAMIL HERNANDEZ XIMENA"],
@@ -662,6 +662,8 @@
             '11C':["ACOSTA DE LA CRUZ ISACC DAVID","ACUÑA RADA SARESTH CAROLINA","BENEDETTI GARCIA GLEINER DAVID","BORGE FLOREZ MARIA ALEJANDRA","CANTILLO NORIEGA KEIVEN STEVEN","CONSUEGRA GOYENECHE HANYDANIELS ISABELL","CONSUEGRA JARAMILLO MARIA ALEJANDRA","CONSUEGRA POLO EDU FERNANDO","CORRO IBAÑEZ DAVID ALEJANDRO","DE LA HOZ ARTETA ANGELINE LUCIA","GARCIA REDONDO NAYEIDIS CAROLINA","GOMEZ MARTINEZ NADIA JALILA","GOMEZ OROZCO ANGIE SOFIA","GUTIERREZ OJEDA ANTONE ALEXANDER","LEAL QUINTANILLA JESUS DAVID","MARIANO OROZCO NICOLL ANDREA","MELENDEZ CAMBERO WILIANNIS KARI","MENDOZA ESCALANTE DILAN SACHEL","MERCADO CONSUEGRA MARIE ESTHER","NAVAS BOLIVAR JAMER DE JESUS","OROZCO ARAUJO MARIA DE LOS ANGELES","ORTEGA GARCIA JULIANA ANDREA","OSPINO DE LA CRUZ JOSE ENRIQUE","OVIEDO MOLINA THAILY SOFIA","PADILLA CONRADO JAIRO ANDRES","PALLARES DE LA RANS JUAN DANIEL","PALMA PEREZ DANNA MEIBELYN","PEREZ DE LA CRUZ LIS DAYANA","RADA TAMAYO JASIR ALFONSO","RAMOS CONTRERAS TALIANA RUBI","RODRIGUEZ BLANCO ZAMIRA SOFIA","SALGADO VERDEZA MARIA VALENTINA","SARMIENTO ACUÑA DULCE MARIA","SARMIENTO PALMA MANUEL ALFONSO","SIERRA DE LA CRUZ LAUREEN JAEL","SILVERA SANTIAGO JUAN SEBASTIAN","SUAREZ SIERRA MARIA ANGEL"],
             '11D':["ARIZA DE LA CRUZ SEBASTIAN","ARIZA SILVERA JORGE MARIO","BLANCO ESCALANTE SAIDER","BOLIVAR VIVANCO NICOL","BORGE GOENAGA SHADIA","CABALLERO BARRIOS BREIDER","CHICO MARTINEZ DAIRON","CONSUEGRA SILVERA SARAY","ESCALANTE GONZALEZ DANIELA","GALLARDO BRADFORD NAYALITH","GARZON GALINDO LENIN","GONZALEZ DE LA RANS SHARLET","GUTIERREZ MENDOZA JOSE","GUTIERREZ VASQUEZ PAULA","MELENDRES VILLALBA KEIMER","MEZA GARCIA CARLOS","MORA SILVERA DEYNER","ORTEGA GONZALEZ LEWIN","PADILLA PARRA MARY","PALMA DE LA HOZ LUIS","PEDRAZA OLIVEROS MATHIAS","PEDROZA GALLARDO SCARLETT","PEREZ VEGA NICOL","RODRIGUEZ SALAS YORYANIZ","SANTIAGO SOLANO AXEL","VARGAS ALBIS YERSON","VARGAS MUÑOZ SHERIT","VELILLA ACOSTA CAMILO"]
         };
+        
+        let allStudentsData = JSON.parse(JSON.stringify(allStudentsDataHardcoded));
 
         // --- 2. FUNCIONES DE UTILIDAD COMÚN ---
         function getUIElements() {
@@ -776,34 +778,86 @@
         }
 
         // --- 3. PERSISTENCIA DE DATOS Y MERGE INTELIGENTE ---
-        function loadAllData() {
-            const savedGrades = localStorage.getItem('gradesData_2026');
-            gradesData = savedGrades ? JSON.parse(savedGrades) : {};
+        function mergeAndCleanData(sourceGrades, hardcodedStudents) {
+            let newGradesData = {};
+            let finalStudents = JSON.parse(JSON.stringify(hardcodedStudents)); 
             
+            for (const period in sourceGrades) {
+                newGradesData[period] = {};
+                
+                for (const course in finalStudents) {
+                    newGradesData[period][course] = { dateNotes: {}, columnNotes: {}, generalComments: [] };
+                    const oldCourseGrades = sourceGrades[period][course] || {};
+                    
+                    if (sourceGrades[period][course]) {
+                        newGradesData[period][course].dateNotes = oldCourseGrades.dateNotes || {};
+                        newGradesData[period][course].columnNotes = oldCourseGrades.columnNotes || {};
+                        newGradesData[period][course].generalComments = oldCourseGrades.generalComments || [];
+                    }
+                    
+                    finalStudents[course].forEach(newStudent => {
+                        if (oldCourseGrades[newStudent]) {
+                            newGradesData[period][course][newStudent] = oldCourseGrades[newStudent];
+                        } else {
+                            const newKey = newStudent.split(' ').slice(0, 2).join(' ').trim(); 
+                            let foundOldStudent = null;
+                            for (const oldStudent in oldCourseGrades) {
+                                if(['dateNotes', 'columnNotes', 'generalComments'].includes(oldStudent)) continue;
+                                const oldKey = oldStudent.split(' ').slice(0, 2).join(' ').trim();
+                                if (newKey === oldKey && newKey.length > 3) {
+                                    foundOldStudent = oldStudent;
+                                    break;
+                                }
+                            }
+                            if (foundOldStudent) {
+                                newGradesData[period][course][newStudent] = oldCourseGrades[foundOldStudent];
+                            } else {
+                                newGradesData[period][course][newStudent] = { grades: {}, attendance: {}, observations: [] };
+                            }
+                        }
+                    });
+                    
+                    for (const oldStudent in oldCourseGrades) {
+                        if(['dateNotes', 'columnNotes', 'generalComments'].includes(oldStudent)) continue;
+                        
+                        let isMatched = false;
+                        finalStudents[course].forEach(newStudent => {
+                            const newKey = newStudent.split(' ').slice(0, 2).join(' ').trim();
+                            const oldKey = oldStudent.split(' ').slice(0, 2).join(' ').trim();
+                            if ((newKey === oldKey && newKey.length > 3) || newStudent === oldStudent) isMatched = true;
+                        });
+                        
+                        if (!isMatched) {
+                            const sData = oldCourseGrades[oldStudent];
+                            const hasGrades = Object.keys(sData.grades || {}).length > 0;
+                            const hasAttendance = Object.keys(sData.attendance || {}).length > 0;
+                            const hasObs = (sData.observations || []).length > 0;
+                            
+                            if (hasGrades || hasAttendance || hasObs) {
+                                if (!finalStudents[course].includes(oldStudent)) {
+                                    finalStudents[course].push(oldStudent);
+                                }
+                                newGradesData[period][course][oldStudent] = sData;
+                            }
+                        }
+                    }
+                    finalStudents[course].sort((a,b) => a.localeCompare(b));
+                }
+            }
+            return { cleanGrades: newGradesData, cleanStudents: finalStudents };
+        }
+
+        function loadAllData() {
             const savedGlobalNotes = localStorage.getItem('globalNotes_2026');
             globalNotes = savedGlobalNotes ? JSON.parse(savedGlobalNotes) : [];
             
-            const savedStudents = localStorage.getItem('allStudentsData_2026');
-            if (savedStudents) {
-                const parsedStudents = JSON.parse(savedStudents);
-                for (const course in parsedStudents) {
-                    if (!allStudentsData[course]) {
-                        allStudentsData[course] = parsedStudents[course];
-                    } else {
-                        const existing = new Set([...allStudentsData[course], ...parsedStudents[course]]);
-                        allStudentsData[course] = Array.from(existing).sort((a,b) => a.localeCompare(b));
-                    }
-                }
-            }
-
             const savedSchedule = localStorage.getItem('dailySchedule_2026_v4');
             if (savedSchedule) {
                 dailySchedule = JSON.parse(savedSchedule);
             }
             
-            // Asegurarnos que todos los cursos siempre estén en el horario
             const assignedCourses = new Set(Object.values(dailySchedule).flat());
-            Object.keys(allStudentsData).forEach(course => {
+            Object.keys(allStudentsDataHardcoded).forEach(course => {
                 if (!assignedCourses.has(course)) {
                     let defaultDay = 'Lunes';
                     for (const day in defaultDailySchedule) {
@@ -813,6 +867,17 @@
                     dailySchedule[defaultDay].push(course);
                 }
             });
+
+            const savedGrades = localStorage.getItem('gradesData_2026');
+            if (savedGrades) {
+                const rawGrades = JSON.parse(savedGrades);
+                const merged = mergeAndCleanData(rawGrades, allStudentsDataHardcoded);
+                gradesData = merged.cleanGrades;
+                allStudentsData = merged.cleanStudents;
+            } else {
+                gradesData = {};
+                allStudentsData = JSON.parse(JSON.stringify(allStudentsDataHardcoded));
+            }
         }
         
         function saveAllData(isPartial = false) { 
@@ -945,7 +1010,7 @@
                 deleteBtn.className = 'text-red-500 hover:text-red-700 text-xl ml-2 bg-transparent border-none cursor-pointer';
                 deleteBtn.innerHTML = '&times;';
                 if (appSettings.periods.length <= 1) deleteBtn.classList.add('hidden');
-                deleteBtn.onclick = () => window.deletePeriod(period.name);
+                deleteBtn.onclick = () => deletePeriod(period.name);
                 div.appendChild(deleteBtn);
                 periodsList.appendChild(div);
             });
@@ -968,7 +1033,7 @@
                         button.id = 'tab-' + group;
                         button.className = 'tab-button';
                         button.textContent = group;
-                        button.onclick = () => window.switchCourse(group);
+                        button.onclick = () => switchCourse(group);
                         wrapper.appendChild(button);
                     });
                     ui.tabNavigation.appendChild(dayBlock);
@@ -976,14 +1041,14 @@
             }
         }
 
-        window.switchCourse = function(course) {
+        function switchCourse(course) {
             activeCourse = course;
             ensureCourseData(activePeriod, activeCourse);
             document.querySelectorAll('.tab-button.active').forEach(b => b.classList.remove('active'));
             const tab = document.getElementById('tab-' + activeCourse);
             if(tab) tab.classList.add('active');
             renderTable();
-        };
+        }
 
         // --- 5. RENDERIZADO DE TABLA Y ESTADÍSTICAS ---
         function calculateAndDisplayStats() {
@@ -1474,9 +1539,9 @@
         window.showBulletinModal = async function(student) {
             ensureStudentData(activePeriod, activeCourse, student);
             const studentData = gradesData[activePeriod][activeCourse][student];
-            const def = calculateDef(studentData.grades);
-            const nivel = determineNivel(def);
-            const attendance = calculateAttendanceSummary(studentData.attendance);
+            const def = window.calculateDef(studentData.grades);
+            const nivel = window.determineNivel(def);
+            const attendance = window.calculateAttendanceSummary(studentData.attendance);
             const timestamp = new Date().toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' });
 
             let obsListHTML = 'Sin observaciones.';
@@ -1513,9 +1578,9 @@
             const cData = pData && pData[activeCourse] ? pData[activeCourse] : {};
             const studentData = cData && cData[student] ? cData[student] : {};
             
-            const def = calculateDef(studentData.grades);
-            const nivel = determineNivel(def);
-            const attendance = calculateAttendanceSummary(studentData.attendance);
+            const def = window.calculateDef(studentData.grades);
+            const nivel = window.determineNivel(def);
+            const attendance = window.calculateAttendanceSummary(studentData.attendance);
 
             let reportHTML = `
                 <div class="p-4" id="studentReportContent">
@@ -2431,7 +2496,7 @@
                         if (!importedData.appSettings || !importedData.allStudentsData || !importedData.gradesData) throw new Error('Archivo inválido.');
                         
                         // 1. Unificar estudiantes (Mantener los nuevos 11°, 7D, 9E y agregar los del backup)
-                        const mergedStudents = { ...allStudentsData }; // Los que están por defecto en el código
+                        const mergedStudents = { ...allStudentsDataHardcoded }; // Los que están por defecto en el código
                         for (const course in importedData.allStudentsData) {
                             if (!mergedStudents[course]) {
                                 mergedStudents[course] = importedData.allStudentsData[course];
@@ -2446,7 +2511,7 @@
                         let mergedSchedule = importedData.dailySchedule || { 'Lunes':[], 'Martes':[], 'Miércoles':[], 'Jueves':[], 'Viernes':[] };
                         const assignedCourses = new Set(Object.values(mergedSchedule).flat());
                         
-                        Object.keys(allStudentsData).forEach(course => {
+                        Object.keys(allStudentsDataHardcoded).forEach(course => {
                             if (!assignedCourses.has(course)) {
                                 // Buscar el día predeterminado de este curso
                                 let defaultDay = 'Lunes';
@@ -2666,7 +2731,7 @@
             });
         }
         
-        function initializeApp() {
+        window.initializeApp = function() {
             getUIElements();
             applyTheme(localStorage.getItem('darkMode') === 'true');
             loadSettings();
@@ -2674,14 +2739,14 @@
             
             for (const course in allStudentsData) {
                 if (Array.isArray(allStudentsData[course])) {
-                    allStudentsData[course] = allStudentsData[course].map(student => formatStudentName(student)).sort((a, b) => a.localeCompare(b));
+                    allStudentsData[course] = allStudentsData[course].map(student => window.formatStudentName(student)).sort((a, b) => a.localeCompare(b));
                 }
             }
 
             setupPeriodSelector();
             generateTabs();
             setupEventListeners(); 
-            setupSpeechRecognition();
+            window.setupSpeechRecognition();
 
             const dayMap = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
             const todayIndex = new Date().getDay();
@@ -2697,10 +2762,9 @@
             if (initialCourse) {
                 window.switchCourse(initialCourse);
             }
-        }
-        
-        // --- 8. INICIALIZACIÓN ---
-        initializeApp();
+        };
+
+        window.onload = window.initializeApp;
     </script>
 </body>
 </html>
