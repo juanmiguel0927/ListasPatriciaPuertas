@@ -466,7 +466,7 @@
         <div id="scheduleModal" class="modal-overlay">
             <div class="modal-content max-w-4xl">
                 <h3 class="text-xl font-bold mb-4">📅 Editar Horario Semanal</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-300 mb-4">Selecciona qué grupos tienen clase en cada día de la semana.</p>
+                <p class="text-sm text-gray-500 dark:text-gray-300 mb-4">Selecciona qué grupos tienen clase en cada día de la semana para el <strong><span id="schedulePeriodTitle"></span></strong>.</p>
                 <div id="scheduleGrid" class="grid grid-cols-1 sm:grid-cols-5 gap-4"></div>
                 <div class="flex justify-end gap-2 mt-6">
                     <button id="closeScheduleModal" class="action-button">Cancelar</button>
@@ -619,19 +619,26 @@
     <div id="customTooltip" class="hidden absolute p-2 text-sm rounded-md shadow-lg max-w-xs whitespace-normal"></div>
 
     <script>
-        // === 1. VARIABLES GLOBALES Y ESTADO ===
         const ui = {};
         let recognition = null;
         let isRecognitionSessionActive = false;
         let voiceGradingMode = 'student';
         
-        const defaultDailySchedule = { 
-            'Lunes': ['11A', '9C', '9D'], 
+        const baseScheduleP1 = {
+            'Lunes': ['9C', '8B', '9D'], 
+            'Martes': ['10C', '10D'], 
+            'Miércoles': ['8A', '9A', '9B'], 
+            'Jueves': ['8C'], 
+            'Viernes': ['8B', '8D', '9E', '7D']
+        };
+        const baseScheduleP2 = {
+            'Lunes': ['9C', '8B', '9D', '11A', '11D'], 
             'Martes': ['10C', '10D'], 
             'Miércoles': ['8A', '9A', '9B'], 
             'Jueves': ['8C', '11B', '11C'], 
-            'Viernes': ['8B', '8D', '9E'] 
+            'Viernes': ['8D', '9E', '8C', '7D']
         };
+
         let schedulesByPeriod = {};
         
         const dayNameToNumber = { 'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5 };
@@ -665,7 +672,6 @@
         
         let allStudentsData = JSON.parse(JSON.stringify(allStudentsDataHardcoded));
 
-        // --- 2. FUNCIONES DE UTILIDAD COMÚN ---
         function getUIElements() {
             const ids = [
                 'attendanceTableContainer', 'courseTitle', 'courseInfo', 'tabNavigation', 
@@ -710,12 +716,12 @@
         function formatStudentName(str) { return !str ? '' : str.trim().toUpperCase(); }
         
         function getActiveCoursesForPeriod(period) {
-            const sched = schedulesByPeriod[period] || defaultDailySchedule;
+            const sched = schedulesByPeriod[period] || (period === 'Periodo 1' ? baseScheduleP1 : baseScheduleP2);
             return Array.from(new Set(Object.values(sched).flat()));
         }
 
         function getDayForCourse(course) { 
-            const sched = schedulesByPeriod[activePeriod] || defaultDailySchedule;
+            const sched = schedulesByPeriod[activePeriod] || (activePeriod === 'Periodo 1' ? baseScheduleP1 : baseScheduleP2);
             for (const day in sched) { if (sched[day].includes(course)) return day; } 
             return null; 
         }
@@ -788,7 +794,6 @@
             return {attended: p, absent: a, excused: e, late: t}; 
         }
 
-        // --- 3. PERSISTENCIA DE DATOS Y MERGE INTELIGENTE ---
         function loadAllData() {
             const savedGrades = localStorage.getItem('gradesData_2026');
             gradesData = savedGrades ? JSON.parse(savedGrades) : {};
@@ -796,20 +801,17 @@
             const savedGlobalNotes = localStorage.getItem('globalNotes_2026');
             globalNotes = savedGlobalNotes ? JSON.parse(savedGlobalNotes) : [];
             
-            const savedSchedule = localStorage.getItem('schedulesByPeriod_2026');
+            const savedSchedule = localStorage.getItem('schedulesByPeriod_2026_v5');
             if (savedSchedule) {
                 schedulesByPeriod = JSON.parse(savedSchedule);
             } else {
-                // Migración o defecto
-                schedulesByPeriod = {};
-                if (appSettings && appSettings.periods) {
-                    appSettings.periods.forEach(p => {
-                        schedulesByPeriod[p.name] = JSON.parse(JSON.stringify(defaultDailySchedule));
-                    });
-                }
+                schedulesByPeriod = {
+                    'Periodo 1': JSON.parse(JSON.stringify(baseScheduleP1)),
+                    'Periodo 2': JSON.parse(JSON.stringify(baseScheduleP2)),
+                    'Periodo 3': JSON.parse(JSON.stringify(baseScheduleP2))
+                };
             }
 
-            // Forzar limpiado de estudiantes: siempre se carga la lista dura oficial para evitar fantasmas
             const savedStudents = localStorage.getItem('allStudentsData_2026_clean');
             if (savedStudents) {
                 allStudentsData = JSON.parse(savedStudents);
@@ -823,7 +825,7 @@
             try { 
                 localStorage.setItem('gradesData_2026', JSON.stringify(gradesData)); 
                 localStorage.setItem('allStudentsData_2026_clean', JSON.stringify(allStudentsData)); 
-                localStorage.setItem('schedulesByPeriod_2026', JSON.stringify(schedulesByPeriod)); 
+                localStorage.setItem('schedulesByPeriod_2026_v5', JSON.stringify(schedulesByPeriod)); 
                 localStorage.setItem('globalNotes_2026', JSON.stringify(globalNotes));
                 if(!isPartial) renderTable();
             } catch (e) { console.error("Error saving data: ", e); } 
@@ -900,7 +902,6 @@
             }
         }
 
-        // --- 4. RENDERIZADO Y NAVEGACIÓN ---
         function setupPeriodSelector() {
             if (!ui.periodSelector) return;
             ui.periodSelector.innerHTML = '';
@@ -958,7 +959,7 @@
         function generateTabs() {
             if(!ui.tabNavigation) return;
             ui.tabNavigation.innerHTML = '';
-            const currentSchedule = schedulesByPeriod[activePeriod] || defaultDailySchedule;
+            const currentSchedule = schedulesByPeriod[activePeriod] || (activePeriod === 'Periodo 1' ? baseScheduleP1 : baseScheduleP2);
 
             for (const day in currentSchedule) {
                 const visibleCoursesForDay = currentSchedule[day].filter(group => {
@@ -991,7 +992,6 @@
             renderTable();
         }
 
-        // --- 5. RENDERIZADO DE TABLA Y ESTADÍSTICAS ---
         function calculateAndDisplayStats() {
             if (!activeCourse) return;
             const pData = gradesData[activePeriod];
@@ -1190,7 +1190,6 @@
             }
         }
 
-        // --- 6. FUNCIONES DE ACTUALIZACIÓN ---
         function enableEdit(cell) {
             if (cell.querySelector('input')) return;
             const { student, field } = cell.dataset;
@@ -1328,7 +1327,6 @@
             setTimeout(() => ui.passwordInput.focus(), 100);
         }
 
-        // --- 7. FUNCIONES DE MODALES PRINCIPALES ---
         function showGeneralObsModal() {
             ui.genObsCourseName.textContent = "Todos los Cursos";
             ui.genObsTextarea.value = '';
@@ -2190,7 +2188,7 @@
                 const todayIndex = new Date().getDay();
                 const todayName = dayMap[todayIndex === 0 || todayIndex === 6 ? 1 : todayIndex];
                 
-                const currentSchedule = schedulesByPeriod[activePeriod] || defaultDailySchedule;
+                const currentSchedule = schedulesByPeriod[activePeriod] || (activePeriod === 'Periodo 1' ? baseScheduleP1 : baseScheduleP2);
                 const visibleCoursesToday = (currentSchedule[todayName] || []).filter(c => {
                     return appSettings.hiddenCourses ? !appSettings.hiddenCourses.includes(c) : true;
                 });
@@ -2204,7 +2202,7 @@
                 appSettings.activePeriod = activePeriod; 
                 
                 if (!schedulesByPeriod[activePeriod]) {
-                    schedulesByPeriod[activePeriod] = JSON.parse(JSON.stringify(schedulesByPeriod['Periodo 1'] || defaultDailySchedule));
+                    schedulesByPeriod[activePeriod] = JSON.parse(JSON.stringify(activePeriod === 'Periodo 1' ? baseScheduleP1 : baseScheduleP2));
                 }
                 
                 saveSettings(); 
@@ -2466,35 +2464,80 @@
                         if (!importedData.appSettings || !importedData.allStudentsData || !importedData.gradesData) throw new Error('Archivo inválido.');
                         
                         // 1. Limpieza total de listas de estudiantes a la base oficial
-                        allStudentsData = JSON.parse(JSON.stringify(allStudentsDataHardcoded));
+                        let mergedStudents = JSON.parse(JSON.stringify(allStudentsDataHardcoded));
+                        let importedGrades = importedData.gradesData || {};
+                        const normalize = (str) => str.trim().toUpperCase().replace(/\s+/g, ' ');
+
+                        for (const period in importedGrades) {
+                            for (const course in importedGrades[period]) {
+                                const courseData = importedGrades[period][course];
+                                if (!mergedStudents[course]) mergedStudents[course] = [];
+                                const officialStudents = mergedStudents[course];
+                                
+                                for (const oldStudentName in courseData) {
+                                    if (['dateNotes', 'columnNotes', 'generalComments'].includes(oldStudentName)) continue;
+                                    const sData = courseData[oldStudentName];
+                                    const hasGrades = Object.keys(sData.grades || {}).length > 0;
+                                    const hasAttendance = Object.keys(sData.attendance || {}).length > 0;
+                                    const hasObs = (sData.observations || []).length > 0;
+                                    
+                                    if (!hasGrades && !hasAttendance && !hasObs) {
+                                        delete courseData[oldStudentName];
+                                        continue;
+                                    }
+
+                                    let matchedName = officialStudents.find(s => normalize(s) === normalize(oldStudentName));
+                                    if (!matchedName) {
+                                        const oldParts = normalize(oldStudentName).split(' ');
+                                        if (oldParts.length >= 2) {
+                                            const oldPrefix = oldParts[0] + ' ' + oldParts[1].substring(0, 4);
+                                            matchedName = officialStudents.find(s => normalize(s).startsWith(oldPrefix));
+                                        }
+                                    }
+
+                                    if (matchedName) {
+                                        if (matchedName !== oldStudentName) {
+                                            courseData[matchedName] = courseData[oldStudentName];
+                                            delete courseData[oldStudentName];
+                                        }
+                                    } else {
+                                        officialStudents.push(oldStudentName);
+                                    }
+                                }
+                                mergedStudents[course] = [...new Set(officialStudents)].sort((a,b) => a.localeCompare(b));
+                            }
+                        }
+
+                        allStudentsData = mergedStudents;
+                        gradesData = importedGrades;
+                        globalNotes = importedData.globalNotes || [];
 
                         // 2. Horarios por periodo
+                        const importedPeriods = importedData.appSettings.periods || appSettings.periods;
                         if (importedData.schedulesByPeriod) {
                             schedulesByPeriod = importedData.schedulesByPeriod;
                         } else if (importedData.dailySchedule) {
                             schedulesByPeriod = {};
-                            appSettings.periods.forEach(p => {
-                                schedulesByPeriod[p.name] = JSON.parse(JSON.stringify(importedData.dailySchedule));
+                            importedPeriods.forEach(p => {
+                                let sched = JSON.parse(JSON.stringify(importedData.dailySchedule));
+                                if (p.name === 'Periodo 1') {
+                                    for(let day in sched) {
+                                        sched[day] = sched[day].filter(c => !c.startsWith('11'));
+                                    }
+                                }
+                                schedulesByPeriod[p.name] = sched;
                             });
                         }
-
-                        // 3. Notas y Diario
-                        gradesData = importedData.gradesData || {};
-                        globalNotes = importedData.globalNotes || [];
                         
                         // Fusionar configuraciones
+                        appSettings.periods = importedPeriods;
                         appSettings.professor = importedData.appSettings.professor || appSettings.professor;
                         appSettings.subject = importedData.appSettings.subject || appSettings.subject;
                         appSettings.hiddenCourses = importedData.appSettings.hiddenCourses || appSettings.hiddenCourses;
                         
-                        // Restauramos periodos viejos, pero si están vacíos usamos los nuevos
-                        if (importedData.appSettings.periods && importedData.appSettings.periods.length > 0) {
-                            appSettings.periods = importedData.appSettings.periods;
-                        }
-                        
                         saveSettings(); 
                         saveAllData(true); 
-                        showMessage('Datos importados. Recargando...', 'success'); 
+                        showMessage('Datos importados con éxito. Recargando...', 'success'); 
                         setTimeout(() => window.location.reload(), 500);
                     } catch (error) { 
                         showMessage(`Error: ${error.message}`, 'error'); 
@@ -2602,7 +2645,8 @@
                 const allCourses = Object.keys(allStudentsData).sort();
                 const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
                 
-                const currentScheduleForPeriod = schedulesByPeriod[activePeriod] || defaultDailySchedule;
+                document.getElementById('schedulePeriodTitle').textContent = activePeriod;
+                const currentScheduleForPeriod = schedulesByPeriod[activePeriod] || (activePeriod === 'Periodo 1' ? baseScheduleP1 : baseScheduleP2);
 
                 days.forEach(day => {
                     const dayCol = document.createElement('div');
@@ -2707,7 +2751,7 @@
             const todayIndex = new Date().getDay();
             const todayName = dayMap[todayIndex === 0 || todayIndex === 6 ? 1 : todayIndex]; 
             
-            const currentSchedule = schedulesByPeriod[activePeriod] || defaultDailySchedule;
+            const currentSchedule = schedulesByPeriod[activePeriod] || (activePeriod === 'Periodo 1' ? baseScheduleP1 : baseScheduleP2);
             const visibleCoursesToday = (currentSchedule[todayName] || []).filter(c => {
                 return appSettings.hiddenCourses ? !appSettings.hiddenCourses.includes(c) : true;
             });
@@ -2743,7 +2787,7 @@
         window.updateAttendance = updateAttendance;
 
         // --- 8. INICIALIZACIÓN ---
-        window.addEventListener('DOMContentLoaded', initializeApp);
+        window.onload = initializeApp;
     </script>
 </body>
 </html>
