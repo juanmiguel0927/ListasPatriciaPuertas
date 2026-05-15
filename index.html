@@ -619,19 +619,21 @@
     <div id="customTooltip" class="hidden absolute p-2 text-sm rounded-md shadow-lg max-w-xs whitespace-normal"></div>
 
     <script>
-        // === 1. VARIABLES Y ESTADO GLOBAL ===
+        // === 1. VARIABLES GLOBALES Y ESTADO ===
         const ui = {};
         let recognition = null;
         let isRecognitionSessionActive = false;
         let voiceGradingMode = 'student';
         
-        let dailySchedule = { 
+        const defaultDailySchedule = { 
             'Lunes': ['11A', '9C', '9D'], 
             'Martes': ['10C', '10D'], 
             'Miércoles': ['8A', '9A', '9B'], 
             'Jueves': ['8C', '11B', '11C'], 
             'Viernes': ['8B', '8D', '9E'] 
         };
+        let dailySchedule = JSON.parse(JSON.stringify(defaultDailySchedule));
+        
         const dayNameToNumber = { 'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5 };
         let activeCourse = null;
         let activePeriod = null;
@@ -773,7 +775,7 @@
             return {attended: p, absent: a, excused: e, late: t}; 
         }
 
-        // --- 3. PERSISTENCIA DE DATOS ---
+        // --- 3. PERSISTENCIA DE DATOS Y MERGE INTELIGENTE ---
         function loadAllData() {
             const savedGrades = localStorage.getItem('gradesData_2026');
             gradesData = savedGrades ? JSON.parse(savedGrades) : {};
@@ -781,17 +783,42 @@
             const savedGlobalNotes = localStorage.getItem('globalNotes_2026');
             globalNotes = savedGlobalNotes ? JSON.parse(savedGlobalNotes) : [];
             
-            const savedSchedule = localStorage.getItem('dailySchedule_2026_v3');
+            const savedStudents = localStorage.getItem('allStudentsData_2026');
+            if (savedStudents) {
+                const parsedStudents = JSON.parse(savedStudents);
+                for (const course in parsedStudents) {
+                    if (!allStudentsData[course]) {
+                        allStudentsData[course] = parsedStudents[course];
+                    } else {
+                        const existing = new Set([...allStudentsData[course], ...parsedStudents[course]]);
+                        allStudentsData[course] = Array.from(existing).sort((a,b) => a.localeCompare(b));
+                    }
+                }
+            }
+
+            const savedSchedule = localStorage.getItem('dailySchedule_2026_v4');
             if (savedSchedule) {
                 dailySchedule = JSON.parse(savedSchedule);
             }
+            
+            const assignedCourses = new Set(Object.values(dailySchedule).flat());
+            Object.keys(allStudentsData).forEach(course => {
+                if (!assignedCourses.has(course)) {
+                    let defaultDay = 'Lunes';
+                    for (const day in defaultDailySchedule) {
+                        if (defaultDailySchedule[day].includes(course)) defaultDay = day;
+                    }
+                    if(!dailySchedule[defaultDay]) dailySchedule[defaultDay] = [];
+                    dailySchedule[defaultDay].push(course);
+                }
+            });
         }
         
         function saveAllData(isPartial = false) { 
             try { 
                 localStorage.setItem('gradesData_2026', JSON.stringify(gradesData)); 
                 localStorage.setItem('allStudentsData_2026', JSON.stringify(allStudentsData)); 
-                localStorage.setItem('dailySchedule_2026_v3', JSON.stringify(dailySchedule)); 
+                localStorage.setItem('dailySchedule_2026_v4', JSON.stringify(dailySchedule)); 
                 localStorage.setItem('globalNotes_2026', JSON.stringify(globalNotes));
                 if(!isPartial) renderTable();
             } catch (e) { console.error("Error saving data: ", e); } 
@@ -821,18 +848,21 @@
                 if (!appSettings.gradeStructure) appSettings.gradeStructure = defaultSettings.gradeStructure;
                 if (!appSettings.percentages) appSettings.percentages = defaultSettings.percentages;
                 if (!appSettings.predefinedObs) appSettings.predefinedObs = defaultSettings.predefinedObs;
+                
+                if (!appSettings.activePeriod || !appSettings.periods.find(p => p.name === appSettings.activePeriod)) {
+                    appSettings.activePeriod = appSettings.periods[0].name;
+                }
             } else {
                 appSettings = defaultSettings;
+                const today = new Date();
+                let selectedPeriod = appSettings.periods[0].name; 
+                for (const period of appSettings.periods) {
+                    const start = new Date(period.start + 'T00:00:00');
+                    const end = new Date(period.end + 'T23:59:59');
+                    if (today >= start && today <= end) { selectedPeriod = period.name; break; }
+                }
+                appSettings.activePeriod = selectedPeriod;
             }
-            
-            const today = new Date();
-            let selectedPeriod = appSettings.periods[0].name; 
-            for (const period of appSettings.periods) {
-                const start = new Date(period.start + 'T00:00:00');
-                const end = new Date(period.end + 'T23:59:59');
-                if (today >= start && today <= end) { selectedPeriod = period.name; break; }
-            }
-            appSettings.activePeriod = selectedPeriod;
             activePeriod = appSettings.activePeriod;
         }
 
@@ -883,7 +913,7 @@
                 showMessage('Debe haber al menos un periodo.', 'error');
                 return;
             }
-            if (confirm('¿Estás seguro de eliminar el periodo ' + periodName + '? Se perderán todas las notas asociadas.')) {
+            showPasswordConfirm('Eliminar Periodo ' + periodName, () => {
                 appSettings.periods = appSettings.periods.filter(p => p.name !== periodName);
                 if (gradesData[periodName]) delete gradesData[periodName];
                 if (activePeriod === periodName) {
@@ -895,7 +925,7 @@
                 renderPeriodsList(); 
                 renderTable();
                 showMessage('Periodo eliminado.', 'success');
-            }
+            });
         }
 
         function renderPeriodsList() {
@@ -2111,7 +2141,7 @@
             };
         }
 
-        // --- 6. EVENT LISTENERS SETUP ---
+        // --- 6. EVENT LISTENERS PRINCIPALES ---
         function setupEventListeners() {
             const addListener = (elementKey, event, handler) => {
                 if (ui[elementKey]) ui[elementKey].addEventListener(event, handler);
@@ -2398,11 +2428,59 @@
                     try {
                         const importedData = JSON.parse(e.target.result);
                         if (!importedData.appSettings || !importedData.allStudentsData || !importedData.gradesData) throw new Error('Archivo inválido.');
-                        appSettings = importedData.appSettings; dailySchedule = importedData.dailySchedule || {}; allStudentsData = importedData.allStudentsData; gradesData = importedData.gradesData;
+                        
+                        // 1. Unificar estudiantes (Mantener los nuevos 11°, 7D, 9E y agregar los del backup)
+                        const mergedStudents = { ...allStudentsData }; // Los que están por defecto en el código
+                        for (const course in importedData.allStudentsData) {
+                            if (!mergedStudents[course]) {
+                                mergedStudents[course] = importedData.allStudentsData[course];
+                            } else {
+                                const existing = new Set([...mergedStudents[course], ...importedData.allStudentsData[course]]);
+                                mergedStudents[course] = Array.from(existing).sort((a,b) => a.localeCompare(b));
+                            }
+                        }
+                        allStudentsData = mergedStudents;
+
+                        // 2. Unificar Horario (Asegurar que los nuevos salones tengan su pestaña)
+                        let mergedSchedule = importedData.dailySchedule || { 'Lunes':[], 'Martes':[], 'Miércoles':[], 'Jueves':[], 'Viernes':[] };
+                        const assignedCourses = new Set(Object.values(mergedSchedule).flat());
+                        
+                        Object.keys(allStudentsData).forEach(course => {
+                            if (!assignedCourses.has(course)) {
+                                // Buscar el día predeterminado de este curso
+                                let defaultDay = 'Lunes';
+                                for (const day in defaultDailySchedule) {
+                                    if (defaultDailySchedule[day].includes(course)) defaultDay = day;
+                                }
+                                if(!mergedSchedule[defaultDay]) mergedSchedule[defaultDay] = [];
+                                mergedSchedule[defaultDay].push(course);
+                            }
+                        });
+                        dailySchedule = mergedSchedule;
+
+                        // 3. Restaurar notas, ajustes y diario
+                        gradesData = importedData.gradesData;
                         globalNotes = importedData.globalNotes || [];
-                        saveSettings(); saveAllData(true); showMessage('Datos importados. Recargando...', 'success'); setTimeout(() => window.location.reload(), 500);
-                    } catch (error) { showMessage(`Error: ${error.message}`, 'error'); }
-                    ui.importJsonFile.value = ''; ui.dataManagementModal.classList.remove('active');
+                        
+                        // Fusionar configuraciones
+                        appSettings.professor = importedData.appSettings.professor || appSettings.professor;
+                        appSettings.subject = importedData.appSettings.subject || appSettings.subject;
+                        appSettings.hiddenCourses = importedData.appSettings.hiddenCourses || appSettings.hiddenCourses;
+                        
+                        // Restauramos periodos viejos, pero si están vacíos usamos los nuevos
+                        if (importedData.appSettings.periods && importedData.appSettings.periods.length > 0) {
+                            appSettings.periods = importedData.appSettings.periods;
+                        }
+                        
+                        saveSettings(); 
+                        saveAllData(true); 
+                        showMessage('Datos importados. Recargando...', 'success'); 
+                        setTimeout(() => window.location.reload(), 500);
+                    } catch (error) { 
+                        showMessage(`Error: ${error.message}`, 'error'); 
+                    }
+                    ui.importJsonFile.value = ''; 
+                    ui.dataManagementModal.classList.remove('active');
                 };
                 reader.readAsText(file);
             });
@@ -2620,7 +2698,7 @@
             }
         }
         
-        // --- 7. EXPOSICIÓN GLOBAL DE FUNCIONES ---
+        // --- 7. EXPOSICIÓN GLOBAL DE FUNCIONES PARA EL HTML ---
         window.switchCourse = switchCourse;
         window.showCourseManagementModal = showCourseManagementModal;
         window.showGeneralObsModal = showGeneralObsModal;
@@ -2642,7 +2720,7 @@
         window.updateAttendance = updateAttendance;
 
         // --- 8. INICIALIZACIÓN ---
-        initializeApp();
+        window.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
 </html>
